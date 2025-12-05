@@ -1,0 +1,48 @@
+#
+# Copyright Debezium Authors
+#
+# Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
+#
+name: Maven CI
+
+on:
+  push:
+    branches:
+      - main
+      - 1.*
+      - 2.*
+      - 3.*
+      - 4.*
+    paths-ignore:
+        - '*.md'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout core repository
+        uses: actions/checkout@v6
+        with:
+          repository: debezium/debezium
+          ref: ${{ github.ref }}
+          path: core
+      - name: Checkout Debezium Extensions
+        uses: actions/checkout@v6
+        with:
+          path: extensions
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'graalvm'
+          java-version: 21
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Maven build core
+        run: ./extensions/mvnw clean install -f core/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
+      - name: Maven build Debezium Extensions
+        run: ./extensions/mvnw clean install -fae -f extensions/pom.xml -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 -DskipNonCore -Dnative
