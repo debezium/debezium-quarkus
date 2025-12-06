@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.debezium</groupId>
+        <artifactId>debezium-parent</artifactId>
+        <version>3.4.0-SNAPSHOT</version>
+    </parent>
+
+    <name>Quarkus Debezium :: Extensions :: Build Aggregator</name>
+    <description>Debezium Parent Module for Quarkus extensions</description>
+
+    <artifactId>quarkus-debezium-extensions-parent</artifactId>
+
+    <packaging>pom</packaging>
+
+
+    <modules>
+        <module>debezium-quarkus-outbox-common</module>
+        <module>debezium-quarkus-outbox</module>
+        <module>debezium-quarkus-outbox-reactive</module>
+        <module>quarkus-debezium-parent</module>
+    </modules>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/debezium/dbz/issues</url>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>Apache Software License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <connection>scm:git:git@github.com:debezium/debezium-quarkus.git</connection>
+        <developerConnection>scm:git:git@github.com:debezium/debezium-quarkus.git</developerConnection>
+        <url>https://github.com/debezium/debezium-quarkus</url>
+        <tag>HEAD</tag>
+    </scm>
+
+</project>

@@ -5,9 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.debezium</groupId>
-        <artifactId>debezium-parent</artifactId>
+        <artifactId>quarkus-debezium-extensions-parent</artifactId>
         <version>3.4.0-SNAPSHOT</version>
-	<relativePath>../debezium-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>debezium-quarkus-outbox-reactive-parent</artifactId>
