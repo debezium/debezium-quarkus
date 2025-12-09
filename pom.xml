@@ -17,7 +17,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <debezium.version>3.4.0.Beta1</debezium.version>
+        <dbz.version>3.4.0.Beta1</dbz.version>
     </properties>
 
     <dependencyManagement>
@@ -25,7 +25,7 @@
             <dependency>
                 <groupId>io.debezium</groupId>
                 <artifactId>debezium-bom</artifactId>
-                <version>3.4.0.Beta1</version>
+                <version>${dbz.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -43,7 +43,7 @@
                         <dependency>
                             <groupId>io.debezium</groupId>
                             <artifactId>debezium-ide-configs</artifactId>
-                            <version>3.4.0.Beta1</version>
+                            <version>${dbz.version}</version>
                         </dependency>
                     </dependencies>
                     <configuration>
@@ -59,7 +59,7 @@
                         <dependency>
                             <groupId>io.debezium</groupId>
                             <artifactId>debezium-revapi</artifactId>
-                            <version>3.4.0.Beta1</version>
+                            <version>${dbz.version}</version>
                         </dependency>
                         <dependency>
                             <groupId>org.revapi</groupId>
@@ -90,7 +90,7 @@
                     <dependency>
                         <groupId>io.debezium</groupId>
                         <artifactId>debezium-checkstyle</artifactId>
-                        <version>3.4.0.Beta1</version>
+                        <version>${dbz.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
