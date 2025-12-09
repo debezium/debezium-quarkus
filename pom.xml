@@ -13,8 +13,20 @@
 
     <artifactId>quarkus-debezium-extensions-parent</artifactId>
 
+    <version>3.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.debezium</groupId>
+                <artifactId>debezium-bom</artifactId>
+                <version>3.4.0.Beta1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <modules>
         <module>debezium-quarkus-outbox-common</module>
