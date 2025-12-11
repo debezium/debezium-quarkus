@@ -4,13 +4,12 @@
 
     <parent>
         <groupId>io.debezium</groupId>
-        <artifactId>debezium-parent</artifactId>
+        <artifactId>quarkus-debezium-extensions-parent</artifactId>
         <version>3.4.0-SNAPSHOT</version>
-        <relativePath>../debezium-parent/pom.xml</relativePath>
     </parent>
 
-    <name>Quarkus Debezium :: Extension :: Build Aggregator</name>
-    <description>Debezium Parent Module for Quarkus extensions</description>
+    <name>Quarkus Debezium :: Runtime Extensions :: Build Aggregator</name>
+    <description>Parent Module for Debezium Runtime Extensions for Quarkus</description>
 
     <artifactId>quarkus-debezium-parent</artifactId>
     <groupId>io.debezium.quarkus</groupId>
