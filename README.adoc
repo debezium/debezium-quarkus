@@ -6,7 +6,7 @@ image:https://img.shields.io/badge/zulip-join_chat-brightgreen.svg["Chat on Zuli
 ==== CI Branch Status
 [width="50%"]
 |===
-|main | image:https://github.com/debezium/debezium-quarkus/actions/workflows/ci-build.yaml/badge.svg?branch=main["Main Branch Build", link="https://github.com/apache/camel-quarkus/actions?query=workflow%3A%Debezium+Quarkus+CI%22"]
+|main | image:https://github.com/debezium/debezium-quarkus/actions/workflows/ci-build.yml/badge.svg?branch=main["Main Branch Build", link="https://github.com/debezium/debezium-quarkus/actions?query=workflow%3A%22%22Debezium+Quarkus+CI%22%22"]
 |===
 
 This repository hosts **Debezium extensions for Quarkus**, enabling Quarkus applications to work with Debezium for change data capture (CDC) and related patterns.
