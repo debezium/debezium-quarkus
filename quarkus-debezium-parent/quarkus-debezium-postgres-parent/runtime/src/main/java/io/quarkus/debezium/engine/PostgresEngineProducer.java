@@ -44,6 +44,7 @@ public class PostgresEngineProducer implements ConnectorProducer {
 
     private final StateHandler stateHandler;
     private final Map<String, QuarkusDatasourceConfiguration> quarkusDatasourceConfigurations;
+    private DebeziumFactory debeziumFactory;
     private final QuarkusNotificationChannel channel;
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final DebeziumConfigurationEngineParser engineParser = new DebeziumConfigurationEngineParser();
@@ -52,13 +53,14 @@ public class PostgresEngineProducer implements ConnectorProducer {
     public PostgresEngineProducer(StateHandler stateHandler,
                                   Instance<QuarkusDatasourceConfiguration> configurations,
                                   QuarkusNotificationChannel channel,
-                                  SourceRecordConsumerHandler sourceRecordConsumerHandler) {
+                                  SourceRecordConsumerHandler sourceRecordConsumerHandler, DebeziumFactory debeziumFactory) {
         this.stateHandler = stateHandler;
         this.channel = channel;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
         this.quarkusDatasourceConfigurations = configurations
                 .stream()
                 .collect(Collectors.toMap(QuarkusDatasourceConfiguration::getSanitizedName, Function.identity()));
+        this.debeziumFactory = debeziumFactory;
     }
 
     public PostgresEngineProducer(StateHandler stateHandler,
@@ -96,15 +98,7 @@ public class PostgresEngineProducer implements ConnectorProducer {
         return new DebeziumConnectorRegistry() {
             private final Map<String, Debezium> engines = enrichedMultiEngineConfigurations
                     .stream()
-                    .map(engine -> {
-                        EngineManifest engineManifest = new EngineManifest(engine.engineId());
-
-                        return Map.entry(engine.engineId(), new SourceRecordDebezium(
-                                engine.configuration(),
-                                stateHandler,
-                                POSTGRES,
-                                sourceRecordConsumerHandler.get(engineManifest), engineManifest));
-                    })
+                    .map(engine -> Map.entry(engine.engineId(), debeziumFactory.get(POSTGRES, engine)))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             @Override

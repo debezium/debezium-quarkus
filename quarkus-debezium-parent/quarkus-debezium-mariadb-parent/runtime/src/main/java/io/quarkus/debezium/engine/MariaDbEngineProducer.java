@@ -27,22 +27,18 @@ import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
-import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
 
 public class MariaDbEngineProducer implements ConnectorProducer {
     public static final Connector MARIADB = new Connector(MariaDbConnector.class.getName());
 
-    private final StateHandler stateHandler;
-    private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final AgroalParser agroalParser;
+    private final DebeziumFactory debeziumFactory;
 
     @Inject
-    public MariaDbEngineProducer(StateHandler stateHandler,
-                                 SourceRecordConsumerHandler sourceRecordConsumerHandler,
-                                 AgroalParser agroalParser) {
-        this.stateHandler = stateHandler;
-        this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
+    public MariaDbEngineProducer(AgroalParser agroalParser,
+                                 DebeziumFactory debeziumFactory) {
         this.agroalParser = agroalParser;
+        this.debeziumFactory = debeziumFactory;
     }
 
     @Produces
@@ -55,18 +51,11 @@ public class MariaDbEngineProducer implements ConnectorProducer {
             private final Map<String, Debezium> engines = multiEngineConfigurations
                     .stream()
                     .map(engine -> {
-                        EngineManifest engineManifest = new EngineManifest(engine.engineId());
-
                         Map<String, String> debeziumConfiguration = engine.configuration();
 
-                        // remove unnecessary configuration for sqlserver
                         debeziumConfiguration.remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
 
-                        return Map.entry(engine.engineId(), new SourceRecordDebezium(
-                                engine.configuration(),
-                                stateHandler,
-                                MARIADB,
-                                sourceRecordConsumerHandler.get(engineManifest), engineManifest));
+                        return Map.entry(engine.engineId(), debeziumFactory.get(MARIADB, engine));
                     })
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

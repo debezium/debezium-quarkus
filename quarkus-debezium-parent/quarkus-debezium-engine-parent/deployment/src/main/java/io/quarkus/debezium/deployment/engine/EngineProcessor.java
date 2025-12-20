@@ -77,6 +77,7 @@ import io.quarkus.debezium.deployment.items.DebeziumGeneratedCustomConverterBuil
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedInvokerBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedPostProcessorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumMediatorBuildItem;
+import io.quarkus.debezium.engine.DebeziumFactory;
 import io.quarkus.debezium.engine.DebeziumRecorder;
 import io.quarkus.debezium.engine.DefaultStateHandler;
 import io.quarkus.debezium.engine.capture.CapturingEventInvokerRegistryProducer;
@@ -171,6 +172,12 @@ public class EngineProcessor {
         additionalBeanProducer.produce(AdditionalBeanBuildItem
                 .builder()
                 .addBeanClasses(DefaultStateHandler.class)
+                .build());
+
+        additionalBeanProducer.produce(AdditionalBeanBuildItem
+                .builder()
+                .setUnremovable()
+                .addBeanClasses(DebeziumFactory.class)
                 .build());
 
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()

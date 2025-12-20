@@ -29,37 +29,23 @@ import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 import io.quarkus.debezium.configuration.MongoDbDatasourceConfiguration;
 import io.quarkus.debezium.configuration.MultiEngineMongoDbDatasourceConfiguration;
-import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
 import io.quarkus.debezium.notification.QuarkusNotificationChannel;
 
 public class MongoDbEngineProducer implements ConnectorProducer {
 
     public static final Connector MONGODB = new Connector(MongoDbConnector.class.getName());
-    private final StateHandler stateHandler;
     private final Map<String, MongoDbDatasourceConfiguration> quarkusDatasourceConfigurations;
+    private DebeziumFactory debeziumFactory;
     private final QuarkusNotificationChannel channel;
-    private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final DebeziumConfigurationEngineParser engineParser = new DebeziumConfigurationEngineParser();
 
     @Inject
-    public MongoDbEngineProducer(StateHandler stateHandler,
-                                 MultiEngineMongoDbDatasourceConfiguration multiEngineMongoDbDatasourceConfiguration,
+    public MongoDbEngineProducer(MultiEngineMongoDbDatasourceConfiguration multiEngineMongoDbDatasourceConfiguration,
                                  QuarkusNotificationChannel channel,
-                                 SourceRecordConsumerHandler sourceRecordConsumerHandler) {
-        this.stateHandler = stateHandler;
+                                 DebeziumFactory debeziumFactory) {
         this.channel = channel;
-        this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
         this.quarkusDatasourceConfigurations = multiEngineMongoDbDatasourceConfiguration.get();
-    }
-
-    public MongoDbEngineProducer(StateHandler stateHandler,
-                                 Map<String, MongoDbDatasourceConfiguration> quarkusDatasourceConfigurations,
-                                 QuarkusNotificationChannel channel,
-                                 SourceRecordConsumerHandler sourceRecordConsumerHandler) {
-        this.stateHandler = stateHandler;
-        this.quarkusDatasourceConfigurations = quarkusDatasourceConfigurations;
-        this.channel = channel;
-        this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
+        this.debeziumFactory = debeziumFactory;
     }
 
     @Produces
@@ -79,15 +65,7 @@ public class MongoDbEngineProducer implements ConnectorProducer {
         return new DebeziumConnectorRegistry() {
             private final Map<String, Debezium> engines = enrichedMultiEngineConfigurations
                     .stream()
-                    .map(engine -> {
-                        EngineManifest engineManifest = new EngineManifest(engine.engineId());
-
-                        return Map.entry(engine.engineId(), new SourceRecordDebezium(
-                                engine.configuration(),
-                                stateHandler,
-                                MONGODB,
-                                sourceRecordConsumerHandler.get(engineManifest), engineManifest));
-                    })
+                    .map(engine -> Map.entry(engine.engineId(), debeziumFactory.get(MONGODB, engine)))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
             @Override
