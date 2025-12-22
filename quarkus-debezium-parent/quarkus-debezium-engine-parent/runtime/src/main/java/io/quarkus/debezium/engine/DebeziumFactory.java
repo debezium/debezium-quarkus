@@ -5,8 +5,11 @@
  */
 package io.quarkus.debezium.engine;
 
+import io.debezium.runtime.DebeziumSerialization;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
+import io.debezium.DebeziumException;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.EngineManifest;
@@ -15,17 +18,25 @@ import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
 
 public class DebeziumFactory {
 
+    private final Instance<DebeziumSerialization> serialization;
     private final StateHandler stateHandler;
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
 
     @Inject
-    public DebeziumFactory(StateHandler stateHandler,
+    public DebeziumFactory(
+                           Instance<DebeziumSerialization> serialization,
+                           StateHandler stateHandler,
                            SourceRecordConsumerHandler sourceRecordConsumerHandler) {
+        this.serialization = serialization;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
     }
 
     public Debezium get(Connector connector, MultiEngineConfiguration engine) {
+        if (serialization.isResolvable()) {
+            throw new DebeziumException("not implemented yet engine with configurable serialization");
+        }
+
         EngineManifest engineManifest = new EngineManifest(engine.engineId());
 
         return new SourceRecordDebezium(
