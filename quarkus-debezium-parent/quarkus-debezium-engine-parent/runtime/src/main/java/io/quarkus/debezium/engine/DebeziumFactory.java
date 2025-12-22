@@ -5,13 +5,13 @@
  */
 package io.quarkus.debezium.engine;
 
-import io.debezium.runtime.DebeziumSerialization;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import io.debezium.DebeziumException;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.Debezium;
+import io.debezium.runtime.DebeziumSerialization;
 import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
