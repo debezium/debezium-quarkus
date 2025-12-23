@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 
+import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ class SourceRecordDebezium extends RunnableDebezium {
         LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
         this.configuration = configuration;
         this.stateHandler = stateHandler;
-        this.engine = DebeziumEngine.create(Connect.class, Connect.class)
+        this.engine = DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                 .using(Configuration.empty()
                         .withSystemProperties(Function.identity())
                         .edit()
