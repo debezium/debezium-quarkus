@@ -380,6 +380,7 @@ public class EngineProcessor {
                 true);
 
         CapturingInvokerGenerator capturingInvokerGenerator = new MultipleCapturingInvokerGenerators(
+                new CapturingEventsGenerator(classOutput),
                 new CapturingEventGenerator(classOutput),
                 new CapturingObjectInvokerGenerator(classOutput));
 
