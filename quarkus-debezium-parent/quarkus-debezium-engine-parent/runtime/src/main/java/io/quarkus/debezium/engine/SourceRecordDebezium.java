@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 
-import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.slf4j.Logger;
@@ -18,7 +17,9 @@ import org.slf4j.LoggerFactory;
 
 import io.debezium.config.Configuration;
 import io.debezium.embedded.Connect;
+import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
+import io.debezium.engine.DebeziumEngine.ChangeConsumer;
 import io.debezium.engine.DebeziumEngine.Signaler;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumStatus;
@@ -55,6 +56,27 @@ class SourceRecordDebezium extends RunnableDebezium {
                 .build();
         this.connector = connector;
         this.engineManifest = engineManifest;
+    }
+
+    SourceRecordDebezium(Map<String, String> configuration,
+                         ChangeConsumer batchConsumer,
+                         Connector connector,
+                         StateHandler stateHandler,
+                         EngineManifest engineManifest) {
+        this.configuration = configuration;
+        this.connector = connector;
+        this.stateHandler = stateHandler;
+        this.engineManifest = engineManifest;
+        this.engine = DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
+                .using(Configuration.empty()
+                        .withSystemProperties(Function.identity())
+                        .edit()
+                        .with(Configuration.from(configuration))
+                        .build().asProperties())
+                .using(this.stateHandler.connectorCallback(engineManifest, this))
+                .using(this.stateHandler.completionCallback(engineManifest, this))
+                .notifying(batchConsumer)
+                .build();
     }
 
     @Override
