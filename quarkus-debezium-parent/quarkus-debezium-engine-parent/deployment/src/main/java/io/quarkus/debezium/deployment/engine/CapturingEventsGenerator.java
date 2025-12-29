@@ -1,11 +1,18 @@
 /*
  * Copyright Debezium Authors.
  *
- * Licensed under the Apache Software License version 2.0, available at
- * http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.quarkus.debezium.deployment.engine;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
 
 import io.debezium.runtime.BatchEvent;
 import io.debezium.runtime.Capturing;
@@ -19,13 +26,6 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.runtime.util.HashUtil;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.Type;
-
-import java.util.Optional;
-import java.util.UUID;
 
 public class CapturingEventsGenerator implements GizmoBasedCapturingInvokerGenerator {
     private final ClassOutput output;
@@ -45,7 +45,7 @@ public class CapturingEventsGenerator implements GizmoBasedCapturingInvokerGener
      * public class GeneratedCapturingInvoker {
      * private final Object beanInstance;
      * <p>
-     * void capture(List<BatchEvent> event) {
+     * void capture(CapturingEvents<BatchEvent> event) {
      * beanInstance.method(event);
      * }
      * <p>
@@ -70,15 +70,15 @@ public class CapturingEventsGenerator implements GizmoBasedCapturingInvokerGener
 
             try (MethodCreator destination = invoker.getMethodCreator("destination", String.class)) {
                 Optional.ofNullable(methodInfo
-                                .annotation(DebeziumDotNames.CAPTURING)
-                                .value("destination"))
+                        .annotation(DebeziumDotNames.CAPTURING)
+                        .value("destination"))
                         .map(AnnotationValue::asString)
                         .ifPresentOrElse(s -> {
-                                    if (s.isEmpty()) {
-                                        throw new IllegalArgumentException("empty destination are not allowed for @Capturing annotation  " + methodInfo.declaringClass());
-                                    }
-                                    destination.returnValue(destination.load(s));
-                                },
+                            if (s.isEmpty()) {
+                                throw new IllegalArgumentException("empty destination are not allowed for @Capturing annotation  " + methodInfo.declaringClass());
+                            }
+                            destination.returnValue(destination.load(s));
+                        },
                                 () -> destination.returnValue(destination.load(Capturing.ALL)));
             }
 
