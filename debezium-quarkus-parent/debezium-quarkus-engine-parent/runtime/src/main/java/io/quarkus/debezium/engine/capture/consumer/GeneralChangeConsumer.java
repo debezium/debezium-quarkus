@@ -1,17 +1,16 @@
 /*
  * Copyright Debezium Authors.
  *
- * Licensed under the Apache Software License version 2.0, available at
- * http://www.apache.org/licenses/LICENSE-2.0
+ * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.quarkus.debezium.engine.capture.consumer;
 
+import java.util.List;
+
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine.ChangeConsumer;
 import io.debezium.engine.DebeziumEngine.RecordCommitter;
-
-import java.util.List;
 
 public interface GeneralChangeConsumer extends ChangeConsumer<ChangeEvent<Object, Object>> {
 
