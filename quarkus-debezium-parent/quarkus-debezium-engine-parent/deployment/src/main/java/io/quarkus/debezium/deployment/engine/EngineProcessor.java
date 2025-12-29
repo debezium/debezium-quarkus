@@ -81,9 +81,11 @@ import io.quarkus.debezium.engine.DebeziumFactory;
 import io.quarkus.debezium.engine.DebeziumRecorder;
 import io.quarkus.debezium.engine.DefaultStateHandler;
 import io.quarkus.debezium.engine.capture.CapturingEventInvokerRegistryProducer;
+import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.CapturingInvoker;
 import io.quarkus.debezium.engine.capture.CapturingObjectInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.DynamicCapturingInvokerSupplier;
+import io.quarkus.debezium.engine.capture.consumer.GeneralChangeConsumerProducer;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordEventProducer;
 import io.quarkus.debezium.engine.converter.custom.DynamicCustomConverterSupplier;
 import io.quarkus.debezium.engine.deserializer.CapturingEventDeserializerRegistryProducer;
@@ -155,7 +157,8 @@ public class EngineProcessor {
                 .builder()
                 .addBeanClasses(
                         CapturingEventInvokerRegistryProducer.class,
-                        CapturingObjectInvokerRegistryProducer.class)
+                        CapturingObjectInvokerRegistryProducer.class,
+                        CapturingEventsInvokerRegistryProducer.class)
                 .setDefaultScope(DotNames.APPLICATION_SCOPED)
                 .setUnremovable()
                 .build());
@@ -163,7 +166,8 @@ public class EngineProcessor {
         additionalBeanProducer.produce(AdditionalBeanBuildItem
                 .builder()
                 .addBeanClasses(
-                        SourceRecordEventProducer.class)
+                        SourceRecordEventProducer.class,
+                        GeneralChangeConsumerProducer.class)
                 .setDefaultScope(DotNames.APPLICATION_SCOPED)
                 .setUnremovable()
                 .build());
@@ -380,9 +384,9 @@ public class EngineProcessor {
                 true);
 
         CapturingInvokerGenerator capturingInvokerGenerator = new MultipleCapturingInvokerGenerators(
-                new CapturingEventsGenerator(classOutput),
                 new CapturingEventGenerator(classOutput),
-                new CapturingObjectInvokerGenerator(classOutput));
+                new CapturingObjectInvokerGenerator(classOutput),
+                new CapturingEventsGenerator(classOutput));
 
         PostProcessorGenerator postProcessorGenerator = new PostProcessorGenerator(classOutput);
         CustomConverterGenerator customConverterGenerator = new CustomConverterGenerator(classOutput);
