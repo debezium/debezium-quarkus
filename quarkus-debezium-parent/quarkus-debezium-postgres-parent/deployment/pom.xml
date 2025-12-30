@@ -30,8 +30,8 @@
             <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-agroal-deployment</artifactId>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>quarkus-debezium-agroal-deployment</artifactId>
         </dependency>
 
         <dependency>
@@ -61,6 +61,17 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>quarkus-debezium-testsuite-deployment</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
             <scope>test</scope>
         </dependency>
 

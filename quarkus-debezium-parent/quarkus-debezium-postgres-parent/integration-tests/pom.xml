@@ -46,6 +46,21 @@
             <artifactId>postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>quarkus-debezium-testsuite-integration-tests</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>quarkus-debezium-testsuite-integration-tests</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -125,7 +140,7 @@
                                 </env>
                                 <volumes>
                                     <bind>
-                                        <volume>${project.basedir}/src/main/resources/sql/default.sql:/docker-entrypoint-initdb.d/default.sql</volume>
+                                        <volume>${project.basedir}/src/main/resources/sql/default/default.sql:/docker-entrypoint-initdb.d/default.sql</volume>
                                     </bind>
                                 </volumes>
                             </run>
@@ -144,7 +159,7 @@
                                 </env>
                                 <volumes>
                                     <bind>
-                                        <volume>${project.basedir}/src/main/resources/sql/alternative.sql:/docker-entrypoint-initdb.d/alternative.sql</volume>
+                                        <volume>${project.basedir}/src/main/resources/sql/alternative/alternative.sql:/docker-entrypoint-initdb.d/alternative.sql</volume>
                                     </bind>
                                 </volumes>
                             </run>
