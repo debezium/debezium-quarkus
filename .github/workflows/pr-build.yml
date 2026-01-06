@@ -26,8 +26,15 @@ env:
   MAVEN_FULL_BUILD_PROJECTS: ":quarkus-debezium-extensions-parent,:debezium-quarkus-outbox-common-parent,:debezium-quarkus-outbox-common,:debezium-quarkus-outbox-deployment-common,:debezium-quarkus-outbox-parent,:debezium-quarkus-outbox,:debezium-quarkus-outbox-deployment,:debezium-quarkus-outbox-integration-tests,:debezium-quarkus-outbox-reactive-parent,:debezium-quarkus-outbox-reactive,:debezium-quarkus-outbox-reactive-deployment,:debezium-quarkus-outbox-reactive-integration-tests,:quarkus-debezium-parent,:quarkus-debezium-engine-spi-parent,:quarkus-debezium-engine-spi,:quarkus-debezium-engine-deployment-spi,:quarkus-debezium-engine-parent,:quarkus-debezium-engine,:quarkus-debezium-engine-deployment,:quarkus-debezium-agroal-parent,:quarkus-debezium-agroal,:quarkus-debezium-agroal-deployment,:quarkus-debezium-testsuite-parent,:quarkus-debezium-testsuite-deployment,:quarkus-debezium-testsuite-integration-tests,:quarkus-debezium-postgres-parent,:quarkus-debezium-postgres,:quarkus-debezium-postgres-deployment,:quarkus-debezium-postgres-integration-tests,:quarkus-debezium-mongodb-parent,:quarkus-debezium-mongodb,:quarkus-debezium-mongodb-deployment,:quarkus-debezium-mongodb-integration-tests,:quarkus-debezium-sqlserver-parent,:quarkus-debezium-sqlserver,:quarkus-debezium-sqlserver-deployment,:quarkus-debezium-sqlserver-integration-tests,:quarkus-debezium-mysql-parent,:quarkus-debezium-mysql,:quarkus-debezium-mysql-deployment,:quarkus-debezium-mysql-integration-tests,:quarkus-debezium-mariadb-parent,:quarkus-debezium-mariadb,:quarkus-debezium-mariadb-deployment,:quarkus-debezium-mariadb-integration-tests"
 
 jobs:
+  # Checks that all commits contain sign-offs
+  check-signed-commits:
+    name: Check signed commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: debezium/dbz/.github/actions/check-dco@main
   check_style:
     name: "Checkstyle and Formatting"
+    needs: [ check-signed-commits ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
