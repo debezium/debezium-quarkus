@@ -23,7 +23,7 @@
         <maven.compiler.testTarget>${debezium.java.specific.target}</maven.compiler.testTarget>
         <maven.compiler.testRelease>${debezium.java.specific.target}</maven.compiler.testRelease>
 
-        <quarkus.platform.version>${quarkus.version.extension}</quarkus.platform.version>
+        <quarkus.platform.version>${quarkus.version}</quarkus.platform.version>
         <debezium.version>${project.version}</debezium.version>
     </properties>
 

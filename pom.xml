@@ -18,6 +18,9 @@
 
     <properties>
         <dbz.version>3.4.0.Final</dbz.version>
+
+        <!-- Defines the Quarkus version used for all Debezium Quarkus Extensions -->
+        <quarkus.version>3.30.5</quarkus.version>
     </properties>
 
     <dependencyManagement>
