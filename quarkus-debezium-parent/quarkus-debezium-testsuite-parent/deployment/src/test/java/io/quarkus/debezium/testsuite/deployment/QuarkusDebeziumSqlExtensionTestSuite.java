@@ -12,6 +12,7 @@ import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 import org.junit.platform.suite.api.SuiteDisplayName;
 
+import io.quarkus.debezium.testsuite.deployment.suite.CapturingEventsTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingTest.Order;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingTest.User;
@@ -50,7 +51,8 @@ import io.quarkus.debezium.testsuite.deployment.suite.PostProcessingTest;
  *
  */
 @Suite
-@SelectClasses({ CapturingTest.class, DebeziumLifeCycleTest.class, HeartbeatTest.class, NotificationTest.class, PostProcessingTest.class, CustomConverterTest.class })
+@SelectClasses({ CapturingTest.class, DebeziumLifeCycleTest.class, HeartbeatTest.class, NotificationTest.class, PostProcessingTest.class, CustomConverterTest.class,
+        CapturingEventsTest.class })
 @SuiteDisplayName("Sql Debezium Extensions for Quarkus Test Suite")
 public interface QuarkusDebeziumSqlExtensionTestSuite {
 }
