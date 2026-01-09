@@ -30,6 +30,10 @@ jobs:
   build-debezium-core:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Debezium Quarkus Extensions repository
+        uses: actions/checkout@v6
+        with:
+          path: debezium-quarkus
       - name: Check if pull request branch exists in debezium main repository
         id: branch
         env:
