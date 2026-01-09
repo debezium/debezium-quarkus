@@ -4,7 +4,7 @@
 # Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
 #
 # Cross CI workflow is triggered on a `pull_request` event.
-# It builds the Debezium core before building the Debezium Server basing on either the `main` branch or the `pull_request` branch.
+# It builds the Debezium core before building the Debezium Quarkus Extensions basing on either the `main` branch or the `pull_request` branch.
 # If a `pull_request` with same branch name is present in the Debezium's upstream core repository, then the core build of this `pull_request`
 # will be based on `pull_request` branch of user's Debezium core repository.
 # Otherwise the core build of this `pull_request` will be based on the `main` branch of Debezium's upstream core repository.
@@ -26,6 +26,58 @@ env:
   MAVEN_FULL_BUILD_PROJECTS: ":quarkus-debezium-extensions-parent,:debezium-quarkus-outbox-common-parent,:debezium-quarkus-outbox-common,:debezium-quarkus-outbox-deployment-common,:debezium-quarkus-outbox-parent,:debezium-quarkus-outbox,:debezium-quarkus-outbox-deployment,:debezium-quarkus-outbox-integration-tests,:debezium-quarkus-outbox-reactive-parent,:debezium-quarkus-outbox-reactive,:debezium-quarkus-outbox-reactive-deployment,:debezium-quarkus-outbox-reactive-integration-tests,:quarkus-debezium-parent,:quarkus-debezium-engine-spi-parent,:quarkus-debezium-engine-spi,:quarkus-debezium-engine-deployment-spi,:quarkus-debezium-engine-parent,:quarkus-debezium-engine,:quarkus-debezium-engine-deployment,:quarkus-debezium-agroal-parent,:quarkus-debezium-agroal,:quarkus-debezium-agroal-deployment,:quarkus-debezium-testsuite-parent,:quarkus-debezium-testsuite-deployment,:quarkus-debezium-testsuite-integration-tests,:quarkus-debezium-postgres-parent,:quarkus-debezium-postgres,:quarkus-debezium-postgres-deployment,:quarkus-debezium-postgres-integration-tests,:quarkus-debezium-mongodb-parent,:quarkus-debezium-mongodb,:quarkus-debezium-mongodb-deployment,:quarkus-debezium-mongodb-integration-tests,:quarkus-debezium-sqlserver-parent,:quarkus-debezium-sqlserver,:quarkus-debezium-sqlserver-deployment,:quarkus-debezium-sqlserver-integration-tests,:quarkus-debezium-mysql-parent,:quarkus-debezium-mysql,:quarkus-debezium-mysql-deployment,:quarkus-debezium-mysql-integration-tests,:quarkus-debezium-mariadb-parent,:quarkus-debezium-mariadb,:quarkus-debezium-mariadb-deployment,:quarkus-debezium-mariadb-integration-tests"
 
 jobs:
+  build-debezium-quarkus-dependencies:
+    name: "Build Debezium & Dependencies"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Debezium Quarkus Extensions repository
+        uses: actions/checkout@v6
+        with:
+          path: debezium-quarkus
+      - name: Check if pull request branch exists in debezium main repository
+        id: branch
+        env:
+          branch_name: ${{ github.head_ref }}
+        run: |
+          curl --silent -X "GET" https://api.github.com/repos/debezium/debezium/pulls | jq '.[] | {branch: .head.ref}' | jq -r '.branch' >> SORTED_PULLS.txt
+
+          while IFS=" " read -r BRANCH;
+          do
+            if grep -q "$branch_name" <<< "$BRANCH"; then
+              echo "BRANCH_FOUND=true" >> $GITHUB_OUTPUT
+            fi
+          done < SORTED_PULLS.txt
+      - name: Checkout core repository with pull request branch
+        if: ${{ steps.branch.outputs.BRANCH_FOUND == 'true' }}
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.user.login }}/debezium
+          ref: ${{ github.head_ref }}
+          path: core
+      - name: Checkout core repository with default base branch
+        if: ${{ steps.branch.outputs.BRANCH_FOUND != 'true' }}
+        uses: actions/checkout@v6
+        with:
+          repository: debezium/debezium
+          ref: ${{ github.base_ref }}
+          path: core
+      - name: Checkout db2 repository with default base branch
+        uses: actions/checkout@v6
+        with:
+          repository: debezium/debezium-connector-db2
+          path: db2
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - uses: debezium/debezium/.github/actions/maven-cache@main
+        with:
+          key: debezium-quarkus-PR-build-${{ hashFiles('debezium-quarkus/**/pom.xml') }}
+      - name: Maven build core
+        run: ./debezium-quarkus/mvnw clean install -f core/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
+      - name: Maven build db2
+        run: ./debezium-quarkus/mvnw clean install -f db2/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
   # Checks that all commits contain sign-offs
   check-signed-commits:
     name: Check signed commits
@@ -34,31 +86,31 @@ jobs:
       - uses: debezium/dbz/.github/actions/check-dco@main
   check_style:
     name: "Checkstyle and Formatting"
-    needs: [ check-signed-commits ]
+    needs: [ check-signed-commits, build-debezium-quarkus-dependencies ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
         uses: actions/checkout@v6
       - uses: debezium/debezium/.github/actions/checkstyle-format@main
         with:
-          maven-cache-key: maven-debezium-test-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
   build_outbox:
     name: "Outbox Extension"
-    needs: [ check_style ]
+    needs: [ build-debezium-quarkus-dependencies ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
         uses: actions/checkout@v6
       - uses: ./.github/actions/build-debezium-outbox
         with:
-          maven-cache-key: maven-debezium-test-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
   build_extensions:
     name: "Debezium Quarkus Extensions"
-    needs: [ check_style ]
+    needs: [ build-debezium-quarkus-dependencies ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
         uses: actions/checkout@v6
       - uses: ./.github/actions/build-quarkus-extensions
         with:
-          maven-cache-key: maven-debezium-test-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
