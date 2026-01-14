@@ -22,6 +22,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -72,6 +73,13 @@ public class PostgresEngineProcessor implements QuarkusEngineProcessor<AgroalDat
                 SelectAllSnapshotQuery.class)
                 .reason(getClass().getName())
                 .build());
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    NativeImageConfigBuildItem nativeImageConfiguration() {
+        return NativeImageConfigBuildItem.builder()
+                .addRuntimeInitializedClass("com.google.protobuf.JavaFeaturesProto")
+                .build();
     }
 
     @Override
