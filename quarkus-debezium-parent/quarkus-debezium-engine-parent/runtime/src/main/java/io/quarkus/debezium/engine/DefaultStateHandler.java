@@ -8,9 +8,9 @@ package io.quarkus.debezium.engine;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import io.debezium.engine.DebeziumEngine.CompletionCallback;
 import io.debezium.engine.DebeziumEngine.ConnectorCallback;
@@ -28,7 +28,7 @@ import io.debezium.runtime.events.TasksStartedEvent;
 import io.debezium.runtime.events.TasksStoppedEvent;
 import io.quarkus.arc.Unremovable;
 
-@ApplicationScoped
+@Singleton
 @Unremovable
 public class DefaultStateHandler implements StateHandler {
 
