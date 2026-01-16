@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>debezium-quarkus-outbox-deployment-common</artifactId>
-    <name>Debezium Quarkus :: Outbox :: Deployment :: Common</name>
+    <name>Debezium Quarkus :: Extension :: Outbox :: Deployment :: Common</name>
     <packaging>jar</packaging>
 
     <properties>

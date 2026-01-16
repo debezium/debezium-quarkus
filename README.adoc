@@ -19,7 +19,7 @@ This repository hosts **Debezium extensions for Quarkus**, enabling Quarkus appl
 == When to use these extensions
 
 - **Use the Outbox extension** to implement reliable, asynchronous inter-service communication without dual-writes; combine your app’s transactional outbox table with Debezium connectors and your chosen sink (Kafka, etc.).
-- **Use the Quarkus Debezium Engine extension** when you want lightweight, Kafka-free (optional) CDC *inside* your application with fast startup and small memory footprint (particularly with Quarkus Native/GraalVM). Best for POCs, dev environments, or simple streaming in microservices.
+- **Use the Debezium Quarkus Engine extension** when you want lightweight, Kafka-free (optional) CDC *inside* your application with fast startup and small memory footprint (particularly with Quarkus Native/GraalVM). Best for POCs, dev environments, or simple streaming in microservices.
 
 == Quick start
 
@@ -28,7 +28,7 @@ This repository hosts **Debezium extensions for Quarkus**, enabling Quarkus appl
 Using **Quarkus CLI**:
 
 ```bash
-quarkus ext add io.debezium.quarkus:quarkus-debezium-postgres
+quarkus ext add io.debezium.quarkus:debezium-quarkus-postgres
 ```
 
 Using **Maven**:
@@ -36,7 +36,7 @@ Using **Maven**:
 ```xml
 <dependency>
   <groupId>io.debezium.quarkus</groupId>
-  <artifactId>quarkus-debezium-postgres</artifactId>
+  <artifactId>debezium-quarkus-postgres</artifactId>
   <version>${version.debezium}</version>
 </dependency>
 ```
@@ -44,10 +44,10 @@ Using **Maven**:
 Using **Gradle**:
 
 ```gradle
-implementation("io.debezium.quarkus:quarkus-debezium-postgres:${version.debezium}")
+implementation("io.debezium.quarkus:debezium-quarkus-postgres:${version.debezium}")
 ```
 
-The Engine extension brings Quarkus-native configuration and listener APIs for consuming CDC events in-process. See the https://debezium.io/documentation/reference/stable/integrations/quarkus-debezium-engine-extension.html[documentation] for features and setup details.
+The Engine extension brings Quarkus-native configuration and listener APIs for consuming CDC events in-process. See the https://debezium.io/documentation/reference/stable/integrations/debezium-quarkus-engine-extension.html[documentation] for features and setup details.
 
 === Add the Outbox extension to your Quarkus application
 

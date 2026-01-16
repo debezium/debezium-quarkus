@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>debezium-quarkus-outbox-deployment</artifactId>
-    <name>Debezium Quarkus :: Outbox :: Deployment</name>
+    <name>Debezium Quarkus :: Extension :: Outbox :: Deployment</name>
 
     <dependencies>
         <!-- Quarkus deployment dependencies -->

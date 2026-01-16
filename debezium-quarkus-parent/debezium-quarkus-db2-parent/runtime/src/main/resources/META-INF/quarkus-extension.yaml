@@ -1,0 +1,14 @@
+---
+name: "Db2 Debezium Extension for Quarkus"
+description: "Debezium Extensions for Quarkus integrates the Debezium Runtime into Quarkus applications, enabling developers to consume change data capture (CDC) events from supported databases directly within a lightweight, cloud-native application."
+metadata:
+  keywords:
+    - "debezium"
+    - "cdc"
+    - "db2"
+  guide: "https://debezium.io/documentation/reference/${parsedVersion.majorVersion}.${parsedVersion.minorVersion}/integrations/debezium-quarkus-engine-extension.html"
+  categories:
+    - "integration"
+    - "cdc"
+    - "db2"
+  status: "stable"
