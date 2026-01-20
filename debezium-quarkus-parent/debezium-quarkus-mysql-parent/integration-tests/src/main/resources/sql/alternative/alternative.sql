@@ -4,11 +4,11 @@
  * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
  */
 
-GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'mysqluser';
-
-GRANT ALL PRIVILEGES ON *.* TO 'mysqluser'@'%';
+GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT  ON *.* TO 'mysqluser';
 
 CREATE DATABASE alternative;
+GRANT ALL PRIVILEGES ON *.* TO 'mysqluser'@'%';
+
 
 use alternative;
 
