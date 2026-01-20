@@ -35,7 +35,7 @@ public class CapturingEventsTest {
     @RegisterExtension
     static final QuarkusUnitTest setup = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(CaptureProductsHandler.class))
-            .withConfigurationResource("quarkus-debezium-testsuite.properties");
+            .withConfigurationResource("debezium-quarkus-testsuite.properties");
 
     @Test
     @DisplayName("should call the filtered by destination capture")
