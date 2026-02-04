@@ -40,4 +40,10 @@ public class PersistentRegistryTest {
         assertThat(registry).isNotNull();
         assertThat(registry.isCached("NOT_AVAILABLE", "NOT_AVAILABLE")).isFalse();
     }
+
+    @Test
+    @DisplayName("given entity not cached when retrieving for it then return false")
+    void givenEntityNotCachedWhenRetrievingForItThenReturnFalse() {
+        assertThat(registry.isCached("<default>", "Fruit")).isFalse();
+    }
 }

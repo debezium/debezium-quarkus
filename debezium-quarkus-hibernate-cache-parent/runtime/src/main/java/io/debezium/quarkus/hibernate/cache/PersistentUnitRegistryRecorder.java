@@ -6,7 +6,8 @@
 
 package io.debezium.quarkus.hibernate.cache;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.Recorder;
@@ -14,15 +15,20 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class PersistentUnitRegistryRecorder {
 
-    public Supplier<PersistenceUnitRegistry> registry(List<PersistenceUnit> persistenceUnits) {
-        return () -> {
-            return new PersistenceUnitRegistry() {
-                @Override
-                public boolean isCached(String unit, String table) {
-                    return false;
-                }
+    public Supplier<PersistenceUnitRegistry> registry(Map<String, PersistenceUnit> persistenceUnits) {
+        return () -> (unit, table) -> {
+            if (!persistenceUnits.containsKey(unit)) {
+                return false;
+            }
 
-            };
+            Optional<JpaInformation> jpaInformation = persistenceUnits.get(unit)
+                    .jpaInformation()
+                    .stream().filter(jpa -> jpa.table().equals(table))
+                    .findFirst();
+
+            return jpaInformation
+                    .map(JpaInformation::cached)
+                    .orElse(false);
         };
     }
 }

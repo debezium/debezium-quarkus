@@ -11,6 +11,7 @@ import static io.debezium.quarkus.hibernate.cache.PersistenceUnit.CacheMode;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -52,8 +53,7 @@ class DebeziumQuarkusHibernateCacheProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void discoverEntities(
-                          BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+    void discoverEntities(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
                           PersistentUnitRegistryRecorder recorder,
                           List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
                           JpaModelPersistenceUnitMappingBuildItem jpaModelBuildItem,
@@ -77,7 +77,7 @@ class DebeziumQuarkusHibernateCacheProcessor {
                                 persistentUnit)))
                 .collect(Collectors.groupingBy(JpaInformation::persistentUnit));
 
-        List<PersistenceUnit> persistenceUnits = persistenceUnitDescriptorBuildItems
+        var persistenceUnits = persistenceUnitDescriptorBuildItems
                 .stream()
                 .map(unit -> unit.asOutputPersistenceUnitDefinition(Collections.emptyList()))
                 .map(QuarkusPersistenceUnitDefinition::getPersistenceUnitDescriptor)
@@ -85,7 +85,7 @@ class DebeziumQuarkusHibernateCacheProcessor {
                         unit.getName(),
                         entities.get(unit.getName()),
                         CacheMode.valueOf(unit.getProperties().get("jakarta.persistence.sharedCache.mode").toString())))
-                .toList();
+                .collect(Collectors.toMap(PersistenceUnit::name, Function.identity()));
 
         syntheticBeanBuildItemBuildProducer
                 .produce(
