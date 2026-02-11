@@ -113,6 +113,25 @@ public class DebeziumQuarkusHibernateCacheProcessor {
                                 .done());
     }
 
+    @BuildStep
+    public void additionalItem(BuildProducer<AdditionalBeanBuildItem> producer) {
+        producer.produce(
+                AdditionalBeanBuildItem
+                        .builder()
+                        .addBeanClasses(DebeziumCacheInvalidatorProducer.class)
+                        .setUnremovable()
+                        .setDefaultScope(DotNames.SINGLETON)
+                        .build());
+
+        producer.produce(
+                AdditionalBeanBuildItem
+                        .builder()
+                        .setRemovable()
+                        .addBeanClass(HibernateCacheHandler.class)
+                        .setDefaultScope(DotNames.SINGLETON)
+                        .build());
+    }
+
     private boolean isCached(ClassInfo classInfo) {
         if (classInfo.hasDeclaredAnnotation(DotName.createSimple(Cacheable.class))
                 && classInfo.annotation(DotName.createSimple(Cacheable.class)).value() != null) {
