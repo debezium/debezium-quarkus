@@ -9,7 +9,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>debezium-quarkus-extensions-parent</artifactId>
-    <version>3.5.0-SNAPSHOT</version>
+
     <name>Debezium Quarkus :: Extensions Parent</name>
     <packaging>pom</packaging>
     <description>Debezium Parent Module for Quarkus extensions</description>
@@ -209,6 +209,7 @@
         <module>debezium-quarkus-outbox</module>
         <module>debezium-quarkus-outbox-reactive</module>
         <module>debezium-quarkus-parent</module>
+        <module>debezium-quarkus-test</module>
         <module>debezium-quarkus-hibernate-cache-parent</module>
     </modules>
 

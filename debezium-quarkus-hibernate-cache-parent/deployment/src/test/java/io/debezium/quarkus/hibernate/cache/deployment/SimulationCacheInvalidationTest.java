@@ -24,11 +24,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.debezium.quarkus.hibernate.cache.deployment.assertions.DebeziumAssertions;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.Fruit;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.Order;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.Product;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.User;
+import io.debezium.quarkus.test.assertions.DebeziumAssertions;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.EngineManifest;
 import io.quarkus.test.QuarkusUnitTest;
@@ -52,8 +52,7 @@ public class SimulationCacheInvalidationTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar
-                    .addClasses(Order.class, Product.class, User.class, Fruit.class,
-                            DebeziumAssertions.class, DebeziumAssertions.Condition.class)
+                    .addClasses(Order.class, Product.class, User.class, Fruit.class)
                     .addAsResource("ehcache.xml", "ehcache.xml"))
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "validate")
             .overrideConfigKey("quarkus.hibernate-orm.database.default-schema", "inventory")
