@@ -16,8 +16,8 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,8 +46,7 @@ public class SimulationCacheInvalidationTest {
     @Inject
     DebeziumConnectorRegistry registry;
 
-    private SessionFactory sessionFactory;
-    private Statistics stats;
+    private HibernateStatistics hibernateStatistics;
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
@@ -66,11 +65,8 @@ public class SimulationCacheInvalidationTest {
 
     @BeforeEach
     void setUp() {
-        sessionFactory = entityManager.unwrap(Session.class).getSessionFactory();
-        stats = sessionFactory.getStatistics();
-        stats.clear();
-
-        assertThat(stats.isStatisticsEnabled()).isTrue();
+        hibernateStatistics = new HibernateStatistics(entityManager);
+        hibernateStatistics.isEnabled();
     }
 
     @Test
@@ -83,36 +79,62 @@ public class SimulationCacheInvalidationTest {
 
         var firstTimeFetchingOrder = findDetached(1L);
 
-        assertThat(firstTimeFetchingOrder).isNotNull();
-
-        assertThat(stats.getSecondLevelCachePutCount()).isEqualTo(1);
-        assertThat(stats.getSecondLevelCacheHitCount()).isEqualTo(0);
-        assertThat(stats.getSecondLevelCacheMissCount()).isEqualTo(1);
+        hibernateStatistics.isCacheLoad();
         assertThat(firstTimeFetchingOrder.getDescription()).isEqualTo("one");
 
         var secondTimefetchingOrder = findDetached(1L);
 
-        assertThat(secondTimefetchingOrder).isNotNull();
-
-        assertThat(stats.getSecondLevelCachePutCount()).isEqualTo(1);
-        assertThat(stats.getSecondLevelCacheHitCount()).isEqualTo(1);
-        assertThat(stats.getSecondLevelCacheMissCount()).isEqualTo(1);
-        assertThat(firstTimeFetchingOrder.getDescription()).isEqualTo("one");
+        hibernateStatistics.isCacheHit();
+        assertThat(secondTimefetchingOrder.getDescription()).isEqualTo("one");
 
         rawUpdateOrder(1L, "another description");
 
         var thirdTimefetchingOrder = findDetached(1L);
 
+        hibernateStatistics.isCacheHit();
         assertThat(thirdTimefetchingOrder.getDescription()).isEqualTo("one");
-        assertThat(stats.getSecondLevelCachePutCount()).isEqualTo(1);
-        assertThat(stats.getSecondLevelCacheHitCount()).isEqualTo(2);
-        assertThat(stats.getSecondLevelCacheMissCount()).isEqualTo(1);
 
         given().await()
                 .atMost(10, TimeUnit.MINUTES)
                 .untilAsserted(() -> assertThat(findDetached(1L)
                         .getDescription())
                         .isEqualTo("another description"));
+    }
+
+    public static class HibernateStatistics {
+        private final Statistics statistics;
+        private int cachePut = 0;
+        private int cacheHit = 0;
+        private int cacheMiss = 0;
+
+        private HibernateStatistics(Statistics statistics) {
+            statistics.clear();
+            this.statistics = statistics;
+        }
+
+        public HibernateStatistics(EntityManager entityManager) {
+            this(entityManager.unwrap(Session.class).getSessionFactory().getStatistics());
+        }
+
+        public void isCacheLoad() {
+            assertThat(statistics.getSecondLevelCachePutCount()).isEqualTo(++cachePut);
+            assertThat(statistics.getSecondLevelCacheHitCount()).isEqualTo(cacheHit);
+            assertThat(statistics.getSecondLevelCacheMissCount()).isEqualTo(++cacheMiss);
+        }
+
+        public void isCacheHit() {
+            assertThat(statistics.getSecondLevelCachePutCount()).isEqualTo(cachePut);
+            assertThat(statistics.getSecondLevelCacheHitCount()).isEqualTo(++cacheHit);
+            assertThat(statistics.getSecondLevelCacheMissCount()).isEqualTo(cacheMiss);
+        }
+
+        public void isEnabled() {
+            assertThat(statistics.isStatisticsEnabled()).isTrue();
+        }
+
+        public void clear() {
+            statistics.clear();
+        }
     }
 
     @Transactional
@@ -125,12 +147,11 @@ public class SimulationCacheInvalidationTest {
 
     void rawUpdateOrder(Long id, String description) {
         try (var conn = dataSource.getConnection();
-                var ps = conn.prepareStatement("UPDATE inventory.order SET description=? WHERE id=?")) {
+             var ps = conn.prepareStatement("UPDATE inventory.order SET description=? WHERE id=?")) {
             ps.setString(1, description);
             ps.setLong(2, id);
             ps.executeUpdate();
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
