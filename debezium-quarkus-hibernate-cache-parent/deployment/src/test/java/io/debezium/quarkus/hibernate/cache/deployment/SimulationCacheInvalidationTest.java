@@ -16,7 +16,6 @@ import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
-import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
