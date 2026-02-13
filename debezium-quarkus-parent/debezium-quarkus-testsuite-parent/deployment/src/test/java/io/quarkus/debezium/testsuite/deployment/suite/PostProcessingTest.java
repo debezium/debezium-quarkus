@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -67,8 +68,13 @@ public class PostProcessingTest {
 
         @PostProcessing()
         public void postProcessing(Object key, Struct struct) {
-            this.ids.add(((Struct) key)
-                    .get("id").toString());
+            final Struct keyStruct = (Struct) key;
+            for (Field field : keyStruct.schema().fields()) {
+                if (field.name().equalsIgnoreCase("id")) {
+                    this.ids.add(keyStruct.get(field).toString());
+                    break;
+                }
+            }
         }
 
         public String key() {

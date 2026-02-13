@@ -97,6 +97,7 @@
         <module>debezium-quarkus-mysql-parent</module>
         <module>debezium-quarkus-mariadb-parent</module>
         <module>debezium-quarkus-db2-parent</module>
+        <module>debezium-quarkus-oracle-parent</module>
     </modules>
 
     <build>

@@ -18,7 +18,7 @@ import io.debezium.jdbc.JdbcConfiguration;
 public class DatasourceParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DatasourceParser.class);
-    public static final String REGEX = "jdbc:[a-z]+://(?<hostname>[^:/;?]+)(:(?<port>\\d+))?([/;](?<dbname>[^?;]+))?";
+    public static final String REGEX = "jdbc:(?:oracle:(?:thin|oci):@(?://)?|[a-z]+://)(?<hostname>[^:/;?]+)(:(?<port>\\d+))?([/:;](?<dbname>[^?;]+))?";
     private static final Pattern pattern = Pattern.compile(REGEX);
     private final String value;
 
