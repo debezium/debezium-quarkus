@@ -5,6 +5,10 @@
  */
 package io.quarkus.debezium.engine;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
@@ -22,10 +26,11 @@ public class DebeziumFactory {
     private final Instance<DebeziumSerialization> serialization;
     private final StateHandler stateHandler;
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
+    private final List<DebeziumConfigurationEnhancer> enhancers;
     private final ChangeConsumerHandler changeConsumerHandler;
 
     @Inject
-    public DebeziumFactory(
+    public DebeziumFactory(Instance<DebeziumConfigurationEnhancer> enhancerInstance,
                            Instance<DebeziumSerialization> serialization,
                            StateHandler stateHandler,
                            SourceRecordConsumerHandler sourceRecordConsumerHandler,
@@ -33,6 +38,9 @@ public class DebeziumFactory {
         this.serialization = serialization;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
+        this.enhancers = enhancerInstance
+                .stream()
+                .toList();
         this.changeConsumerHandler = changeConsumerHandler;
     }
 
@@ -42,6 +50,10 @@ public class DebeziumFactory {
         }
 
         EngineManifest engineManifest = new EngineManifest(engine.engineId());
+        ComposeConfigurationEnhancer enhancer = new ComposeConfigurationEnhancer(engine.configuration(),
+                enhancers.stream()
+                        .filter(enhancers -> enhancers.applicableTo().equals(connector))
+                        .toList());
 
         if (changeConsumerHandler != null) {
             return new SourceRecordDebezium(
@@ -53,10 +65,33 @@ public class DebeziumFactory {
         }
 
         return new SourceRecordDebezium(
-                engine.configuration(),
+                enhancer.get(),
                 stateHandler,
                 connector,
                 sourceRecordConsumerHandler.get(engineManifest),
                 engineManifest);
+    }
+
+    private class ComposeConfigurationEnhancer {
+        private final Map<String, String> base;
+        private final List<DebeziumConfigurationEnhancer> enhancers;
+
+        ComposeConfigurationEnhancer(Map<String, String> base,
+                                     List<DebeziumConfigurationEnhancer> enhancers) {
+            this.base = base;
+            this.enhancers = enhancers;
+        }
+
+        Map<String, String> get() {
+            Map<String, String> entries = enhancers
+                    .stream()
+                    .map(enhancer -> enhancer.apply(base))
+                    .flatMap(a -> a.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            base.putAll(entries);
+
+            return base;
+        }
     }
 }

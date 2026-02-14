@@ -33,6 +33,8 @@ import io.debezium.connector.mysql.snapshot.query.SelectAllSnapshotQuery;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
@@ -44,6 +46,7 @@ import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.engine.MySqlEngineProducer;
+import io.quarkus.debezium.engine.MySqlReplicaEnhancer;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -104,6 +107,15 @@ public class MySqlEngineProcessor implements QuarkusEngineProcessor<AgroalDataso
     @BuildStep
     DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
         return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.MYSQL);
+    }
+
+    @BuildStep
+    void replicaConfigurationEnhancer(BuildProducer<AdditionalBeanBuildItem> producer) {
+        producer.produce(AdditionalBeanBuildItem
+                .builder()
+                .addBeanClass(MySqlReplicaEnhancer.class)
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .build());
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)

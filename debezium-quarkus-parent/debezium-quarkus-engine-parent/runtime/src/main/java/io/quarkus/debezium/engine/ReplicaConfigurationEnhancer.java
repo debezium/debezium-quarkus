@@ -1,0 +1,47 @@
+/*
+ * Copyright Debezium Authors.
+ *
+ * Licensed under the Apache Software License version 2.0, available at http://www.apache.org/licenses/LICENSE-2.0
+ */
+
+package io.quarkus.debezium.engine;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+
+public abstract class ReplicaConfigurationEnhancer implements DebeziumConfigurationEnhancer {
+
+    public static final String QUARKUS_DEBEZIUM_REPLICA = "quarkus.debezium.replica";
+    private final Config config = ConfigProvider.getConfig();
+
+    @Override
+    public Map<String, String> apply(Map<String, String> configuration) {
+        if (config.getOptionalValue(property(), String.class).isPresent()) {
+            return Map.of();
+        }
+
+        Optional<Mode> replicaConfiguration = config.getOptionalValue(QUARKUS_DEBEZIUM_REPLICA, Mode.class);
+
+        if (replicaConfiguration.isEmpty()) {
+            return Map.of();
+        }
+
+        int value = switch (replicaConfiguration.get()) {
+            case Mode.DEFAULT -> Math.abs(config.getConfigValue("hostname").getValue().hashCode());
+            case Mode.RANDOM -> (int) UUID.randomUUID().getLeastSignificantBits();
+        };
+
+        return Map.of(property(), String.valueOf(value));
+    }
+
+    public abstract String property();
+
+    enum Mode {
+        DEFAULT,
+        RANDOM
+    }
+}

@@ -12,12 +12,15 @@ import io.debezium.connector.postgresql.PostgresSourceInfoStructMaker;
 import io.debezium.connector.postgresql.snapshot.lock.NoSnapshotLock;
 import io.debezium.connector.postgresql.snapshot.lock.SharedSnapshotLock;
 import io.debezium.connector.postgresql.snapshot.query.SelectAllSnapshotQuery;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.engine.PostgresEngineProducer;
+import io.quarkus.debezium.engine.PostgresReplicaEnhancer;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -80,6 +83,15 @@ public class PostgresEngineProcessor implements QuarkusEngineProcessor<AgroalDat
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("com.google.protobuf.JavaFeaturesProto")
                 .build();
+    }
+
+    @BuildStep
+    void replicaConfigurationEnhancer(BuildProducer<AdditionalBeanBuildItem> producer) {
+        producer.produce(AdditionalBeanBuildItem
+                .builder()
+                .addBeanClass(PostgresReplicaEnhancer.class)
+                .setDefaultScope(DotNames.APPLICATION_SCOPED)
+                .build());
     }
 
     @Override
