@@ -10,6 +10,9 @@
 
     <artifactId>debezium-quarkus-hibernate-cache-deployment</artifactId>
     <name>Debezium Quarkus :: Extension :: Hibernate Cache :: Deployment</name>
+    <properties>
+        <hibernate-jcache.version>7.2.4.Final</hibernate-jcache.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -52,7 +55,7 @@
         <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-jcache</artifactId>
-            <version>7.2.4.Final</version>
+            <version>${hibernate-jcache.version}</version>
             <scope>test</scope>
         </dependency>
 

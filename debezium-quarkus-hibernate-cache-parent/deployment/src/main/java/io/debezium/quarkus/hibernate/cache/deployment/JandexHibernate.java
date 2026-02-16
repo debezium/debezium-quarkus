@@ -10,7 +10,12 @@ import io.debezium.quarkus.hibernate.cache.RawPersistenceUnit;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.Type;
 
 import java.util.Optional;
 import java.util.function.Function;

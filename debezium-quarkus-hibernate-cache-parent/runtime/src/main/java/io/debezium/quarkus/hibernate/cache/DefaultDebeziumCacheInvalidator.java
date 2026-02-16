@@ -6,6 +6,7 @@
 
 package io.debezium.quarkus.hibernate.cache;
 
+import io.debezium.data.Envelope;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 
@@ -38,7 +39,7 @@ public class DefaultDebeziumCacheInvalidator implements DebeziumCacheInvalidator
                 ((Struct) event
                         .record()
                         .value())
-                        .getStruct("source")));
+                        .getStruct(Envelope.FieldName.SOURCE)));
     }
 
 }
