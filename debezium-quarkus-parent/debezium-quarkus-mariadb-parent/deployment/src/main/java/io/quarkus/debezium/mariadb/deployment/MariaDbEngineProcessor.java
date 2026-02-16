@@ -171,17 +171,14 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
         public static final String CONNECTION_STRING = "jdbc:mariadb://" + LOCALHOST + ":3306/debezium";
         public static final String SERVICE_NAME = "debezium-devservices-mariadb";
 
-        private final MariaDBContainer<SELF> container;
         private final String username;
         private final String database;
 
         private DebeziumMariaDbContainer(String user, String password, String database) {
-            this.username = user;
-            this.database = database;
-            this.container = new MariaDBContainer<SELF>(
-                    DockerImageName.parse(IMAGE).asCompatibleSubstituteFor("mariadb"))
-                    .withCreateContainerCmdModifier(cmd -> cmd.getHostConfig()
-                            .withPortBindings(new PortBinding(Ports.Binding.bindPort(3306), new ExposedPort(3306))))
+            super(DockerImageName.parse(IMAGE).asCompatibleSubstituteFor("mariadb"));
+
+            withCreateContainerCmdModifier(cmd -> cmd.getHostConfig()
+                    .withPortBindings(new PortBinding(Ports.Binding.bindPort(3306), new ExposedPort(3306))))
                     .withUsername(user)
                     .withPassword(password)
                     .withCopyToContainer(Transferable.of("""
@@ -197,16 +194,19 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
                             default_authentication_plugin = mysql_native_password
                             """), "/etc/mysql/conf.d/mariadb.cnf")
                     .withEnv("MARIADB_ROOT_PASSWORD", password);
+
+            this.username = user;
+            this.database = database;
         }
 
         @Override
         public void start() {
-            container.start();
+            super.start();
 
             try {
-                container.execInContainer("mariadb",
+                execInContainer("mariadb",
                         "-uroot",
-                        "-p" + container.getPassword(),
+                        "-p" + getPassword(),
                         "-e",
                         MessageFormat.format("""
                                 CREATE DATABASE {0};
@@ -220,17 +220,12 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
         }
 
         public String getConnectionInfo() {
-            return container.getJdbcUrl();
-        }
-
-        @Override
-        public String getContainerId() {
-            return container.getContainerId();
+            return getJdbcUrl();
         }
 
         @Override
         public void close() {
-            container.stop();
+            stop();
         }
 
     }

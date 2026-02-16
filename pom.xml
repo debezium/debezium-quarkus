@@ -39,7 +39,7 @@
         <version.debezium>${project.version}</version.debezium>
 
         <!-- Defines the Quarkus version used for all Debezium Quarkus Extensions -->
-        <quarkus.version>3.30.5</quarkus.version>
+        <quarkus.version>3.31.3</quarkus.version>
     </properties>
 
     <dependencyManagement>

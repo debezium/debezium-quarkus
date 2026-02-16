@@ -31,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
+            <artifactId>testcontainers-mysql</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>junit</groupId>
