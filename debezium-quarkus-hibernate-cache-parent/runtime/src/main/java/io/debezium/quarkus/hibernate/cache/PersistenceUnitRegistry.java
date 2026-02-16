@@ -8,6 +8,11 @@ package io.debezium.quarkus.hibernate.cache;
 
 import java.util.Optional;
 
+/**
+ * The registry for the cached hibernate entities found by Debezium
+ *
+ * @author Giovanni Panice
+ */
 public interface PersistenceUnitRegistry {
     boolean isCached(String unit, String table);
 
