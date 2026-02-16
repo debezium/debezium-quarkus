@@ -17,7 +17,6 @@ import io.debezium.connector.oracle.olr.OpenLogReplicatorAdapter;
 import io.debezium.connector.oracle.snapshot.lock.NoSnapshotLock;
 import io.debezium.connector.oracle.snapshot.lock.SharedSnapshotLock;
 import io.debezium.connector.oracle.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.connector.oracle.xstream.XStreamAdapter;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
@@ -63,8 +62,12 @@ public class DebeziumOracleProcessor implements QuarkusEngineProcessor<AgroalDat
                 StreamingAdapter.class,
                 BufferedLogMinerAdapter.class,
                 UnbufferedLogMinerAdapter.class,
-                XStreamAdapter.class,
                 OpenLogReplicatorAdapter.class)
+                .reason(getClass().getName())
+                .build());
+
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
+                "io.debezium.connector.oracle.xstream.XStreamAdapter")
                 .reason(getClass().getName())
                 .build());
     }
