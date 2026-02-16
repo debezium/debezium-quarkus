@@ -146,11 +146,12 @@ public class SimulationCacheInvalidationTest {
 
     void rawUpdateOrder(Long id, String description) {
         try (var conn = dataSource.getConnection();
-             var ps = conn.prepareStatement("UPDATE inventory.order SET description=? WHERE id=?")) {
+                var ps = conn.prepareStatement("UPDATE inventory.order SET description=? WHERE id=?")) {
             ps.setString(1, description);
             ps.setLong(2, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
+        }
+        catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
