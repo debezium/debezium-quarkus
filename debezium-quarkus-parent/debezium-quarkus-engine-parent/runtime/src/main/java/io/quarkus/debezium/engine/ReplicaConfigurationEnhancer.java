@@ -31,11 +31,18 @@ public abstract class ReplicaConfigurationEnhancer implements DebeziumConfigurat
         }
 
         int value = switch (replicaConfiguration.get()) {
-            case Mode.DEFAULT -> Math.abs(config.getConfigValue("hostname").getValue().hashCode());
-            case Mode.RANDOM -> (int) UUID.randomUUID().getLeastSignificantBits();
+            case Mode.DEFAULT -> config
+                    .getOptionalValue("HOSTNAME", String.class)
+                            .map(a -> Math.abs(a.hashCode()))
+                            .orElseGet(this::calculateRandomly);
+            case Mode.RANDOM -> calculateRandomly();
         };
 
         return Map.of(property(), String.valueOf(value));
+    }
+
+    private int calculateRandomly() {
+        return (int) (UUID.randomUUID().getLeastSignificantBits() & 0x7FFF_FFFFL);
     }
 
     public abstract String property();
