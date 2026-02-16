@@ -6,13 +6,14 @@
 
 package io.quarkus.debezium.engine;
 
+import io.debezium.connector.binlog.BinlogConnectorConfig;
 import io.debezium.runtime.Connector;
 
 public class MySqlReplicaEnhancer extends ReplicaConfigurationEnhancer {
 
     @Override
     public String property() {
-        return "database.server.id";
+        return BinlogConnectorConfig.SERVER_ID.name();
     }
 
     @Override

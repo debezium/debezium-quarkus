@@ -6,7 +6,10 @@
 
 package io.debezium.quarkus.hibernate.cache.deployment;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
+import org.hibernate.cfg.CacheSettings;
 
 public class DebeziumQuarkusHibernateCacheProcessor {
 
@@ -71,7 +75,7 @@ public class DebeziumQuarkusHibernateCacheProcessor {
                 .map(unit -> new RawPersistenceUnit(
                         unit.getName(),
                         entities.get(unit.getName()),
-                        CacheMode.valueOf(unit.getProperties().get("jakarta.persistence.sharedCache.mode").toString())))
+                        CacheMode.valueOf(unit.getProperties().get(CacheSettings.JAKARTA_SHARED_CACHE_MODE).toString())))
                 .collect(Collectors.toMap(RawPersistenceUnit::name, Function.identity()));
 
         syntheticBeanBuildItemBuildProducer

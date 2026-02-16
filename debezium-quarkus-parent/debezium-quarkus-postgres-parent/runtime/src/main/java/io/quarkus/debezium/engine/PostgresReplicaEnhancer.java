@@ -6,13 +6,14 @@
 
 package io.quarkus.debezium.engine;
 
+import io.debezium.connector.postgresql.PostgresConnectorConfig;
 import io.debezium.runtime.Connector;
 
 public class PostgresReplicaEnhancer extends ReplicaConfigurationEnhancer {
 
     @Override
     public String property() {
-        return "slot.name";
+        return PostgresConnectorConfig.SLOT_NAME.name();
     }
 
     @Override
