@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.quarkus.debezium.engine.Quarkus;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -67,7 +68,7 @@ public class PersistentUnitRegistryRecorder {
     }
 
     private String sanitize(String value) {
-        return value.replaceAll("[<>]", "");
+        return value.replaceAll(Quarkus.QUARKUS_DATASOURCE_BRACKETS, "");
     }
 
     private <T> Class<T> loadClass(String name) {

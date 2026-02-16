@@ -7,6 +7,7 @@
 package io.quarkus.debezium.agroal.configuration;
 
 import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
+import static io.quarkus.debezium.engine.Quarkus.QUARKUS_DATASOURCE_BRACKETS;
 
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class AgroalDatasourceConfiguration implements QuarkusDatasourceConfigura
     public Map<String, String> asDebezium() {
         if (database == null) {
             return Map.of(
-                    "name", name.replaceAll("[<>]", ""),
+                    "name", name.replaceAll(QUARKUS_DATASOURCE_BRACKETS, ""),
                     DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name(), host,
                     DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name(), port,
                     DATABASE_CONFIG_PREFIX + JdbcConfiguration.USER.name(), username,
@@ -72,7 +73,7 @@ public class AgroalDatasourceConfiguration implements QuarkusDatasourceConfigura
 
     @Override
     public String getSanitizedName() {
-        return name.replaceAll("[<>]", "");
+        return name.replaceAll(QUARKUS_DATASOURCE_BRACKETS, "");
     }
 
     public String getDbKind() {
