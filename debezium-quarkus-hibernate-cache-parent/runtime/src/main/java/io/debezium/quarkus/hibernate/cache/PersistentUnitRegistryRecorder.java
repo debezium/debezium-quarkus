@@ -44,10 +44,7 @@ public class PersistentUnitRegistryRecorder {
                     return false;
                 }
 
-                Optional<PersistenceUnit.JpaInfo> jpaInformation = units.get(unit)
-                        .infos()
-                        .stream().filter(jpa -> jpa.table().equals(table))
-                        .findFirst();
+                Optional<PersistenceUnit.JpaInfo> jpaInformation = retrieveJpa(unit, table);
 
                 return jpaInformation
                         .map(PersistenceUnit.JpaInfo::cached)
@@ -56,11 +53,15 @@ public class PersistentUnitRegistryRecorder {
 
             @Override
             public Optional<Class<?>> retrieve(String unit, String table) {
+                return retrieveJpa(unit, table)
+                        .map(PersistenceUnit.JpaInfo::clazz);
+            }
+
+            private Optional<PersistenceUnit.JpaInfo> retrieveJpa(String unit, String table) {
                 return units.get(unit).infos()
                         .stream()
                         .filter(info -> info.table().equals(table))
-                        .findFirst()
-                        .map(PersistenceUnit.JpaInfo::clazz);
+                        .findFirst();
             }
         };
     }
