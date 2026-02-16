@@ -6,24 +6,11 @@
 
 package io.debezium.quarkus.hibernate.cache.deployment;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.persistence.Cacheable;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.Type;
 
 import io.debezium.quarkus.hibernate.cache.CacheMode;
 import io.debezium.quarkus.hibernate.cache.DebeziumCacheInvalidatorProducer;
@@ -49,6 +36,8 @@ public class DebeziumQuarkusHibernateCacheProcessor {
 
     private static final String FEATURE = "debezium-hibernate-cache";
     private final PhysicalNamingStrategyStandard physicalNamingStrategyStandard = new PhysicalNamingStrategyStandard();
+    private final JandexHibernate transformer = new JandexHibernate(
+            classInfo -> physicalNamingStrategyStandard.apply(classInfo.simpleName()));
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -72,24 +61,7 @@ public class DebeziumQuarkusHibernateCacheProcessor {
                 .flatMap(entry -> entry
                         .getValue()
                         .stream()
-                        .map(persistentUnit -> new RawJpaInfo(
-                                entry.getKey().simpleName(),
-                                entry.getKey().annotation(DotName.createSimple(Table.class)) != null &&
-                                        entry.getKey().annotation(DotName.createSimple(Table.class)).value("name") != null
-                                                ? entry.getKey().annotation(DotName.createSimple(Table.class)).value("name").asString()
-                                                : physicalNamingStrategyStandard.apply(entry.getKey().simpleName()),
-                                Optional.ofNullable(entry.getKey().annotation(DotName.createSimple(Id.class)))
-                                        .map(AnnotationInstance::target)
-                                        .map(AnnotationTarget::asField)
-                                        .map(FieldInfo::name),
-                                Optional.ofNullable(entry.getKey().annotation(DotName.createSimple(Id.class)))
-                                        .map(AnnotationInstance::target)
-                                        .map(AnnotationTarget::asField)
-                                        .map(FieldInfo::type)
-                                        .map(Type::toString),
-                                isCached(entry.getKey()),
-                                persistentUnit,
-                                entry.getKey().name().toString())))
+                        .map(persistentUnit -> transformer.transform(entry.getKey(), persistentUnit)))
                 .collect(Collectors.groupingBy(RawJpaInfo::persistentUnit));
 
         var persistenceUnits = persistenceUnitDescriptorBuildItems
@@ -130,16 +102,6 @@ public class DebeziumQuarkusHibernateCacheProcessor {
                         .addBeanClass(HibernateCacheHandler.class)
                         .setDefaultScope(DotNames.SINGLETON)
                         .build());
-    }
-
-    private boolean isCached(ClassInfo classInfo) {
-        if (classInfo.hasDeclaredAnnotation(DotName.createSimple(Cacheable.class))
-                && classInfo.annotation(DotName.createSimple(Cacheable.class)).value() != null) {
-            return classInfo.annotation(DotName.createSimple(Cacheable.class)).value().asBoolean();
-        }
-
-        return classInfo.hasDeclaredAnnotation(DotName.createSimple(Cacheable.class))
-                && classInfo.annotation(DotName.createSimple(Cacheable.class)).value() == null;
     }
 
 }
