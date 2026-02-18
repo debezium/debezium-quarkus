@@ -76,6 +76,7 @@ public class DebeziumOracleProcessor implements QuarkusEngineProcessor<AgroalDat
     NativeImageConfigBuildItem nativeImageConfiguration() {
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("oracle.jdbc.driver.OracleDriver")
+                .addRuntimeInitializedClass("com.google.protobuf.JavaFeaturesProto")
                 .build();
     }
 
