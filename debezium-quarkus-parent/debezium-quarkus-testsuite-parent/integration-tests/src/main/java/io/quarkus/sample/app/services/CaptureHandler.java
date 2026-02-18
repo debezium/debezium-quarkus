@@ -32,18 +32,18 @@ public class CaptureHandler {
     }
 
     @Capturing
-    public void capture(CapturingEvent<SourceRecord> event) {
+    public void capture(CapturingEvent<String, SourceRecord> event) {
         productService.captured();
     }
 
     @Capturing(destination = "integration.native.products")
-    public void products(CapturingEvent<Product> event) {
+    public void products(CapturingEvent<String, Product> event) {
         logger.info("getting a product event for destination {} from capturing id {}", event.destination(), event.engine());
         productService.add(event.record());
     }
 
     @Capturing(destination = "integration2.alternative.orders", engine = "alternative")
-    public void orders(CapturingEvent<Order> event) {
+    public void orders(CapturingEvent<String, Order> event) {
         logger.info("getting a order event for destination {} from capturing id {}", event.destination(), event.engine());
         orderService.add(event.record());
     }

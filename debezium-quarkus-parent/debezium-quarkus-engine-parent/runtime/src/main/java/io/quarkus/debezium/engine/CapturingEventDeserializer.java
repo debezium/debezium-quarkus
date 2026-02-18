@@ -8,6 +8,6 @@ package io.quarkus.debezium.engine;
 
 import io.debezium.runtime.CapturingEvent;
 
-public interface CapturingEventDeserializer<T, V> {
-    CapturingEvent<T> deserialize(CapturingEvent<V> event);
+public interface CapturingEventDeserializer<T, K, V> {
+    CapturingEvent<String, T> deserialize(CapturingEvent<K, V> event);
 }

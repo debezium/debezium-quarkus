@@ -23,13 +23,13 @@ import io.quarkus.debezium.engine.deserializer.CapturingEventDeserializerRegistr
 
 public class SourceRecordEventProducer {
 
-    private final CapturingInvokerRegistry<CapturingEvent<?>> capturingEventRegistry;
+    private final CapturingInvokerRegistry<CapturingEvent<?, ?>> capturingEventRegistry;
     private final CapturingInvokerRegistry<Object> capturingObjectInvokerRegistry;
-    private final CapturingEventDeserializerRegistry<SourceRecord> capturingEventDeserializerRegistry;
+    private final CapturingEventDeserializerRegistry<SourceRecord, SourceRecord> capturingEventDeserializerRegistry;
 
     @Inject
-    public SourceRecordEventProducer(CapturingInvokerRegistry<CapturingEvent<?>> capturingEventRegistry,
-                                     CapturingEventDeserializerRegistry<SourceRecord> capturingEventDeserializerRegistry,
+    public SourceRecordEventProducer(CapturingInvokerRegistry<CapturingEvent<?, ?>> capturingEventRegistry,
+                                     CapturingEventDeserializerRegistry<SourceRecord, SourceRecord> capturingEventDeserializerRegistry,
                                      CapturingInvokerRegistry<Object> capturingObjectInvokerRegistry) {
         this.capturingEventRegistry = capturingEventRegistry;
         this.capturingEventDeserializerRegistry = capturingEventDeserializerRegistry;
@@ -45,7 +45,7 @@ public class SourceRecordEventProducer {
             @Override
             public void accept(ChangeEvent<SourceRecord, SourceRecord> event) {
                 logger.trace("receiving event {} with engine id {}", event.destination(), manifest.id());
-                CapturingEvent<SourceRecord> capturingEvent = new OperationMapper(manifest.id()).from(event);
+                CapturingEvent<SourceRecord, SourceRecord> capturingEvent = new OperationMapper(manifest.id()).from(event);
 
                 var deserializer = capturingEventDeserializerRegistry.get(capturingEvent.destination());
                 CapturingInvoker<Object> objectCapturingInvoker = capturingObjectInvokerRegistry.get(capturingEvent);

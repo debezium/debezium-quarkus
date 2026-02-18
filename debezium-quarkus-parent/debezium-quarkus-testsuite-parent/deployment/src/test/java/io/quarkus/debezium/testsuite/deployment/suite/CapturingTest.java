@@ -44,11 +44,11 @@ public class CapturingTest {
     CaptureProductsHandler captureProductsHandler;
 
     @Inject
-    CapturingEventDeserializerRegistry<SourceRecord> registry;
+    CapturingEventDeserializerRegistry<SourceRecord, SourceRecord> registry;
 
     @BeforeEach
     void setUp() {
-        var mutableRegistry = (MutableCapturingEventDeserializerRegistry<SourceRecord>) registry;
+        var mutableRegistry = (MutableCapturingEventDeserializerRegistry<SourceRecord, SourceRecord>) registry;
         mutableRegistry.register("topic.inventory.orders", new OrderDeserializer());
         mutableRegistry.register("topic.inventory.users", new UserDeserializer());
     }
@@ -103,17 +103,17 @@ public class CapturingTest {
         private final List<User> users = new ArrayList<>();
 
         @Capturing()
-        public void newCapture(CapturingEvent<SourceRecord> event) {
+        public void newCapture(CapturingEvent<SourceRecord, SourceRecord> event) {
             isInvoked.set(true);
         }
 
         @Capturing(destination = "topic.inventory.products")
-        public void anotherCapture(CapturingEvent<SourceRecord> event) {
+        public void anotherCapture(CapturingEvent<SourceRecord, SourceRecord> event) {
             isCapturingFilteredEvent.incrementAndGet();
         }
 
         @Capturing(destination = "topic.inventory.orders")
-        public void deserializedCapture(CapturingEvent<Order> event) {
+        public void deserializedCapture(CapturingEvent<String, Order> event) {
             orders.add(event.record());
         }
 

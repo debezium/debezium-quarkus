@@ -14,8 +14,8 @@ import io.debezium.runtime.CapturingEvent;
  * Invoker assigned to any annotated class with method {@link Capturing} and events {@link CapturingEvent} or serialized event
  *
  */
-public interface CapturingEventInvoker extends CapturingInvoker<CapturingEvent<Object>> {
+public interface CapturingEventInvoker extends CapturingInvoker<CapturingEvent<Object, Object>> {
 
     @Override
-    void capture(CapturingEvent<Object> event);
+    void capture(CapturingEvent<Object, Object> event);
 }

@@ -25,7 +25,7 @@ import io.debezium.runtime.CapturingEvent.Truncate;
 import io.debezium.runtime.CapturingEvent.Update;
 import io.quarkus.debezium.engine.deserializer.Deserializer;
 
-public class SourceRecordDeserializer<T> implements CapturingEventDeserializer<T, SourceRecord> {
+public class SourceRecordDeserializer<T> implements CapturingEventDeserializer<T, SourceRecord, SourceRecord> {
 
     private final Deserializer<T> deserializer;
     private final Converter converter;
@@ -37,7 +37,7 @@ public class SourceRecordDeserializer<T> implements CapturingEventDeserializer<T
     }
 
     @Override
-    public CapturingEvent<T> deserialize(CapturingEvent<SourceRecord> event) {
+    public CapturingEvent<String, T> deserialize(CapturingEvent<SourceRecord, SourceRecord> event) {
         byte[] data = converter.fromConnectData(
                 event.record().topic(),
                 event.record().valueSchema(),
@@ -45,6 +45,7 @@ public class SourceRecordDeserializer<T> implements CapturingEventDeserializer<T
 
         if (!Envelope.isEnvelopeSchema(event.record().valueSchema())) {
             return new Message<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, null),
                     event.destination(),
                     event.source(),
@@ -53,37 +54,43 @@ public class SourceRecordDeserializer<T> implements CapturingEventDeserializer<T
         }
 
         return switch (event) {
-            case Create<SourceRecord> record -> new Create<>(
+            case Create<SourceRecord, SourceRecord> record -> new Create<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, AFTER),
                     record.destination(),
                     record.source(),
                     record.headers(),
                     event.engine());
-            case Delete<SourceRecord> record -> new Delete<>(
+            case Delete<SourceRecord, SourceRecord> record -> new Delete<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, BEFORE),
                     record.destination(),
                     record.source(),
                     record.headers(),
                     event.engine());
-            case Message<SourceRecord> record -> new Message<>(
+            case Message<SourceRecord, SourceRecord> record -> new Message<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, AFTER),
                     record.destination(),
                     record.source(),
                     record.headers(),
                     event.engine());
-            case Read<SourceRecord> record -> new Read<>(
+            case Read<SourceRecord, SourceRecord> record -> new Read<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, AFTER),
                     record.destination(),
                     record.source(),
                     record.headers(),
                     event.engine());
-            case Truncate<SourceRecord> record -> new Truncate<>(
+            case Truncate<SourceRecord, SourceRecord> record -> new Truncate<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, AFTER),
                     record.destination(),
                     record.source(),
                     record.headers(),
                     event.engine());
-            case CapturingEvent.Update<SourceRecord> record -> new Update<>(
+            case CapturingEvent.Update<SourceRecord, SourceRecord> record -> new Update<>(
+                    event.key() != null ? event.key().toString() : null,
                     deserializer.deserialize(data, AFTER),
                     record.destination(),
                     record.source(),

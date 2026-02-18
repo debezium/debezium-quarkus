@@ -30,8 +30,8 @@ public class CapturingEventDeserializerRegistryProducer {
 
     @Produces
     @Singleton
-    public CapturingEventDeserializerRegistry<SourceRecord> produce(DebeziumEngineConfiguration configuration) {
-        Map<String, CapturingEventDeserializer<?, SourceRecord>> nestedDeserializers = configuration
+    public CapturingEventDeserializerRegistry<SourceRecord, SourceRecord> produce(DebeziumEngineConfiguration configuration) {
+        Map<String, CapturingEventDeserializer<?, SourceRecord, SourceRecord>> nestedDeserializers = configuration
                 .capturing()
                 .values()
                 .stream()
@@ -39,7 +39,7 @@ public class CapturingEventDeserializerRegistryProducer {
                 .collect(toMap(DebeziumEngineConfiguration.DeserializerConfiguration::destination,
                         config -> getDeserializer(config.deserializer())));
 
-        Map<String, CapturingEventDeserializer<?, SourceRecord>> deserializers = configuration
+        Map<String, CapturingEventDeserializer<?, SourceRecord, SourceRecord>> deserializers = configuration
                 .capturing()
                 .values()
                 .stream()
@@ -63,13 +63,13 @@ public class CapturingEventDeserializerRegistryProducer {
             }
 
             @Override
-            public CapturingEventDeserializer<?, SourceRecord> get(String identifier) {
+            public CapturingEventDeserializer<?, SourceRecord, SourceRecord> get(String identifier) {
                 return deserializers.get(identifier);
             }
         };
     }
 
-    private CapturingEventDeserializer<?, SourceRecord> getDeserializer(String deserializer) {
+    private CapturingEventDeserializer<?, SourceRecord, SourceRecord> getDeserializer(String deserializer) {
         try {
             return new SourceRecordDeserializer<>((Deserializer<?>) Class
                     .forName(deserializer, true, Thread.currentThread().getContextClassLoader()).getDeclaredConstructor().newInstance(), converter);

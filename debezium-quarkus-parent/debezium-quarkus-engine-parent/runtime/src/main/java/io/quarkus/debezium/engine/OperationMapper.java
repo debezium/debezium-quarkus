@@ -30,11 +30,12 @@ public class OperationMapper {
         this.engine = engine;
     }
 
-    public CapturingEvent<SourceRecord> from(ChangeEvent<SourceRecord, SourceRecord> record) {
+    public CapturingEvent<SourceRecord, SourceRecord> from(ChangeEvent<SourceRecord, SourceRecord> record) {
         Struct payload = (Struct) record.value().value();
 
         if (payload == null) {
             return new Message<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
@@ -44,6 +45,7 @@ public class OperationMapper {
 
         if (payload.schema() == null) {
             return new Message<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
@@ -53,6 +55,7 @@ public class OperationMapper {
 
         if (payload.schema().field(OPERATION) == null) {
             return new Message<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
@@ -62,36 +65,42 @@ public class OperationMapper {
 
         return switch (Operation.forCode(payload.getString(OPERATION))) {
             case READ -> new Read<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
                     record.headers(),
                     engine);
             case CREATE -> new Create<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
                     record.headers(),
                     engine);
             case UPDATE -> new Update<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
                     record.headers(),
                     engine);
             case DELETE -> new Delete<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
                     record.headers(),
                     engine);
             case TRUNCATE -> new Truncate<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,
                     record.headers(),
                     engine);
             case MESSAGE -> new Message<>(
+                    record.key(),
                     record.value(),
                     record.destination(),
                     NOT_AVAILABLE,

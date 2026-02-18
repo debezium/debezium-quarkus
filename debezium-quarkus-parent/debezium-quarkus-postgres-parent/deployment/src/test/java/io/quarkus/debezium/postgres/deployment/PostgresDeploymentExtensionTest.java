@@ -12,7 +12,7 @@ import org.junit.platform.suite.api.SuiteDisplayName;
 
 import io.quarkus.debezium.testsuite.deployment.QuarkusDebeziumSqlExtensionTestSuite;
 
-@SuiteDisplayName("Sql Server Debezium Extensions for Quarkus Test Suite")
+@SuiteDisplayName("Postgres Debezium Extensions for Quarkus Test Suite")
 public class PostgresDeploymentExtensionTest implements QuarkusDebeziumSqlExtensionTestSuite {
     private static final PostgresResource postgresResource = new PostgresResource();
 

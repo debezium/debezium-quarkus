@@ -25,7 +25,7 @@ public class CapturingEventInvokerRegistryProducer {
 
     @Produces
     @Singleton
-    public CapturingInvokerRegistry<CapturingEvent<Object>> produce() {
+    public CapturingInvokerRegistry<CapturingEvent<Object, Object>> produce() {
         validator.validate(this.invokers
                 .stream()
                 .toList());
