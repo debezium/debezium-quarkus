@@ -94,9 +94,134 @@ jobs:
       - uses: debezium/debezium/.github/actions/checkstyle-format@main
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
+  # This job is responsible for inspecting the changes in the repository and setting specific output variables
+  # that subsequent jobs can use to determine whether a particular job should be skipped or included.
+  file_changes:
+    name: "Detect repository changes"
+    needs: [ check-signed-commits ]
+    runs-on: ubuntu-latest
+    outputs:
+      common-changed: ${{ steps.changed-files-common.outputs.any_changed }}
+      outbox-changed: ${{ steps.changed-files-outbox.outputs.any_changed }}
+      core-changed: ${{ steps.changed-files-core.outputs.any_changed }}
+      testing-changed: ${{ steps.changed-files-testing.outputs.any_changed }}
+      mongodb-changed: ${{ steps.changed-files-mongodb.outputs.any_changed }}
+      mariadb-changed: ${{ steps.changed-files-mariadb.outputs.any_changed }}
+      mysql-changed: ${{ steps.changed-files-mysql.outputs.any_changed }}
+      postgresql-changed: ${{ steps.changed-files-postgresql.outputs.any_changed }}
+      oracle-changed: ${{ steps.changed-files-oracle.outputs.any_changed }}
+      sqlserver-changed: ${{ steps.changed-files-sqlserver.outputs.any_changed }}
+      db2-changed: ${{ steps.changed-files-db2.outputs.any_changed }}
+      changed_connectors: ${{ steps.aggregate.outputs.changed_connectors }}
+    steps:
+      - name: Checkout Action
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get modified files (Common)
+        id: changed-files-common
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            pom.xml
+            .mvn/**
+            .github/actions/**
+            .github/workflows/pr-build.yml
+      - name: Get modified files (Outbox)
+        id: changed-files-outbox
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-outbox/**
+            debezium-quarkus-outbox-common/**
+            debezium-quarkus-outbox-reactive/**
+      - name: Get modified files (Core)
+        id: changed-files-core
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-engine-spi-parent/**
+            debezium-quarkus-parent/debezium-quarkus-engine-parent/**
+            debezium-quarkus-parent/debezium-quarkus-agroal-parent/**
+      - name: Get modified files (Testing)
+        id: changed-files-testing
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-testsuite-parent/**
+      - name: Get modified files (MongoDB)
+        id: changed-files-mongodb
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-mongodb-parent/**
+      - name: Get modified files (MySQL)
+        id: changed-files-mysql
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-mysql-parent/**
+      - name: Get modified files (MariaDB)
+        id: changed-files-mariadb
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-mariadb-parent/**
+      - name: Get modified files (PostgreSQL)
+        id: changed-files-postgresql
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-postgresql-parent/**
+      - name: Get modified files (Oracle)
+        id: changed-files-oracle
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-oracle-parent/**
+      - name: Get modified files (SQL Server)
+        id: changed-files-sqlserver
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-sqlserver-parent/**
+      - name: Get modified files (DB2)
+        id: changed-files-db2
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-parent/debezium-quarkus-sqlserver-parent/**
+      - name: Aggregate changes for Connector Matrix
+        id: aggregate
+        shell: bash
+        run: |
+          RUNTIME_EXTENSIONS=(mongodb mariadb mysql postgres oracle sqlserver db2)
+          
+          COMMON='${{ steps.changed-files-common.outputs.any_changed }}'
+          CORE='${{ steps.changed-files-core.outputs.any_changed }}'
+          TESTING='${{ steps.changed-files-testing.outputs.any_changed }}'
+
+          # If any of the three is true -> run for all the extensions runtime
+          if [[ "$COMMON" == 'true' || "$CORE" == 'true' || "$TESTING" == 'true' ]]; then
+            changed=("${RUNTIME_EXTENSIONS[@]}")
+          else
+            changed=()
+            [[ "${{ steps.changed-files-mongodb.outputs.any_changed }}"    == 'true' ]] && changed+=("mongodb")
+            [[ "${{ steps.changed-files-mariadb.outputs.any_changed }}"    == 'true' ]] && changed+=("mariadb")
+            [[ "${{ steps.changed-files-mysql.outputs.any_changed }}"      == 'true' ]] && changed+=("mysql")
+            [[ "${{ steps.changed-files-postgresql.outputs.any_changed }}" == 'true' ]] && changed+=("postgres")
+            [[ "${{ steps.changed-files-oracle.outputs.any_changed }}"     == 'true' ]] && changed+=("oracle")
+            [[ "${{ steps.changed-files-sqlserver.outputs.any_changed }}"  == 'true' ]] && changed+=("sqlserver")
+            [[ "${{ steps.changed-files-db2.outputs.any_changed }}"        == 'true' ]] && changed+=("db2")
+          fi
+          # Build JSON array: ["svc1","svc2",...]
+          json="[$(printf '"%s",' "${changed[@]}" | sed 's/,$//')]"
+          echo "changed_connectors=$json" >> "$GITHUB_OUTPUT"
+
   build_outbox:
     name: "Outbox Extension"
-    needs: [ build-debezium-quarkus-dependencies ]
+    needs: [ check_style, build-debezium-quarkus-dependencies, file_changes ]
+    if: ${{ needs.file_changes.outputs.common-changed == 'true' || needs.file_changes.outputs.outbox-changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
@@ -104,13 +229,33 @@ jobs:
       - uses: ./.github/actions/build-debezium-outbox
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
-  build_extensions:
-    name: "Debezium Quarkus Extensions"
-    needs: [ build-debezium-quarkus-dependencies ]
+  build-debezium-extension-runtime-core:
+    name: "Debezium Quarkus Extensions Core"
+    needs: [ check_style, build-debezium-quarkus-dependencies, file_changes ]
+    if: ${{ needs.file_changes.outputs.common-changed == 'true' || needs.file_changes.outputs.core-changed == 'true' || needs.file_changes.outputs.testing-changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
         uses: actions/checkout@v6
-      - uses: ./.github/actions/build-quarkus-extensions
+      - uses: ./.github/actions/build-debezium-quarkus-runtime-core
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
+  build-runtime-extensions:
+    name: "Debezium Quarkus Extensions Matrix"
+    runs-on: ubuntu-latest
+    needs: [ check_style, build-debezium-quarkus-dependencies, build-debezium-extension-runtime-core, file_changes ]
+    strategy:
+      fail-fast: false
+      matrix:
+        maven-props:
+          - quarkus.test.integration-test-profile=multi
+          - native
+        connectors: ${{ fromJSON(needs.file_changes.outputs.changed_connectors) }}
+    steps:
+      - name: Checkout Action
+        uses: actions/checkout@v6
+      - uses: ./.github/actions/build-debezium-quarkus-runtime-extension
+        with:
+          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
+          maven-props: ${{ matrix.maven-props }}
+          connector: ${{ matrix.connectors }}

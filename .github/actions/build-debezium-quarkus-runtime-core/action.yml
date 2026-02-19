@@ -1,5 +1,5 @@
-name: "Build Quarkus Extensions"
-description: "Builds the Debezium Quarkus Extensions"
+name: "Build Debezium Quarkus Extension Core"
+description: "Builds the Debezium Extension core"
 
 inputs:
   maven-cache-key:
@@ -20,7 +20,6 @@ runs:
     - uses: ./.github/actions/setup-java
       with:
         distribution: ${{ inputs.distribution }}
-
     - uses: ./.github/actions/maven-cache
       with:
         key: ${{ inputs.maven-cache-key }}
@@ -28,11 +27,15 @@ runs:
       shell: ${{ inputs.shell }}
       run: >
         ./mvnw clean install -DskipITs -DskipTests -B
-    - name: Build Debezium Quarkus Extensions
+    - name: Build Debezium Quarkus Extension SPI
       shell: ${{ inputs.shell }}
       run: >
-        ./mvnw install -B -pl :debezium-quarkus-parent -am -amd -Dnative
-    - name: Test Multiengine Debezium Quarkus Extensions
+        ./mvnw install -B -pl :debezium-quarkus-engine-spi-parent
+    - name: Build Debezium Quarkus Extension Engine
       shell: ${{ inputs.shell }}
       run: >
-        ./mvnw install -B -pl :debezium-quarkus-parent -am -amd -Dquarkus.test.integration-test-profile=multi
+        ./mvnw install -B -pl :debezium-quarkus-engine-parent
+    - name: Build Debezium Quarkus Extension Agroal
+      shell: ${{ inputs.shell }}
+      run: >
+        ./mvnw install -B -pl :debezium-quarkus-agroal-parent

@@ -21,4 +21,5 @@ import io.quarkus.sample.app.general.multi.NotificationMultiEngineIT;
 @SelectClasses({ CapturingMultiEngineIT.class, MultiEngineIT.class, NotificationMultiEngineIT.class, HeartbeatEventMultiEngineIT.class,
         LifecycleEventMultiEngineIT.class })
 public interface QuarkusDebeziumMultiEngineTestSuite {
+    int TIMEOUT = Integer.parseInt(System.getenv().getOrDefault("MULTIENGINE_TIMEOUT", "30"));
 }
