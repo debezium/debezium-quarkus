@@ -13,7 +13,7 @@ import io.debezium.common.annotation.Incubating;
 import io.debezium.engine.Header;
 
 /**
- * A capturing event with value, headers and information related to source and destination.
+ * A capturing event with key, value, headers and information related to source and destination.
  *
  * @param <V>
  */
