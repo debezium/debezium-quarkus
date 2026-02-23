@@ -19,6 +19,10 @@ inputs:
   connector:
     description: "The connector"
     required: true
+  multi-engine-timeout:
+    description: "Multi engine timeout"
+    required: false
+    default: "30"
 
 
 runs:
@@ -37,4 +41,4 @@ runs:
     - name: Build Debezium Quarkus Extensions
       shell: ${{ inputs.shell }}
       run: >
-        ./mvnw install -B -pl :debezium-quarkus-${{ inputs.connector }}-parent -am -amd -D${{ inputs.maven-props }}
+        ./mvnw install -B -pl :debezium-quarkus-${{ inputs.connector }}-parent -am -amd -D${{ inputs.maven-props }} -D${{ inputs.multi-engine-timeout }}
