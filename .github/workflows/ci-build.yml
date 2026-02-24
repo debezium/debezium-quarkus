@@ -109,3 +109,14 @@ jobs:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
           maven-props: ${{ matrix.maven-props }}}
           connector: ${{ matrix.connectors }}
+  build-hibernate-cache:
+    name: "Hibernate Cache Invalidation Extension"
+    needs: [ check_style, build-debezium-quarkus-dependencies ]
+    if: ${{ needs.file_changes.outputs.common-changed == 'true' || needs.file_changes.outputs.hibernate-changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Action
+        uses: actions/checkout@v6
+      - uses: ./.github/actions/build-debezium-hibernate-cache
+        with:
+          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}

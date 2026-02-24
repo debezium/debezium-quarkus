@@ -112,6 +112,7 @@ jobs:
       oracle-changed: ${{ steps.changed-files-oracle.outputs.any_changed }}
       sqlserver-changed: ${{ steps.changed-files-sqlserver.outputs.any_changed }}
       db2-changed: ${{ steps.changed-files-db2.outputs.any_changed }}
+      hibernate-changed: ${{ steps.changed-files-hibernate-invalidation.outputs.any_changed }}
       changed_connectors: ${{ steps.aggregate.outputs.changed_connectors }}
     steps:
       - name: Checkout Action
@@ -191,6 +192,12 @@ jobs:
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-sqlserver-parent/**
+      - name: Get modified files (Hibernate Cache)
+        id: changed-files-hibernate-invalidation
+        uses: tj-actions/changed-files@v47.0.2
+        with:
+          files: |
+            debezium-quarkus-hibernate-cache-parent/**
       - name: Aggregate changes for Connector Matrix
         id: aggregate
         shell: bash
@@ -218,7 +225,7 @@ jobs:
           json="[$(printf '"%s",' "${changed[@]}" | sed 's/,$//')]"
           echo "changed_connectors=$json" >> "$GITHUB_OUTPUT"
 
-  build_outbox:
+  build-outbox:
     name: "Outbox Extension"
     needs: [ check_style, build-debezium-quarkus-dependencies, file_changes ]
     if: ${{ needs.file_changes.outputs.common-changed == 'true' || needs.file_changes.outputs.outbox-changed == 'true' }}
@@ -260,3 +267,14 @@ jobs:
           maven-props: ${{ matrix.maven-props }}
           connector: ${{ matrix.connectors }}
           multi-engine-timeout: ${{ matrix.connectors == 'oracle' && '120' || '30' }}
+  build-hibernate-cache:
+    name: "Hibernate Cache Invalidation Extension"
+    needs: [ check_style, build-debezium-quarkus-dependencies, file_changes ]
+    if: ${{ needs.file_changes.outputs.common-changed == 'true' || needs.file_changes.outputs.hibernate-changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Action
+        uses: actions/checkout@v6
+      - uses: ./.github/actions/build-debezium-hibernate-cache
+        with:
+          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
