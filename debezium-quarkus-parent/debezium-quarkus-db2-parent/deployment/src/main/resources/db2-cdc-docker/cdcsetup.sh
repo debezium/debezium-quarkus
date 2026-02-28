@@ -6,12 +6,12 @@ echo "Waiting for db2inst1 to exist ..."
 while [ "$rc" -ne 0 ]
 do
    sleep 5
-   id db2inst1
+   id $DB2INSTANCE
    rc=$?
    echo '.'
 done
 
-su  -c "/asncdctools/src/dbsetup.sh $DBNAME"   - db2inst1
+su  -c "/asncdctools/src/dbsetup.sh $DBNAME"   - $DB2INSTANCE
 fi
 touch /asncdctools/src/asncdc.nlk
 

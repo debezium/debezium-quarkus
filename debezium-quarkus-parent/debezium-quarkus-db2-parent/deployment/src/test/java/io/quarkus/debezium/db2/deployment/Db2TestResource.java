@@ -46,13 +46,6 @@ public class Db2TestResource {
     }
 
     private void setupDatabase(String jdbcUrl) {
-        // Wait for DB2 to accept JDBC connections
-        waitForJdbc(jdbcUrl);
-
-        // Wait for CDC setup (ASNCDC.ADDTABLE procedure created by dbsetup.sh)
-        waitForCdc(jdbcUrl);
-
-        // Create schema, tables, seed data and enable CDC on each table
         try (Connection conn = DriverManager.getConnection(jdbcUrl, USER, PASSWORD)) {
             conn.setAutoCommit(false);
             try (Statement stmt = conn.createStatement()) {
@@ -81,76 +74,6 @@ public class Db2TestResource {
         }
         catch (Exception e) {
             throw new RuntimeException("Failed to set up DB2 test database", e);
-        }
-
-        // Start asncap capture agent inside the container
-        startAsnCap();
-
-        // Wait until asncap has written its first LSN proving it is active
-        waitForLsn(jdbcUrl);
-    }
-
-    private void startAsnCap() {
-        try {
-            container.execInContainer("su", "-", "db2inst1", "-s", "/bin/bash", "-c",
-                    "nohup /database/config/db2inst1/sqllib/bin/asncap" + " capture_schema=asncdc capture_server=TESTDB" + " > /tmp/asncap.log 2>&1 &");
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Failed to start asncap in container", e);
-        }
-    }
-
-    private void waitForJdbc(String jdbcUrl) {
-        for (int i = 0; i < 60; i++) {
-            try (Connection conn = DriverManager.getConnection(jdbcUrl, USER, PASSWORD); Statement stmt = conn.createStatement()) {
-                stmt.execute("SELECT 1 FROM SYSIBM.SYSDUMMY1");
-                return;
-            }
-            catch (Exception e) {
-                sleep(5_000);
-            }
-        }
-        throw new RuntimeException("DB2 did not accept JDBC connections within timeout");
-    }
-
-    private void waitForCdc(String jdbcUrl) {
-        for (int i = 0; i < 60; i++) {
-            try (Connection conn = DriverManager.getConnection(jdbcUrl, USER, PASSWORD); Statement stmt = conn.createStatement()) {
-                var rs = stmt.executeQuery("SELECT ROUTINENAME FROM SYSCAT.ROUTINES WHERE ROUTINESCHEMA = 'ASNCDC' AND ROUTINENAME = 'ADDTABLE'");
-                if (rs.next()) {
-                    return;
-                }
-            }
-            catch (Exception ignored) {
-            }
-            sleep(10_000);
-        }
-        throw new RuntimeException("DB2 CDC setup did not complete within timeout");
-    }
-
-    private void waitForLsn(String jdbcUrl) {
-        for (int i = 0; i < 60; i++) {
-            try (Connection conn = DriverManager.getConnection(jdbcUrl, USER, PASSWORD); Statement stmt = conn.createStatement()) {
-                var rs = stmt.executeQuery("SELECT MAX(t.SYNCHPOINT) FROM (" + " SELECT CD_NEW_SYNCHPOINT AS SYNCHPOINT FROM ASNCDC.IBMSNAP_REGISTER" + " UNION ALL"
-                        + " SELECT SYNCHPOINT AS SYNCHPOINT FROM ASNCDC.IBMSNAP_REGISTER) t");
-                if (rs.next() && rs.getBytes(1) != null) {
-                    return;
-                }
-            }
-            catch (Exception ignored) {
-            }
-            sleep(5_000);
-        }
-        throw new RuntimeException("asncap did not populate an LSN within timeout");
-    }
-
-    private void sleep(long millis) {
-        try {
-            Thread.sleep(millis);
-        }
-        catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException("Interrupted while waiting for DB2", ie);
         }
     }
 
