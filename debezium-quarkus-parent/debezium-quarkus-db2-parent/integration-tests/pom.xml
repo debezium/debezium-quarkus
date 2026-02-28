@@ -12,13 +12,53 @@
     <name>Debezium Quarkus :: Extension :: db2 :: Integration Tests</name>
 
     <properties>
-
+        <docker.platforms>linux/amd64</docker.platforms>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.debezium.quarkus</groupId>
             <artifactId>debezium-quarkus-db2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>debezium-quarkus-testsuite-integration-tests</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>debezium-quarkus-testsuite-integration-tests</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.lz4</groupId>
@@ -72,6 +112,181 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>start-db2</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-db2</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <imagePullPolicy>IfNotPresent</imagePullPolicy>
+                    <images>
+                        <image>
+                            <alias>db2-native</alias>
+                            <name>debezium/db2-cdc-test:native</name>
+                            <run>
+                                <platform>linux/amd64</platform>
+                                <namingStrategy>none</namingStrategy>
+                                <privileged>true</privileged>
+                                <env>
+                                    <LICENSE>accept</LICENSE>
+                                    <DBNAME>TESTDB</DBNAME>
+                                    <DB2INSTANCE>db2inst1</DB2INSTANCE>
+                                    <DB2INST1_PASSWORD>dbz</DB2INST1_PASSWORD>
+                                    <ARCHIVE_LOGS>true</ARCHIVE_LOGS>
+                                    <AUTOCONFIG>false</AUTOCONFIG>
+                                    <TEST_MODE>true</TEST_MODE>
+                                </env>
+                                <ports>
+                                    <port>50000:50000</port>
+                                </ports>
+                                <log>
+                                    <prefix>db2-native</prefix>
+                                    <enabled>true</enabled>
+                                    <color>blue</color>
+                                </log>
+                                <wait>
+                                    <log>.*done.*</log>
+                                    <time>600000</time>
+                                </wait>
+                            </run>
+                            <build>
+                                <from>icr.io/db2_community/db2:11.5.9.0</from>
+                                <buildx>
+                                    <platforms>
+                                        <platform>${docker.platforms}</platform>
+                                    </platforms>
+                                </buildx>
+                                <assembly>
+                                    <inline>
+                                        <fileSets>
+                                            <fileSet>
+                                                <directory>${project.basedir}/../deployment/src/main/resources/db2-cdc-docker</directory>
+                                                <includes>
+                                                    <include>*.sql</include>
+                                                    <include>*.sh</include>
+                                                    <include>*.c</include>
+                                                </includes>
+                                                <outputDirectory>asncdctools/src</outputDirectory>
+                                            </fileSet>
+                                            <fileSet>
+                                                <directory>${project.basedir}/src/test/resources</directory>
+                                                <includes>
+                                                    <include>testsetup.sql</include>
+                                                </includes>
+                                                <outputDirectory>asncdctools/src</outputDirectory>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inline>
+                                    <targetDir>/</targetDir>
+                                </assembly>
+                                <runCmds>
+                                    <run>mkdir -p /asncdctools/src /var/custom</run>
+                                    <run>chmod -R 777 /asncdctools /var/custom</run>
+                                    <run>cp /asncdctools/src/cdcsetup.sh /var/custom/cdcsetup.sh</run>
+                                    <run>chmod 777 /var/custom/cdcsetup.sh</run>
+                                </runCmds>
+                            </build>
+                            <external>
+                                <type>properties</type>
+                                <mode>override</mode>
+                            </external>
+                        </image>
+                        <image>
+                            <alias>db2-alternative</alias>
+                            <name>debezium/db2-cdc-test:alternative</name>
+                            <run>
+                                <platform>linux/amd64</platform>
+                                <namingStrategy>alias</namingStrategy>
+                                <privileged>true</privileged>
+                                <env>
+                                    <LICENSE>accept</LICENSE>
+                                    <DBNAME>TESTDB</DBNAME>
+                                    <DB2INSTANCE>db2inst1</DB2INSTANCE>
+                                    <DB2INST1_PASSWORD>dbz</DB2INST1_PASSWORD>
+                                    <ARCHIVE_LOGS>true</ARCHIVE_LOGS>
+                                    <AUTOCONFIG>false</AUTOCONFIG>
+                                    <TEST_MODE>true</TEST_MODE>
+                                </env>
+                                <ports>
+                                    <port>50001:50000</port>
+                                </ports>
+                                <log>
+                                    <prefix>db2-alt</prefix>
+                                    <enabled>true</enabled>
+                                    <color>cyan</color>
+                                </log>
+                                <wait>
+                                    <log>.*done.*</log>
+                                    <time>600000</time>
+                                </wait>
+                            </run>
+
+                            <build>
+                                <from>icr.io/db2_community/db2:11.5.9.0</from>
+
+                                <!-- Buildx platform selection -->
+                                <buildx>
+                                    <platforms>
+                                        <platform>${docker.platforms}</platform>
+                                    </platforms>
+                                </buildx>
+
+                                <assembly>
+                                    <inline>
+                                        <fileSets>
+                                            <fileSet>
+                                                <directory>${project.basedir}/../deployment/src/main/resources/db2-cdc-docker</directory>
+                                                <includes>
+                                                    <include>*.sql</include>
+                                                    <include>*.sh</include>
+                                                    <include>*.c</include>
+                                                </includes>
+                                                <outputDirectory>asncdctools/src</outputDirectory>
+                                            </fileSet>
+                                            <fileSet>
+                                                <directory>${project.basedir}/src/test/resources</directory>
+                                                <includes>
+                                                    <include>testsetup.sql</include>
+                                                </includes>
+                                                <outputDirectory>asncdctools/src</outputDirectory>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inline>
+                                    <targetDir>/</targetDir>
+                                </assembly>
+
+                                <runCmds>
+                                    <run>mkdir -p /asncdctools/src /var/custom</run>
+                                    <run>chmod -R 777 /asncdctools /var/custom</run>
+                                    <run>cp /asncdctools/src/cdcsetup.sh /var/custom/cdcsetup.sh</run>
+                                    <run>chmod 777 /var/custom/cdcsetup.sh</run>
+                                </runCmds>
+                            </build>
+
+                            <external>
+                                <type>properties</type>
+                                <mode>override</mode>
+                            </external>
+                        </image>
+                    </images>
+                </configuration>
             </plugin>
         </plugins>
     </build>
