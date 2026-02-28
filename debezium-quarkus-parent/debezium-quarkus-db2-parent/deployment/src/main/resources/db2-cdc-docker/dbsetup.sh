@@ -26,8 +26,8 @@ db2 restart db $DBNAME
 
 db2 connect to $DBNAME
 
-cp /asncdctools/src/asncdc /database/config/db2inst1/sqllib/function
-chmod 777 /database/config/db2inst1/sqllib/function
+cp /asncdctools/src/asncdc /database/config/$DB2INSTANCE/sqllib/function
+chmod 777 /database/config/$DB2INSTANCE/sqllib/function
 
 # add UDF / start stop asncap
 db2 -tvmf /asncdctools/src/asncdc_UDF.sql
