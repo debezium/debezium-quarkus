@@ -27,4 +27,4 @@ fi
 # Start capture agent AFTER tables have CDC enabled
 su - $DB2INSTANCE -s /bin/bash -c "nohup /database/config/$DB2INSTANCE/sqllib/bin/asncap capture_schema=asncdc capture_server=$DBNAME > /tmp/asncap.log 2>&1 &"
 
-echo "done"
+echo "CDC setup completed successfully"

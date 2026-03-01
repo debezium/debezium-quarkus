@@ -162,7 +162,7 @@
                                     <color>blue</color>
                                 </log>
                                 <wait>
-                                    <log>.*done.*</log>
+                                    <log>.*CDC setup completed successfully.*</log>
                                     <time>600000</time>
                                 </wait>
                             </run>
@@ -233,7 +233,7 @@
                                     <color>cyan</color>
                                 </log>
                                 <wait>
-                                    <log>.*done.*</log>
+                                    <log>.*CDC setup completed successfully.*</log>
                                     <time>600000</time>
                                 </wait>
                             </run>

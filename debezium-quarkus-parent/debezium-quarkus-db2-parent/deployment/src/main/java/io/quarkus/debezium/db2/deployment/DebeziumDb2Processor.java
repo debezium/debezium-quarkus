@@ -143,7 +143,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
             withPrivilegedMode(true);
             withExposedPorts(DB2_PORT);
             withEnv(Map.of("LICENSE", "accept", "DBNAME", database, "DB2INSTANCE", USER, "DB2INST1_PASSWORD", password, "ARCHIVE_LOGS", "true", "AUTOCONFIG", "false"));
-            waitingFor(new LogMessageWaitStrategy().withRegEx(".*CDC setup completed.*|.*Setup has completed.*|.*done.*").withStartupTimeout(Duration.ofMinutes(10)));
+            waitingFor(new LogMessageWaitStrategy().withRegEx(".*CDC setup completed successfully.*\\n").withStartupTimeout(Duration.ofMinutes(10)));
         }
 
         public String getConnectionInfo() {

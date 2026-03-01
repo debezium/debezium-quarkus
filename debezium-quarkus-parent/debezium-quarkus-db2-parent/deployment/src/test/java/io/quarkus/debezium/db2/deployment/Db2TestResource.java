@@ -32,7 +32,7 @@ public class Db2TestResource {
                 .withFileFromClasspath("dbsetup.sh", "db2-cdc-docker/dbsetup.sh")).withPrivilegedMode(true).withExposedPorts(DB2_PORT)
                 .withEnv(Map.of("LICENSE", "accept", "DBNAME", DATABASE, "DB2INSTANCE", USER, "DB2INST1_PASSWORD", PASSWORD, "ARCHIVE_LOGS", "true", "AUTOCONFIG",
                         "false"))
-                .waitingFor(new LogMessageWaitStrategy().withRegEx(".*done.*").withStartupTimeout(Duration.ofMinutes(10)));
+                .waitingFor(new LogMessageWaitStrategy().withRegEx(".*CDC setup completed successfully.*\\n").withStartupTimeout(Duration.ofMinutes(10)));
 
         container.start();
 
