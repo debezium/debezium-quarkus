@@ -14,6 +14,7 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 
 import io.debezium.connector.db2.Db2Connection;
+import io.debezium.connector.db2.Db2Connector;
 import io.debezium.connector.db2.Db2ConnectorTask;
 import io.debezium.connector.db2.Db2SourceInfoStructMaker;
 import io.debezium.connector.db2.Module;
@@ -65,6 +66,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
                 SchemaHistory.class,
                 KafkaSchemaHistory.class,
+                Db2Connector.class,
                 Db2Connection.class,
                 Db2SourceInfoStructMaker.class,
                 Db2ConnectorTask.class,
