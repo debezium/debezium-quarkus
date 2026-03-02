@@ -60,7 +60,8 @@ public class Db2IntegrationTestResource {
                 stmt.execute("UPDATE ASNCDC.IBMSNAP_REGISTER SET STATE='A' WHERE STATE='I'");
             }
             conn.commit();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Failed to set up DB2 native engine test database", e);
         }
     }
@@ -80,18 +81,19 @@ public class Db2IntegrationTestResource {
                 stmt.execute("CREATE SCHEMA alternative AUTHORIZATION db2inst1");
                 stmt.execute("CREATE TABLE alternative.ORDERS(" +
                         "ID INT NOT NULL PRIMARY KEY, " +
-                        "KEY INT NOT NULL, " +
-                        "NAME VARCHAR(255) NOT NULL)");
+                        "NAME VARCHAR(255) NOT NULL, " +
+                        "DESCRIPTION VARCHAR(255) NOT NULL)");
 
-                stmt.execute("INSERT INTO alternative.ORDERS (ID, KEY, NAME) VALUES (1, 1, 'one')");
-                stmt.execute("INSERT INTO alternative.ORDERS (ID, KEY, NAME) VALUES (2, 2, 'two')");
+                stmt.execute("INSERT INTO alternative.ORDERS (ID, NAME, DESCRIPTION) VALUES (1, 'pizza', 'pizza with peperoni')");
+                stmt.execute("INSERT INTO alternative.ORDERS (ID, NAME, DESCRIPTION) VALUES (2, 'kebab', 'kebab with mayonnaise')");
                 conn.commit();
 
                 stmt.execute("CALL ASNCDC.ADDTABLE('ALTERNATIVE', 'ORDERS')");
                 stmt.execute("UPDATE ASNCDC.IBMSNAP_REGISTER SET STATE='A' WHERE STATE='I'");
             }
             conn.commit();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Failed to set up DB2 alternative engine test database", e);
         }
     }
