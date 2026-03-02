@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 icr.io/db2_community/db2:11.5.9.0
+FROM icr.io/db2_community/db2:11.5.9.0
 
 MAINTAINER  Peter Urbanetz
 
