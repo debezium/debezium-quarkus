@@ -66,6 +66,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
                 SchemaHistory.class,
                 KafkaSchemaHistory.class,
+                Db2Connector.class,
                 Db2Connection.class,
                 Db2SourceInfoStructMaker.class,
                 Db2ConnectorTask.class,
