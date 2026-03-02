@@ -5,5 +5,12 @@
  */
 package io.quarkus.sample.app;
 
+import org.junit.platform.suite.api.BeforeSuite;
+
 public class Db2DebeziumSingleEngineTestSuiteIT implements QuarkusDebeziumSingleEngineTestSuite {
+
+    @BeforeSuite
+    public static void setupDatabase() {
+        Db2IntegrationTestResource.setupNativeDatabase();
+    }
 }
