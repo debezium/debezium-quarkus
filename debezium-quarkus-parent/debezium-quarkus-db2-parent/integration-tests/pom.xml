@@ -12,6 +12,7 @@
     <name>Debezium Quarkus :: Extension :: db2 :: Integration Tests</name>
 
     <properties>
+
     </properties>
 
     <dependencies>
@@ -165,11 +166,6 @@
                             </run>
                             <build>
                                 <dockerFileDir>${project.basedir}/../deployment/src/main/resources/db2-cdc-docker</dockerFileDir>
-                                <buildx>
-                                    <platforms>
-                                        <platform>${docker.platforms}</platform>
-                                    </platforms>
-                                </buildx>
                             </build>
                         </image>
                         <image>
@@ -199,6 +195,9 @@
                                     <time>600000</time>
                                 </wait>
                             </run>
+                            <build>
+                                <dockerFileDir>${project.basedir}/../deployment/src/main/resources/db2-cdc-docker</dockerFileDir>
+                            </build>
 
                         </image>
                     </images>
