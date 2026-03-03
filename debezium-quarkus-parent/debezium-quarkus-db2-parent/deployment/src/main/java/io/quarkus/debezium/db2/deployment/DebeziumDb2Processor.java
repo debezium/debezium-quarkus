@@ -31,6 +31,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
+import io.quarkus.debezium.db2.runtime.DebeziumDb2Recorder;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
@@ -38,6 +39,8 @@ import io.quarkus.debezium.engine.Db2EngineProducer;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -130,6 +133,14 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
                         effectivePassword, new ContainerShutdownCloseable(container, DebeziumDb2Container.SERVICE_NAME));
             }
         }));
+    }
+
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void recordCdcSetup(DebeziumDb2Recorder recorder, DebeziumEngineConfiguration debeziumEngineConfiguration) {
+        String tableIncludeList = debeziumEngineConfiguration.defaultConfiguration()
+                .getOrDefault("table.include.list", "").toUpperCase();
+        recorder.setupCdcRegistration(tableIncludeList, 60);
     }
 
     private static class DebeziumDb2Container extends GenericContainer<DebeziumDb2Container> {
