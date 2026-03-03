@@ -22,5 +22,5 @@ public interface DebeziumFilterStrategy {
      * @param event {@link SourceRecord} captured by Debezium
      * @return true if the event should be discarded
      */
-    boolean filter(CapturingEvent<SourceRecord> event);
+    boolean filter(CapturingEvent<SourceRecord, SourceRecord> event);
 }

@@ -6,13 +6,13 @@
 
 package io.debezium.quarkus.hibernate.cache;
 
-import io.debezium.data.Envelope;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
-
-import io.debezium.runtime.CapturingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.debezium.data.Envelope;
+import io.debezium.runtime.CapturingEvent;
 
 public class DefaultDebeziumCacheInvalidator implements DebeziumCacheInvalidator {
 
@@ -27,7 +27,7 @@ public class DefaultDebeziumCacheInvalidator implements DebeziumCacheInvalidator
     }
 
     @Override
-    public void evaluate(CapturingEvent<SourceRecord> event) {
+    public void evaluate(CapturingEvent<SourceRecord, SourceRecord> event) {
         if (filterStrategy.filter(event)) {
             LOGGER.debug("CDC event candidate to invalidation discarded, {}", event);
             return;

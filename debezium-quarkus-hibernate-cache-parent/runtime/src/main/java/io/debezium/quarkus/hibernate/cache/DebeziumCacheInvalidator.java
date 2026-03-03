@@ -11,5 +11,5 @@ import org.apache.kafka.connect.source.SourceRecord;
 import io.debezium.runtime.CapturingEvent;
 
 public interface DebeziumCacheInvalidator {
-    void evaluate(CapturingEvent<SourceRecord> event);
+    void evaluate(CapturingEvent<SourceRecord, SourceRecord> event);
 }

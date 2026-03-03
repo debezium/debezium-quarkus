@@ -6,10 +6,13 @@
 
 package io.debezium.quarkus.hibernate.cache.deployment;
 
-import io.debezium.quarkus.hibernate.cache.RawPersistenceUnit;
+import java.util.Optional;
+import java.util.function.Function;
+
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -17,8 +20,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Type;
 
-import java.util.Optional;
-import java.util.function.Function;
+import io.debezium.quarkus.hibernate.cache.RawPersistenceUnit;
 
 public class JandexHibernate {
 
@@ -57,8 +59,8 @@ public class JandexHibernate {
     private String getExplicitTableOrImplicit(ClassInfo classInfo, Function<ClassInfo, String> implicit) {
         return classInfo.annotation(DotName.createSimple(Table.class)) != null &&
                 classInfo.annotation(DotName.createSimple(Table.class)).value("name") != null
-                ? classInfo.annotation(DotName.createSimple(Table.class)).value("name").asString()
-                : implicit.apply(classInfo);
+                        ? classInfo.annotation(DotName.createSimple(Table.class)).value("name").asString()
+                        : implicit.apply(classInfo);
     }
 
     private boolean isCached(ClassInfo classInfo) {

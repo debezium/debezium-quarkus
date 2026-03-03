@@ -12,10 +12,10 @@ import jakarta.inject.Inject;
 
 import org.apache.kafka.connect.source.SourceRecord;
 import org.hibernate.SessionFactory;
-
-import io.debezium.runtime.CapturingEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.debezium.runtime.CapturingEvent;
 
 public class DebeziumCacheInvalidatorProducer {
 
@@ -77,7 +77,7 @@ public class DebeziumCacheInvalidatorProducer {
     private static class DefaultDebeziumFilterStrategy implements DebeziumFilterStrategy {
 
         @Override
-        public boolean filter(CapturingEvent<SourceRecord> event) {
+        public boolean filter(CapturingEvent<SourceRecord, SourceRecord> event) {
             return event instanceof CapturingEvent.Create ||
                     event instanceof CapturingEvent.Message ||
                     event instanceof CapturingEvent.Truncate ||

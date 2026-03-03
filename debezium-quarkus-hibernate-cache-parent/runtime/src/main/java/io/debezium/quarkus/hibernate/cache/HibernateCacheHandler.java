@@ -23,7 +23,7 @@ public class HibernateCacheHandler {
     }
 
     @Capturing()
-    public void capturing(CapturingEvent<SourceRecord> event) {
+    public void capturing(CapturingEvent<SourceRecord, SourceRecord> event) {
         invalidator.evaluate(event);
     }
 }

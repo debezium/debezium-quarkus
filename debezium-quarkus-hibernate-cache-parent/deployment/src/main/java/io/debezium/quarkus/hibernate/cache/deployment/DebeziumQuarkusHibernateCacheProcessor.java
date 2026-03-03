@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.hibernate.cfg.CacheSettings;
+
 import io.debezium.quarkus.hibernate.cache.CacheMode;
 import io.debezium.quarkus.hibernate.cache.DebeziumCacheInvalidatorProducer;
 import io.debezium.quarkus.hibernate.cache.HibernateCacheHandler;
@@ -34,7 +36,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
-import org.hibernate.cfg.CacheSettings;
 
 public class DebeziumQuarkusHibernateCacheProcessor {
 
