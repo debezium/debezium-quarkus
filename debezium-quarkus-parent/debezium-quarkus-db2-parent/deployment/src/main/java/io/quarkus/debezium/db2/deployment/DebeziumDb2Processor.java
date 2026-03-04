@@ -36,6 +36,7 @@ import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.engine.Db2EngineProducer;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -135,7 +136,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         }));
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })
     @Record(ExecutionTime.RUNTIME_INIT)
     void recordCdcSetup(DebeziumDb2Recorder recorder, DebeziumEngineConfiguration debeziumEngineConfiguration) {
         String tableIncludeList = debeziumEngineConfiguration.defaultConfiguration()
