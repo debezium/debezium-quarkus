@@ -136,7 +136,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         }));
     }
 
-    @BuildStep(onlyIf = { IsDevelopment.class, DevServicesConfig.Enabled.class })
+    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void recordCdcSetup(DebeziumDb2Recorder recorder, DebeziumEngineConfiguration debeziumEngineConfiguration) {
         String tableIncludeList = debeziumEngineConfiguration.defaultConfiguration()
