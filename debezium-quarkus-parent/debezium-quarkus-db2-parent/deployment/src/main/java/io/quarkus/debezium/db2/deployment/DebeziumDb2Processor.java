@@ -21,6 +21,7 @@ import io.debezium.connector.db2.Module;
 import io.debezium.connector.db2.snapshot.lock.ExclusiveSnapshotLock;
 import io.debezium.connector.db2.snapshot.lock.NoSnapshotLock;
 import io.debezium.connector.db2.snapshot.query.SelectAllSnapshotQuery;
+import io.debezium.relational.RelationalDatabaseConnectorConfig;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
@@ -31,7 +32,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
-import io.quarkus.debezium.db2.runtime.DebeziumDb2Recorder;
+import io.quarkus.debezium.db2.runtime.DebeziumDb2CdcInstrumentationRecorder;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
@@ -137,9 +138,9 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void recordCdcSetup(DebeziumDb2Recorder recorder, DebeziumEngineConfiguration debeziumEngineConfiguration) {
+    void recordCdcSetup(DebeziumDb2CdcInstrumentationRecorder recorder, DebeziumEngineConfiguration debeziumEngineConfiguration) {
         String tableIncludeList = debeziumEngineConfiguration.defaultConfiguration()
-                .getOrDefault("table.include.list", "").toUpperCase();
+                .getOrDefault(RelationalDatabaseConnectorConfig.TABLE_INCLUDE_LIST, "").toUpperCase();
         recorder.setupCdcRegistration(tableIncludeList, 60);
     }
 
