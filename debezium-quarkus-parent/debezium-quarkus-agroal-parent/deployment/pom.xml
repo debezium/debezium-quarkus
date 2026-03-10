@@ -34,6 +34,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>debezium-quarkus-engine-deployment</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
