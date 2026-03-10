@@ -69,7 +69,7 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
     @BuildStep
     @Override
     public DebeziumConnectorBuildItem engine() {
-        return new DebeziumConnectorBuildItem(MARIADB, MariaDbEngineProducer.class);
+        return new DebeziumConnectorBuildItem(MARIADB, MariaDbEngineProducer.class, MariaDbConnector.class);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

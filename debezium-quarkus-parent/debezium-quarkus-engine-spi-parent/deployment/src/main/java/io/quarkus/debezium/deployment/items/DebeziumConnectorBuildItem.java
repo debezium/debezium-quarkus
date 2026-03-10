@@ -19,10 +19,12 @@ public final class DebeziumConnectorBuildItem extends MultiBuildItem {
 
     private final String name;
     private final Class<? extends ConnectorProducer> producer;
+    private final Class<?> connector;
 
-    public DebeziumConnectorBuildItem(String name, Class<? extends ConnectorProducer> producer) {
+    public DebeziumConnectorBuildItem(String name, Class<? extends ConnectorProducer> producer, Class<?> connector) {
         this.name = name;
         this.producer = producer;
+        this.connector = connector;
     }
 
     public String name() {
@@ -31,5 +33,9 @@ public final class DebeziumConnectorBuildItem extends MultiBuildItem {
 
     public Class<? extends ConnectorProducer> producer() {
         return producer;
+    }
+
+    public Class<?> getConnector() {
+        return connector;
     }
 }

@@ -38,7 +38,7 @@ public class SqlServerEngineProcessor implements QuarkusEngineProcessor<AgroalDa
     @BuildStep
     @Override
     public DebeziumConnectorBuildItem engine() {
-        return new DebeziumConnectorBuildItem(SQLSERVER, SqlServerEngineProducer.class);
+        return new DebeziumConnectorBuildItem(SQLSERVER, SqlServerEngineProducer.class, SqlServerConnector.class);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

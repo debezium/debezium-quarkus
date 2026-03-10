@@ -43,7 +43,7 @@ public class DebeziumOracleProcessor implements QuarkusEngineProcessor<AgroalDat
     @BuildStep
     @Override
     public DebeziumConnectorBuildItem engine() {
-        return new DebeziumConnectorBuildItem(ORACLE, OracleEngineProducer.class);
+        return new DebeziumConnectorBuildItem(ORACLE, OracleEngineProducer.class, OracleConnector.class);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

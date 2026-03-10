@@ -43,7 +43,7 @@ public class PostgresEngineProcessor implements QuarkusEngineProcessor<AgroalDat
     @BuildStep
     @Override
     public DebeziumConnectorBuildItem engine() {
-        return new DebeziumConnectorBuildItem(POSTGRESQL, PostgresEngineProducer.class);
+        return new DebeziumConnectorBuildItem(POSTGRESQL, PostgresEngineProducer.class, PostgresConnector.class);
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)

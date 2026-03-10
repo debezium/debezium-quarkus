@@ -52,7 +52,7 @@ public class MongoDbEngineProcessor implements QuarkusEngineProcessor<MultiEngin
     @BuildStep
     @Override
     public DebeziumConnectorBuildItem engine() {
-        return new DebeziumConnectorBuildItem(MONGODB, MongoDbEngineProducer.class);
+        return new DebeziumConnectorBuildItem(MONGODB, MongoDbEngineProducer.class, MongoDbConnector.class);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

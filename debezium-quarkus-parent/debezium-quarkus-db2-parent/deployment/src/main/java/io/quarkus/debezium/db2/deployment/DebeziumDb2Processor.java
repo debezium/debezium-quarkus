@@ -6,6 +6,7 @@
 package io.quarkus.debezium.db2.deployment;
 
 import io.debezium.connector.db2.Db2Connection;
+import io.debezium.connector.db2.Db2Connector;
 import io.debezium.connector.db2.Db2ConnectorTask;
 import io.debezium.connector.db2.Db2SourceInfoStructMaker;
 import io.debezium.connector.db2.Module;
@@ -36,7 +37,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
 
     @Override
     public DebeziumConnectorBuildItem engine() {
-        return new DebeziumConnectorBuildItem(DB2, Db2EngineProducer.class);
+        return new DebeziumConnectorBuildItem(DB2, Db2EngineProducer.class, Db2Connector.class);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
