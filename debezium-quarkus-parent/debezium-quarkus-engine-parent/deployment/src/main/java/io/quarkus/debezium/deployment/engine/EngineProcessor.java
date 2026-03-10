@@ -19,18 +19,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 
 import org.apache.kafka.common.security.authenticator.SaslClientAuthenticator;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.transforms.predicates.TopicNameMatches;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.debezium.connector.common.BaseSourceConnector;
 import io.debezium.connector.common.BaseSourceTask;
+import io.debezium.connector.common.RelationalBaseSourceConnector;
 import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.spi.OffsetCommitPolicy;
@@ -45,6 +50,7 @@ import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
 import io.debezium.pipeline.signal.channels.process.InProcessSignalChannel;
 import io.debezium.pipeline.txmetadata.DefaultTransactionMetadataFactory;
 import io.debezium.processors.spi.PostProcessor;
+import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
@@ -77,6 +83,7 @@ import io.quarkus.debezium.deployment.items.DebeziumGeneratedCustomConverterBuil
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedInvokerBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedPostProcessorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumMediatorBuildItem;
+import io.quarkus.debezium.engine.CompatibleModeConnectorRecorder;
 import io.quarkus.debezium.engine.DebeziumFactory;
 import io.quarkus.debezium.engine.DebeziumRecorder;
 import io.quarkus.debezium.engine.DefaultStateHandler;
@@ -106,10 +113,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 
@@ -192,6 +201,60 @@ public class EngineProcessor {
                         QuarkusHeartbeatEmitter.class)
                 .setUnremovable()
                 .build());
+    }
+
+    @BuildStep
+    void indexSourceConnectorsForCompatibilityMode(CurateOutcomeBuildItem curateOutcomeBuildItem,
+                                                   BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
+        var sourceConnectorsDependencies = curateOutcomeBuildItem
+                .getApplicationModel()
+                .getDependencies()
+                .stream()
+                .filter(archive -> archive.getKey() != null &&
+                        archive.getKey().getGroupId().equals("io.debezium") &&
+                        archive.getKey().getArtifactId().contains("debezium-connector"))
+                .toList();
+
+        sourceConnectorsDependencies
+                .forEach(dependency -> indexDependencyBuildItemBuildProducer
+                        .produce(new IndexDependencyBuildItem(dependency.getGroupId(), dependency.getArtifactId())));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void produceRegistriesForCompatibilityMode(RecorderContext recorderContext,
+                                               BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+                                               CompatibleModeConnectorRecorder recorder,
+                                               DebeziumEngineConfiguration debeziumEngineConfiguration,
+                                               CombinedIndexBuildItem combinedIndexBuildItem,
+                                               List<DebeziumConnectorBuildItem> debeziumConnectorBuildItems) {
+
+        List<ClassInfo> compatibleConnectorClass = Stream.concat(
+                combinedIndexBuildItem
+                        .getIndex()
+                        .getAllKnownSubclasses(DotName.createSimple(RelationalBaseSourceConnector.class))
+                        .stream(),
+                combinedIndexBuildItem
+                        .getIndex()
+                        .getAllKnownSubclasses(DotName.createSimple(BaseSourceConnector.class))
+                        .stream())
+                .filter(classInfo -> !debeziumConnectorBuildItems
+                        .stream()
+                        .map(item -> item.getConnector().getName())
+                        .toList()
+                        .contains(classInfo.name().toString()))
+                .toList();
+
+        compatibleConnectorClass
+                .forEach(item -> syntheticBeanBuildItemBuildProducer.produce(
+                        SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
+                                .scope(Singleton.class)
+                                .unremovable()
+                                .supplier(recorder.engine(debeziumEngineConfiguration,
+                                        (Class<? extends BaseSourceConnector>) recorderContext.classProxy(item.name().toString())))
+                                .named(DebeziumConnectorRegistry.class.getName() + item.simpleName())
+                                .setRuntimeInit()
+                                .done()));
     }
 
     @BuildStep
