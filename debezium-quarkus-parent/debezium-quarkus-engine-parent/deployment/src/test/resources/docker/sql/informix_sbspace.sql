@@ -1,0 +1,1 @@
+execute function task("create sbspace from storagepool SBSPACE", "2");
