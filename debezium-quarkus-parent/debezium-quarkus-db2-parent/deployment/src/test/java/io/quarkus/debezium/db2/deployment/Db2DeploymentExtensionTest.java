@@ -9,10 +9,10 @@ import org.junit.platform.suite.api.AfterSuite;
 import org.junit.platform.suite.api.BeforeSuite;
 import org.junit.platform.suite.api.SuiteDisplayName;
 
-import io.quarkus.debezium.testsuite.deployment.QuarkusDebeziumNoSqlExtensionTestSuite;
+import io.quarkus.debezium.testsuite.deployment.QuarkusDebeziumSqlExtensionTestSuite;
 
 @SuiteDisplayName("DB2 Debezium Extensions for Quarkus Test Suite")
-public class Db2DeploymentExtensionTest implements QuarkusDebeziumNoSqlExtensionTestSuite {
+public class Db2DeploymentExtensionTest implements QuarkusDebeziumSqlExtensionTestSuite {
 
     private static final Db2TestResource db2Resource = new Db2TestResource();
 

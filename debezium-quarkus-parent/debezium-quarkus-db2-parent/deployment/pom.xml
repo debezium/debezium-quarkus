@@ -81,10 +81,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-storage-kafka</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.debezium.quarkus</groupId>
             <artifactId>debezium-quarkus-testsuite-deployment</artifactId>
             <type>test-jar</type>

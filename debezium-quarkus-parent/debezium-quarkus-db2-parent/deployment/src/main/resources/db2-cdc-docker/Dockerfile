@@ -1,8 +1,5 @@
 FROM icr.io/db2_community/db2:11.5.9.0
 
-MAINTAINER  Peter Urbanetz
-
-
 RUN mkdir -p /asncdctools/src
 
 ADD asncdc_UDF.sql /asncdctools/src
