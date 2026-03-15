@@ -11,40 +11,33 @@ import io.smallrye.config.ConfigValue;
 
 /**
  * The canonical Debezium Server convention uses {@code debezium.*}. The Quarkus runtime extension historically
- * used {@code quarkus.debezium.*}. This interceptor makes existing configurations continue to work by serving
- * {@code debezium.*} values from their {@code quarkus.debezium.*} counterparts when needed.
+ * used {@code quarkus.debezium.*}. This interceptor preserves backward compatibility by resolving
+ * {@code debezium.*} configuration keys from their {@code quarkus.debezium.*} counterparts when the
+ * canonical property is not present.
  */
 public final class QuarkusDebeziumConfigPrefixInterceptor implements ConfigSourceInterceptor {
+
     private static final String CANONICAL_PREFIX = "debezium.";
     private static final String LEGACY_PREFIX = "quarkus.debezium.";
 
     @Override
-    public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
-        final ConfigValue direct = context.proceed(name);
+    public ConfigValue getValue(ConfigSourceInterceptorContext context, String name) {
+        // Prefer canonical configuration
+        ConfigValue direct = context.proceed(name);
         if (direct != null) {
             return direct;
         }
 
+        // Only attempt fallback for canonical Debezium properties
         if (!name.startsWith(CANONICAL_PREFIX)) {
             return null;
         }
 
-        final String legacyName = LEGACY_PREFIX + name.substring(CANONICAL_PREFIX.length());
-        final ConfigValue legacy = context.proceed(legacyName);
-        if (legacy == null) {
-            return null;
-        }
+        // Resolve legacy property
+        String legacyName = LEGACY_PREFIX + name.substring(CANONICAL_PREFIX.length());
+        ConfigValue legacy = context.proceed(legacyName);
 
-        // Preserve the resolved value/source but expose it under the canonical key
-        return ConfigValue.builder()
-                .withName(name)
-                .withValue(legacy.getValue())
-                .withRawValue(legacy.getRawValue())
-                .withProfile(legacy.getProfile())
-                .withConfigSourceName(legacy.getConfigSourceName())
-                .withConfigSourcePosition(legacy.getConfigSourcePosition())
-                .withLineNumber(legacy.getLineNumber())
-                .withProblems(legacy.getProblems())
-                .build();
+        // If found, expose it under the canonical key
+        return legacy != null ? legacy.withName(name) : null;
     }
 }
