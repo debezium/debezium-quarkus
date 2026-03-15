@@ -18,19 +18,19 @@ import io.smallrye.config.WithParentName;
 /**
  * Debezium configuration.
  */
-@ConfigMapping(prefix = "quarkus")
+@ConfigMapping(prefix = "debezium")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface DebeziumEngineConfiguration {
     /**
      * Default Configuration properties for debezium engine
      */
-    @WithName("debezium")
+    @WithParentName
     Map<String, String> defaultConfiguration();
 
     /**
      * Configuration for capturing events
      */
-    @WithName("debezium.capturing")
+    @WithName("capturing")
     Map<String, Capturing> capturing();
 
     /**
@@ -39,7 +39,7 @@ public interface DebeziumEngineConfiguration {
      * Dev Services allows Quarkus to automatically start containers in dev and test mode.
      */
     @ConfigDocSection(generated = true)
-    @WithName("debezium.devservices")
+    @WithName("devservices")
     Map<String, DevServicesConfig> devservices();
 
     interface Capturing {
