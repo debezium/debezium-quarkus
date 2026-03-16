@@ -6,6 +6,8 @@
 
 package io.debezium.quarkus.hibernate.cache;
 
+import java.util.function.Supplier;
+
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
@@ -16,11 +18,11 @@ import io.debezium.runtime.CapturingEvent;
 
 public class DefaultDebeziumCacheInvalidator implements DebeziumCacheInvalidator {
 
-    private final DebeziumEvictionStrategy evictionStrategy;
+    private final Supplier<DebeziumEvictionStrategy> evictionStrategy;
     private final DebeziumFilterStrategy filterStrategy;
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDebeziumCacheInvalidator.class);
 
-    public DefaultDebeziumCacheInvalidator(DebeziumEvictionStrategy evictionStrategy,
+    public DefaultDebeziumCacheInvalidator(Supplier<DebeziumEvictionStrategy> evictionStrategy,
                                            DebeziumFilterStrategy filterStrategy) {
         this.evictionStrategy = evictionStrategy;
         this.filterStrategy = filterStrategy;
@@ -33,7 +35,7 @@ public class DefaultDebeziumCacheInvalidator implements DebeziumCacheInvalidator
             return;
         }
 
-        evictionStrategy.evict(InvalidationEvent.from(
+        evictionStrategy.get().evict(InvalidationEvent.from(
                 event.engine(),
                 (Struct) event.record().key(),
                 ((Struct) event
