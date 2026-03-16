@@ -80,7 +80,6 @@ public class DebeziumCacheInvalidatorProducer {
         public boolean filter(CapturingEvent<SourceRecord, SourceRecord> event) {
             return event instanceof CapturingEvent.Create ||
                     event instanceof CapturingEvent.Message ||
-                    event instanceof CapturingEvent.Truncate ||
                     event instanceof CapturingEvent.Read;
         }
     }
