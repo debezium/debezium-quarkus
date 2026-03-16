@@ -18,8 +18,18 @@ import io.debezium.runtime.Connector;
  *
  */
 public interface DebeziumConfigurationEnhancer extends Function<Map<String, String>, Map<String, String>> {
+
+    /**
+     * enrich a Debezium configuration with other values
+     * @param configuration Debezium vanilla configuration
+     * @return Debezium configuration with additional values
+     */
     @Override
     Map<String, String> apply(Map<String, String> configuration);
 
+    /**
+     *
+     * @return the {@link Connector} in which the Enhancer is valid
+     */
     Connector applicableTo();
 }
