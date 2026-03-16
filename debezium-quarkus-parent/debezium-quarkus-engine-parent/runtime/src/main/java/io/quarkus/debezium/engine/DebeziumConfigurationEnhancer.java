@@ -13,7 +13,8 @@ import io.debezium.runtime.Connector;
 
 /**
  *
- * {@link DebeziumConfigurationEnhancer} is used to enhance configuration
+ * {@link DebeziumConfigurationEnhancer} is used to enhance configuration with values based on
+ * particular operational scenarios
  *
  */
 public interface DebeziumConfigurationEnhancer extends Function<Map<String, String>, Map<String, String>> {
