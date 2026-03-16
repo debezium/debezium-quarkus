@@ -6,6 +6,7 @@
 
 package io.quarkus.debezium.engine;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,7 +40,12 @@ public abstract class ReplicaConfigurationEnhancer implements DebeziumConfigurat
             case Mode.RANDOM -> calculateRandomly();
         };
 
-        return Map.of(property(), String.valueOf(value));
+        Map<String, String> enhancedConfiguration = new HashMap<>();
+
+        enhancedConfiguration.put(property(), String.valueOf(value));
+        enhancedConfiguration.putAll(additionalValues());
+
+        return enhancedConfiguration;
     }
 
     private int calculateRandomly() {
@@ -47,6 +53,10 @@ public abstract class ReplicaConfigurationEnhancer implements DebeziumConfigurat
     }
 
     public abstract String property();
+
+    public Map<String, String> additionalValues() {
+        return new HashMap<>();
+    }
 
     enum Mode {
         DEFAULT, /* Use the machine HOSTNAME to generate an identifier */
