@@ -49,7 +49,7 @@ public abstract class ReplicaConfigurationEnhancer implements DebeziumConfigurat
     public abstract String property();
 
     enum Mode {
-        DEFAULT,
-        RANDOM
+        DEFAULT, /* Use the machine HOSTNAME to generate an identifier */
+        RANDOM /* random generation of an identifier */
     }
 }
