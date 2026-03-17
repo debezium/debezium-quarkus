@@ -16,7 +16,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 public abstract class ReplicaConfigurationEnhancer implements DebeziumConfigurationEnhancer {
 
-    public static final String QUARKUS_DEBEZIUM_REPLICA = "quarkus.debezium.replica";
+    public static final String QUARKUS_DEBEZIUM_REPLICA = "quarkus.debezium.identifier.naming.strategy";
     public static final long MAX = 0x7FFF_FFFFL;
     private final Config config = ConfigProvider.getConfig();
 
