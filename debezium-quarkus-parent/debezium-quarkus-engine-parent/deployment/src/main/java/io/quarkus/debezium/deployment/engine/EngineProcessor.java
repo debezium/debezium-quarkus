@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
@@ -35,7 +34,6 @@ import org.jboss.jandex.Type;
 
 import io.debezium.connector.common.BaseSourceConnector;
 import io.debezium.connector.common.BaseSourceTask;
-import io.debezium.connector.common.RelationalBaseSourceConnector;
 import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.spi.OffsetCommitPolicy;
@@ -128,6 +126,11 @@ public class EngineProcessor {
             SCHEMA_HISTORY.name(),
             TOPIC_NAMING_STRATEGY.name(),
             OFFSET_STORAGE.name());
+
+    private static final List<String> CONNECTOR_BASE_CLASSES = List.of(
+            "BaseSourceConnector",
+            "RelationalBaseSourceConnector",
+            "BinlogConnector");
 
     @BuildStep
     void features(BuildProducer<FeatureBuildItem> producer, List<DebeziumExtensionNameBuildItem> debeziumExtensionNameBuildItems) {
@@ -229,14 +232,11 @@ public class EngineProcessor {
                                                CombinedIndexBuildItem combinedIndexBuildItem,
                                                List<DebeziumConnectorBuildItem> debeziumConnectorBuildItems) {
 
-        List<ClassInfo> compatibleConnectorClass = Stream.concat(
-                combinedIndexBuildItem
+        List<ClassInfo> compatibleConnectorClass = CONNECTOR_BASE_CLASSES
+                .stream()
+                .flatMap(connector -> combinedIndexBuildItem
                         .getIndex()
-                        .getAllKnownSubclasses(DotName.createSimple(RelationalBaseSourceConnector.class))
-                        .stream(),
-                combinedIndexBuildItem
-                        .getIndex()
-                        .getAllKnownSubclasses(DotName.createSimple(BaseSourceConnector.class))
+                        .getAllKnownSubclasses(DotName.createSimple(connector))
                         .stream())
                 .filter(classInfo -> !debeziumConnectorBuildItems
                         .stream()
