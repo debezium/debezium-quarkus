@@ -18,19 +18,19 @@ public interface DebeziumSerialization {
      *
      * @return the key {@link SerializationFormat}
      */
-    Class<? extends SerializationFormat<?>> getKeyFormat();
+    Class<? extends SerializationFormat<Object>> getKeyFormat();
 
     /**
      *
      * @return the value {@link SerializationFormat}
      */
-    Class<? extends SerializationFormat<?>> getValueFormat();
+    Class<? extends SerializationFormat<Object>> getValueFormat();
 
     /**
      *
      * @return the header {@link SerializationFormat}
      */
-    Class<? extends SerializationFormat<?>> getHeaderFormat();
+    Class<? extends SerializationFormat<Object>> getHeaderFormat();
 
     /**
      *
@@ -38,3 +38,4 @@ public interface DebeziumSerialization {
      */
     String getEngineId();
 }
+

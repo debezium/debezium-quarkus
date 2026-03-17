@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
-import io.debezium.DebeziumException;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumSerialization;
@@ -23,19 +22,20 @@ import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
 
 public class DebeziumFactory {
 
-    private final Instance<DebeziumSerialization> serialization;
+    private final Instance<DebeziumSerialization> serializations;
     private final StateHandler stateHandler;
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final List<DebeziumConfigurationEnhancer> enhancers;
     private final ChangeConsumerHandler changeConsumerHandler;
 
     @Inject
-    public DebeziumFactory(Instance<DebeziumConfigurationEnhancer> enhancerInstance,
-                           Instance<DebeziumSerialization> serialization,
-                           StateHandler stateHandler,
-                           SourceRecordConsumerHandler sourceRecordConsumerHandler,
-                           ChangeConsumerHandler changeConsumerHandler) {
-        this.serialization = serialization;
+    public DebeziumFactory(
+            Instance<DebeziumConfigurationEnhancer> enhancerInstance,
+            Instance<DebeziumSerialization> serializations,
+            StateHandler stateHandler,
+            SourceRecordConsumerHandler sourceRecordConsumerHandler,
+            ChangeConsumerHandler changeConsumerHandler) {
+        this.serializations = serializations;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
         this.enhancers = enhancerInstance
@@ -45,8 +45,22 @@ public class DebeziumFactory {
     }
 
     public Debezium get(Connector connector, MultiEngineConfiguration engine) {
-        if (serialization.isResolvable()) {
-            throw new DebeziumException("not implemented yet engine with configurable serialization");
+
+        if (serializations.isResolvable() && changeConsumerHandler != null) {
+            EngineManifest engineManifest = new EngineManifest(engine.engineId());
+
+            return serializations.stream()
+                    .filter(serialization -> serialization.getEngineId().equals(engine.engineId()))
+                    .findFirst()
+                    .map(serialization -> new DebeziumWithCustomSerialization(
+                                    serialization,
+                                    engine.configuration(),
+                                    changeConsumerHandler.get(engineManifest),
+                                    connector,
+                                    stateHandler,
+                                    engineManifest
+                            ))
+                    .orElseThrow();
         }
 
         EngineManifest engineManifest = new EngineManifest(engine.engineId());
