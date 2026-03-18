@@ -17,6 +17,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.engine.internal.SessionEventListenerManagerImpl;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionDelegatorBaseImpl;
 import org.hibernate.event.monitor.spi.EventMonitor;
 import org.slf4j.Logger;
@@ -68,6 +69,12 @@ public class DebeziumCacheInvalidatorProducer {
             this.sessionFactory = sessionFactory;
             this.persistenceUnitRegistry = persistenceUnitRegistry;
             this.sessionFactoryImplementor = sessionFactory.unwrap(SessionFactoryImplementor.class);
+
+            final EventMonitor eventMonitor;
+            try (SessionImplementor session = sessionFactoryImplementor.openSession()) {
+                eventMonitor = session.getEventMonitor();
+            }
+
             this.lazySession = new SharedSessionDelegatorBaseImpl(null) {
                 @Override
                 public SessionEventListenerManager getEventListenerManager() {
@@ -76,7 +83,7 @@ public class DebeziumCacheInvalidatorProducer {
 
                 @Override
                 public EventMonitor getEventMonitor() {
-                    return sessionFactoryImplementor.openSession().getEventMonitor();
+                    return eventMonitor;
                 }
             };
         }
