@@ -6,6 +6,13 @@
 
 package io.quarkus.debezium.engine;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.debezium.config.Configuration;
 import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
@@ -13,12 +20,6 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumSerialization;
 import io.debezium.runtime.DebeziumStatus;
 import io.debezium.runtime.EngineManifest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.function.Function;
 
 public class DebeziumWithCustomSerialization extends RunnableDebezium {
 

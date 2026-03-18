@@ -6,6 +6,8 @@
 package io.quarkus.debezium.engine;
 
 import java.util.List;
+
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -19,8 +21,6 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 import io.quarkus.debezium.engine.capture.consumer.ChangeConsumerHandler;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
-
-import java.util.List;
 
 public class DebeziumFactory {
 
