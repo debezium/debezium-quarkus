@@ -12,25 +12,25 @@ import io.debezium.engine.format.SerializationFormat;
  * serialization information associated to a running {@link Debezium} engine
  */
 @Incubating
-public interface DebeziumSerialization {
+public interface DebeziumSerialization<K, V, H> {
 
     /**
      *
      * @return the key {@link SerializationFormat}
      */
-    Class<? extends SerializationFormat<Object>> getKeyFormat();
+    Class<? extends SerializationFormat<K>> getKeyFormat();
 
     /**
      *
      * @return the value {@link SerializationFormat}
      */
-    Class<? extends SerializationFormat<Object>> getValueFormat();
+    Class<? extends SerializationFormat<V>> getValueFormat();
 
     /**
      *
      * @return the header {@link SerializationFormat}
      */
-    Class<? extends SerializationFormat<Object>> getHeaderFormat();
+    Class<? extends SerializationFormat<H>> getHeaderFormat();
 
     /**
      *
@@ -38,4 +38,3 @@ public interface DebeziumSerialization {
      */
     String getEngineId();
 }
-

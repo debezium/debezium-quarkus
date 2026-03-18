@@ -20,9 +20,11 @@ import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.Multi
 import io.quarkus.debezium.engine.capture.consumer.ChangeConsumerHandler;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
 
+import java.util.List;
+
 public class DebeziumFactory {
 
-    private final Instance<DebeziumSerialization> serializations;
+    private final Instance<DebeziumSerialization<?, ?, ?>> serializations;
     private final StateHandler stateHandler;
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final List<DebeziumConfigurationEnhancer> enhancers;
@@ -31,10 +33,10 @@ public class DebeziumFactory {
     @Inject
     public DebeziumFactory(
             Instance<DebeziumConfigurationEnhancer> enhancerInstance,
-            Instance<DebeziumSerialization> serializations,
-            StateHandler stateHandler,
-            SourceRecordConsumerHandler sourceRecordConsumerHandler,
-            ChangeConsumerHandler changeConsumerHandler) {
+                           Instance<DebeziumSerialization<?, ?, ?>> serializations,
+                           StateHandler stateHandler,
+                           SourceRecordConsumerHandler sourceRecordConsumerHandler,
+                           ChangeConsumerHandler changeConsumerHandler) {
         this.serializations = serializations;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
@@ -49,18 +51,22 @@ public class DebeziumFactory {
         if (serializations.isResolvable() && changeConsumerHandler != null) {
             EngineManifest engineManifest = new EngineManifest(engine.engineId());
 
-            return serializations.stream()
+            List<DebeziumSerialization<?, ?, ?>> serializations = this.serializations
+                    .stream()
                     .filter(serialization -> serialization.getEngineId().equals(engine.engineId()))
-                    .findFirst()
-                    .map(serialization -> new DebeziumWithCustomSerialization(
-                                    serialization,
-                                    engine.configuration(),
-                                    changeConsumerHandler.get(engineManifest),
-                                    connector,
-                                    stateHandler,
-                                    engineManifest
-                            ))
-                    .orElseThrow();
+                    .toList();
+
+            if (serializations.size() > 1) {
+                throw new RuntimeException("Multiple serialization configurations were found for the engine " + engine.engineId());
+            }
+
+            return new DebeziumWithCustomSerialization(
+                    serializations.getFirst(),
+                    engine.configuration(),
+                    changeConsumerHandler.get(engineManifest),
+                    connector,
+                    stateHandler,
+                    engineManifest);
         }
 
         EngineManifest engineManifest = new EngineManifest(engine.engineId());

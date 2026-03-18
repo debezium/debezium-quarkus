@@ -41,9 +41,9 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
         this.engineManifest = engineManifest;
         LOGGER.trace("Creating Debezium with Custom Serialization for engine {}", engineManifest);
         this.engine = DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
-                        debeziumSerialization.getValueFormat(),
-                        debeziumSerialization.getHeaderFormat(),
-                        ConvertingAsyncEngineBuilderFactory.class.getName())
+                debeziumSerialization.getValueFormat(),
+                debeziumSerialization.getHeaderFormat(),
+                ConvertingAsyncEngineBuilderFactory.class.getName())
                 .using(Configuration.empty()
                         .withSystemProperties(Function.identity())
                         .edit()
