@@ -14,7 +14,19 @@ import java.util.Optional;
  * @author Giovanni Panice
  */
 public interface PersistenceUnitRegistry {
+    /**
+     *
+     * @param unit Hibernate Persistent Unit
+     * @param table Hibernate Persistent Unit table
+     * @return if the specific table is cached
+     */
     boolean isCached(String unit, String table);
 
+    /**
+     *
+     * @param unit Hibernate Persistent Unit
+     * @param table Hibernate Persistent Unit table
+     * @return the class mapped to the specified table
+     */
     Optional<Class<?>> retrieve(String unit, String table);
 }

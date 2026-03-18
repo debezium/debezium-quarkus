@@ -10,6 +10,13 @@ import org.apache.kafka.connect.source.SourceRecord;
 
 import io.debezium.runtime.CapturingEvent;
 
+/**
+ *  Invalidates cached data in response to {@link CapturingEvent} events emitted by the Debezium Engine.
+ */
 public interface DebeziumCacheInvalidator {
+    /**
+     *
+     * @param event {@link CapturingEvent} for invalidation
+     */
     void evaluate(CapturingEvent<SourceRecord, SourceRecord> event);
 }

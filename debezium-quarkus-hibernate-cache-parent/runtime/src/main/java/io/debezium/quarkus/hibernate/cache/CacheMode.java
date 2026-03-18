@@ -13,7 +13,7 @@ package io.debezium.quarkus.hibernate.cache;
 public enum CacheMode {
     /** No entities are ever stored in the second-level cache. */
     NONE,
-    /** No entities are ever stored in the second-level cache. */
+    /** All entities are stored in the second-level cache. */
     ALL,
     /**
      * Only entities explicitly marked as cacheable are stored.
