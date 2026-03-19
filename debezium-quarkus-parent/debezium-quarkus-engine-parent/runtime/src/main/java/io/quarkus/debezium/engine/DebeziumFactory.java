@@ -32,7 +32,7 @@ public class DebeziumFactory {
 
     @Inject
     public DebeziumFactory(
-            Instance<DebeziumConfigurationEnhancer> enhancerInstance,
+                           Instance<DebeziumConfigurationEnhancer> enhancerInstance,
                            Instance<DebeziumSerialization<?, ?, ?>> serializations,
                            StateHandler stateHandler,
                            SourceRecordConsumerHandler sourceRecordConsumerHandler,
