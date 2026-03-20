@@ -202,7 +202,7 @@ jobs:
             debezium-quarkus-parent/debezium-quarkus-sqlserver-parent/**
       - name: Get modified files (Hibernate Cache)
         id: changed-files-hibernate-invalidation
-        uses: tj-actions/changed-files@v47.0.2
+        uses: tj-actions/changed-files@v47.0.5
         with:
           files: |
             debezium-quarkus-hibernate-cache-parent/**
