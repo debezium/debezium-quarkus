@@ -39,6 +39,11 @@ jobs:
         with:
           repository: debezium/debezium-connector-db2
           path: db2
+      - name: Checkout informix repository with default base branch
+        uses: actions/checkout@v6
+        with:
+          repository: debezium/debezium-connector-informix
+          path: informix
       - name: Set up JDK
         uses: actions/setup-java@v5
         with:
@@ -51,6 +56,8 @@ jobs:
         run: ./debezium-quarkus/mvnw clean install -f core/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
       - name: Maven build db2
         run: ./debezium-quarkus/mvnw clean install -f db2/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
+      - name: Maven build informix
+        run: ./debezium-quarkus/mvnw clean install -f informix/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
 
   check_style:
     name: "Checkstyle and Formatting"
