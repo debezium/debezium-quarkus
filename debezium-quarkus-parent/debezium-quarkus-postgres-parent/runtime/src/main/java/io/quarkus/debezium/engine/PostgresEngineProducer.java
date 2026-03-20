@@ -92,7 +92,8 @@ public class PostgresEngineProducer implements ConnectorProducer {
 
                 try {
                     runner.start();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     runners.remove(manifest.id());
                     LOGGER.error("Failed to start engine for manifest: {}", manifest.id(), e);
                     throw e;
@@ -109,7 +110,8 @@ public class PostgresEngineProducer implements ConnectorProducer {
 
                 try {
                     runner.shutdown();
-                } catch (Exception e) {
+                }
+                catch (Exception e) {
                     LOGGER.error("Failed to shutdown engine for manifest: {}", manifest.id(), e);
                 }
             }
