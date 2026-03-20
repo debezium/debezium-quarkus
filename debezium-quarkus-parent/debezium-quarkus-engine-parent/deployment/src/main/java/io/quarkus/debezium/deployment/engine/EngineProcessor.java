@@ -14,6 +14,11 @@ import static io.quarkus.debezium.deployment.engine.ClassesInConfigurationHandle
 import static io.quarkus.debezium.deployment.engine.ClassesInConfigurationHandler.TRANSFORM;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +33,6 @@ import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.transforms.predicates.TopicNameMatches;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
@@ -111,7 +115,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -126,11 +129,8 @@ public class EngineProcessor {
             SCHEMA_HISTORY.name(),
             TOPIC_NAMING_STRATEGY.name(),
             OFFSET_STORAGE.name());
-
-    private static final List<String> CONNECTOR_BASE_CLASSES = List.of(
-            "BaseSourceConnector",
-            "RelationalBaseSourceConnector",
-            "BinlogConnector");
+    public static final String DEBEZIUM_GROUP_ID = "io.debezium";
+    public static final String DEBEZIUM_CONNECTOR_PACKAGE = "debezium-connector";
 
     @BuildStep
     void features(BuildProducer<FeatureBuildItem> producer, List<DebeziumExtensionNameBuildItem> debeziumExtensionNameBuildItems) {
@@ -207,52 +207,47 @@ public class EngineProcessor {
     }
 
     @BuildStep
-    void indexSourceConnectorsForCompatibilityMode(CurateOutcomeBuildItem curateOutcomeBuildItem,
-                                                   BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
-        var sourceConnectorsDependencies = curateOutcomeBuildItem
-                .getApplicationModel()
-                .getDependencies()
-                .stream()
-                .filter(archive -> archive.getKey() != null &&
-                        archive.getKey().getGroupId().equals("io.debezium") &&
-                        archive.getKey().getArtifactId().contains("debezium-connector"))
-                .toList();
-
-        sourceConnectorsDependencies
-                .forEach(dependency -> indexDependencyBuildItemBuildProducer
-                        .produce(new IndexDependencyBuildItem(dependency.getGroupId(), dependency.getArtifactId())));
-    }
-
-    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void produceRegistriesForCompatibilityMode(RecorderContext recorderContext,
                                                BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
                                                CompatibleModeConnectorRecorder recorder,
                                                DebeziumEngineConfiguration debeziumEngineConfiguration,
-                                               CombinedIndexBuildItem combinedIndexBuildItem,
+                                               CurateOutcomeBuildItem curateOutcomeBuildItem,
                                                List<DebeziumConnectorBuildItem> debeziumConnectorBuildItems) {
 
-        List<ClassInfo> compatibleConnectorClass = CONNECTOR_BASE_CLASSES
+        var sourceConnectorsDependencies = curateOutcomeBuildItem
+                .getApplicationModel()
+                .getDependencies()
                 .stream()
-                .flatMap(connector -> combinedIndexBuildItem
-                        .getIndex()
-                        .getAllKnownSubclasses(DotName.createSimple(connector))
-                        .stream())
-                .filter(classInfo -> !debeziumConnectorBuildItems
+                .filter(archive -> archive.getKey() != null &&
+                        archive.getKey().getGroupId().equals(DEBEZIUM_GROUP_ID) &&
+                        archive.getKey().getArtifactId().contains(DEBEZIUM_CONNECTOR_PACKAGE))
+                .toList();
+
+        List<String> sourceConnectorClasses = sourceConnectorsDependencies
+                .stream()
+                .map(connectorDependency -> connectorDependency.getResolvedPaths().getSinglePath())
+                .map(this::extractSourceConnector)
+                .flatMap(Optional::stream)
+                .toList();
+
+        List<String> compatibleConnectorClass = sourceConnectorClasses
+                .stream()
+                .filter(sourceConnector -> !debeziumConnectorBuildItems
                         .stream()
                         .map(item -> item.getConnector().getName())
                         .toList()
-                        .contains(classInfo.name().toString()))
+                        .contains(sourceConnector))
                 .toList();
 
         compatibleConnectorClass
-                .forEach(item -> syntheticBeanBuildItemBuildProducer.produce(
+                .forEach(sourceConnector -> syntheticBeanBuildItemBuildProducer.produce(
                         SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
                                 .scope(Singleton.class)
                                 .unremovable()
                                 .supplier(recorder.engine(debeziumEngineConfiguration,
-                                        (Class<? extends BaseSourceConnector>) recorderContext.classProxy(item.name().toString())))
-                                .named(DebeziumConnectorRegistry.class.getName() + item.simpleName())
+                                        (Class<? extends BaseSourceConnector>) recorderContext.classProxy(sourceConnector)))
+                                .named(DebeziumConnectorRegistry.class.getName() + sourceConnector)
                                 .setRuntimeInit()
                                 .done()));
     }
@@ -596,5 +591,21 @@ public class EngineProcessor {
     @BuildStep
     public UnremovableBeanBuildItem avoidRemovalIfNotReferenced() {
         return UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class);
+    }
+
+    private Optional<String> extractSourceConnector(Path path) {
+        try (FileSystem fs = FileSystems.newFileSystem(path, (ClassLoader) null)) {
+            Path serviceFile = fs.getPath("META-INF/services/org.apache.kafka.connect.source.SourceConnector");
+            if (Files.exists(serviceFile)) {
+                return Files
+                        .readAllLines(serviceFile)
+                        .stream()
+                        .findAny();
+            }
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return Optional.empty();
     }
 }
