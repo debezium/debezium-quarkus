@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.debezium.runtime.*;
-import io.quarkus.maven.dependency.Dependency;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -23,6 +21,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.debezium.runtime.Capturing;
+import io.debezium.runtime.CapturingEvent;
+import io.debezium.runtime.Connector;
+import io.debezium.runtime.DebeziumConnectorRegistry;
+import io.debezium.runtime.EngineManifest;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
@@ -37,8 +41,7 @@ public class CompatibilityModeTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.debezium", "debezium-connector-informix"),
                     Dependency.of("com.ibm.informix", "ifx-changestream-client"),
-                    Dependency.of("com.ibm.informix", "jdbc")
-            ))
+                    Dependency.of("com.ibm.informix", "jdbc")))
             .withApplicationRoot((jar) -> jar.addClasses(CaptureProductsHandler.class))
             .withConfigurationResource("debezium-quarkus.properties");
 
