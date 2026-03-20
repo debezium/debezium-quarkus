@@ -14,17 +14,16 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class DebeziumRecorder {
 
-    public void startEngine(ShutdownContext context, BeanContainer container) {
+    public void startEngine(ShutdownContext context, BeanContainer container, boolean autostart) {
         DebeziumConnectorRegistry debeziumConnectorRegistry = container.beanInstance(DebeziumConnectorRegistry.class);
 
         debeziumConnectorRegistry
                 .engines()
-                .stream()
-                .map(debezium -> new DebeziumRunner(DebeziumThreadHandler.getThreadFactory(debezium), debezium))
-                .forEach(runner -> {
-                    runner.start();
-                    context.addShutdownTask(runner::shutdown);
+                .forEach(debezium -> {
+                    if (autostart) {
+                        debeziumConnectorRegistry.start(debezium.manifest());
+                    }
+                    context.addShutdownTask(() -> debeziumConnectorRegistry.stop(debezium.manifest()));
                 });
     }
-
 }

@@ -11,11 +11,15 @@ import static io.debezium.embedded.EmbeddedEngineConfig.CONNECTOR_CLASS;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.debezium.connector.mongodb.MongoDbConnector;
 import io.debezium.runtime.Connector;
@@ -32,7 +36,7 @@ import io.quarkus.debezium.configuration.MultiEngineMongoDbDatasourceConfigurati
 import io.quarkus.debezium.notification.QuarkusNotificationChannel;
 
 public class MongoDbEngineProducer implements ConnectorProducer {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MongoDbEngineProducer.class);
     public static final Connector MONGODB = new Connector(MongoDbConnector.class.getName());
     private final Map<String, MongoDbDatasourceConfiguration> quarkusDatasourceConfigurations;
     private DebeziumFactory debeziumFactory;
@@ -68,6 +72,8 @@ public class MongoDbEngineProducer implements ConnectorProducer {
                     .map(engine -> Map.entry(engine.engineId(), debeziumFactory.get(MONGODB, engine)))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+            private final Map<String, DebeziumRunner> runners = new ConcurrentHashMap<>();
+
             @Override
             public Connector connector() {
                 return MONGODB;
@@ -81,6 +87,49 @@ public class MongoDbEngineProducer implements ConnectorProducer {
             @Override
             public List<Debezium> engines() {
                 return engines.values().stream().toList();
+            }
+
+            @Override
+            public void start(EngineManifest manifest) {
+                Debezium debezium = engines.get(manifest.id());
+
+                if (debezium == null) {
+                    throw new IllegalArgumentException("No engine found for manifest: " + manifest.id());
+                }
+
+                DebeziumRunner runner = new DebeziumRunner(
+                        DebeziumThreadHandler.getThreadFactory(debezium), debezium);
+
+                DebeziumRunner existing = runners.putIfAbsent(manifest.id(), runner);
+                if (existing != null) {
+                    LOGGER.warn("Engine already running for manifest: {}", manifest.id());
+                    return;
+                }
+
+                try {
+                    runner.start();
+                }
+                catch (Exception e) {
+                    runners.remove(manifest.id());
+                    LOGGER.error("Failed to start engine for manifest: {}", manifest.id(), e);
+                    throw e;
+                }
+            }
+
+            @Override
+            public void stop(EngineManifest manifest) {
+                DebeziumRunner runner = runners.remove(manifest.id());
+                if (runner == null) {
+                    LOGGER.warn("No running engine found for manifest: {}", manifest.id());
+                    return;
+                }
+
+                try {
+                    runner.shutdown();
+                }
+                catch (Exception e) {
+                    LOGGER.error("Failed to shutdown engine for manifest: {}", manifest.id(), e);
+                }
             }
         };
     }
