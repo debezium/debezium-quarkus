@@ -13,12 +13,13 @@ import org.junit.platform.suite.api.SuiteDisplayName;
 import io.quarkus.sample.app.events.single.HeartbeatEventSingleEngineIT;
 import io.quarkus.sample.app.events.single.LifecycleEventSingleEngineIT;
 import io.quarkus.sample.app.general.single.CapturingSingleEngineIT;
+import io.quarkus.sample.app.general.single.ManualStartSingleEngineIT;
 import io.quarkus.sample.app.general.single.NotificationSingleEngineIT;
 import io.quarkus.sample.app.general.single.SingleEngineIT;
 
 @Suite
 @SuiteDisplayName("Debezium Extensions for Quarkus - Integration Test Suite for Single Engine")
 @SelectClasses({ CapturingSingleEngineIT.class, SingleEngineIT.class, NotificationSingleEngineIT.class, HeartbeatEventSingleEngineIT.class,
-        LifecycleEventSingleEngineIT.class })
+        LifecycleEventSingleEngineIT.class, ManualStartSingleEngineIT.class })
 public interface QuarkusDebeziumSingleEngineTestSuite {
 }
