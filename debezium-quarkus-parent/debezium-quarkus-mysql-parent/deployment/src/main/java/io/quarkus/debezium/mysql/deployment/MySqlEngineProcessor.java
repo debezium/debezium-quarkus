@@ -37,6 +37,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -50,11 +51,11 @@ import io.quarkus.debezium.engine.MySqlReplicaEnhancer;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class MySqlEngineProcessor implements QuarkusEngineProcessor<AgroalDatasourceConfiguration> {
@@ -135,44 +136,49 @@ public class MySqlEngineProcessor implements QuarkusEngineProcessor<AgroalDataso
         devServicesProducer.produce(new DevServicesDatasourceProviderBuildItem(DatabaseKind.MYSQL,
                 new DevServicesDatasourceProvider() {
                     @Override
-                    public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password, String datasourceName,
-                                                                      DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
-                                                                      Optional<Duration> startupTimeout) {
+                    public String getFeature() {
+                        return DatabaseKind.MYSQL;
+                    }
+
+                    @Override
+                    public DatasourceStartable createDatasourceStartable(Optional<String> username, Optional<String> password, String datasourceName,
+                                                                         DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                                                                         boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
                         String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DebeziumMySqlContainer.USER));
                         String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DebeziumMySqlContainer.PASSWORD));
                         String effectiveDbName = containerConfig.getDbName().orElse(
                                 DataSourceUtil.isDefault(datasourceName) ? DebeziumMySqlContainer.DATABASE : datasourceName);
 
-                        DebeziumMySqlContainer container = new DebeziumMySqlContainer(effectiveUsername, effectivePassword, effectiveDbName);
-                        container.start();
+                        return new DebeziumMySqlContainer(effectiveUsername, effectivePassword, effectiveDbName);
+                    }
 
-                        return new RunningDevServicesDatasource(container.getContainerId(),
-                                container.getConnectionInfo(),
-                                container.getConnectionInfo(),
-                                effectiveUsername,
-                                effectivePassword,
-                                new ContainerShutdownCloseable(container, DebeziumMySqlContainer.SERVICE_NAME));
+                    @Override
+                    public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningComposeDatasource(
+                                                                                                                             LaunchMode launchMode,
+                                                                                                                             boolean useSharedNetwork,
+                                                                                                                             DevServicesDatasourceContainerConfig containerConfig,
+                                                                                                                             DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+                        return Optional.empty();
                     }
                 }));
     }
 
-    private static class DebeziumMySqlContainer<SELF extends MySQLContainer<SELF>> extends MySQLContainer<SELF> {
+    private static class DebeziumMySqlContainer<SELF extends MySQLContainer<SELF>> extends MySQLContainer<SELF> implements DatasourceStartable {
 
         public static final String USER = "debezium";
         public static final String PASSWORD = "dbz";
         public static final String IMAGE = "container-registry.oracle.com/mysql/community-server:9.1";
-        public static final String LOCALHOST = "127.0.0.1";
         public static final String DATABASE = "debezium";
-        public static final String CONNECTION_STRING = "jdbc:mysql://" + LOCALHOST + ":3306/debezium";
-        public static final String SERVICE_NAME = "debezium-devservices-mysql";
 
         private final MySQLContainer<SELF> container;
         private final String username;
+        private final String password;
         private final String database;
 
         private DebeziumMySqlContainer(String user, String password, String database) {
             this.username = user;
+            this.password = password;
             this.database = database;
             this.container = new MySQLContainer<SELF>(
                     DockerImageName.parse(IMAGE).asCompatibleSubstituteFor("mysql"))
@@ -227,6 +233,26 @@ public class MySqlEngineProcessor implements QuarkusEngineProcessor<AgroalDataso
         @Override
         public void close() {
             container.stop();
+        }
+
+        @Override
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        public String getReactiveUrl() {
+            return getConnectionInfo();
+        }
+
+        @Override
+        public String getEffectiveJdbcUrl() {
+            return getConnectionInfo();
         }
 
     }
