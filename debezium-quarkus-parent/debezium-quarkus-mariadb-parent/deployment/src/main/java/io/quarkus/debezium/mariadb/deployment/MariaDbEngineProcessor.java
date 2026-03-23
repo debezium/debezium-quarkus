@@ -36,6 +36,7 @@ import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -48,12 +49,12 @@ import io.quarkus.debezium.engine.MariaDbEngineProducer;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalDatasourceConfiguration> {
@@ -139,39 +140,43 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
                 new DevServicesDatasourceProvider() {
 
                     @Override
-                    public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password, String datasourceName,
-                                                                      DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
-                                                                      Optional<Duration> startupTimeout) {
+                    public String getFeature() {
+                        return DatabaseKind.MARIADB;
+                    }
+
+                    @Override
+                    public DatasourceStartable createDatasourceStartable(Optional<String> username, Optional<String> password, String datasourceName,
+                                                                         DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                                                                         boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
                         String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DebeziumMariaDbContainer.USER));
                         String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DebeziumMariaDbContainer.PASSWORD));
                         String effectiveDbName = containerConfig.getDbName().orElse(
                                 DataSourceUtil.isDefault(datasourceName) ? DebeziumMariaDbContainer.DATABASE : datasourceName);
 
-                        DebeziumMariaDbContainer container = new DebeziumMariaDbContainer(effectiveUsername, effectivePassword, effectiveDbName);
-                        container.start();
+                        return new DebeziumMariaDbContainer(effectiveUsername, effectivePassword, effectiveDbName);
+                    }
 
-                        return new RunningDevServicesDatasource(container.getContainerId(),
-                                container.getConnectionInfo(),
-                                container.getConnectionInfo(),
-                                effectiveUsername,
-                                effectivePassword,
-                                new ContainerShutdownCloseable(container, DebeziumMariaDbContainer.SERVICE_NAME));
+                    @Override
+                    public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningComposeDatasource(
+                                                                                                                             LaunchMode launchMode,
+                                                                                                                             boolean useSharedNetwork,
+                                                                                                                             DevServicesDatasourceContainerConfig containerConfig,
+                                                                                                                             DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+                        return Optional.empty();
                     }
                 }));
     }
 
-    private static class DebeziumMariaDbContainer<SELF extends MariaDBContainer<SELF>> extends MariaDBContainer<SELF> {
+    private static class DebeziumMariaDbContainer<SELF extends MariaDBContainer<SELF>> extends MariaDBContainer<SELF> implements DatasourceStartable {
 
         public static final String USER = "debezium";
         public static final String PASSWORD = "dbz";
         public static final String IMAGE = "mirror.gcr.io/library/mariadb:11.4.3";
-        public static final String LOCALHOST = "127.0.0.1";
         public static final String DATABASE = "debezium";
-        public static final String CONNECTION_STRING = "jdbc:mariadb://" + LOCALHOST + ":3306/debezium";
-        public static final String SERVICE_NAME = "debezium-devservices-mariadb";
 
         private final String username;
+        private final String password;
         private final String database;
 
         private DebeziumMariaDbContainer(String user, String password, String database) {
@@ -196,6 +201,7 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
                     .withEnv("MARIADB_ROOT_PASSWORD", password);
 
             this.username = user;
+            this.password = password;
             this.database = database;
         }
 
@@ -226,6 +232,26 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
         @Override
         public void close() {
             stop();
+        }
+
+        @Override
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        public String getReactiveUrl() {
+            return getConnectionInfo();
+        }
+
+        @Override
+        public String getEffectiveJdbcUrl() {
+            return getConnectionInfo();
         }
 
     }
