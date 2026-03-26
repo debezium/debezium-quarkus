@@ -21,6 +21,46 @@
             <artifactId>debezium-quarkus-db2</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>debezium-quarkus-testsuite-integration-tests</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.debezium.quarkus</groupId>
+            <artifactId>debezium-quarkus-testsuite-integration-tests</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.lz4</groupId>
             <artifactId>lz4-java</artifactId>
             <version>1.8.0</version>
@@ -72,6 +112,96 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>start-db2</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>stop-db2</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <imagePullPolicy>IfNotPresent</imagePullPolicy>
+                    <images>
+                        <image>
+                            <alias>db2-native</alias>
+                            <name>debezium/db2-cdc-test:native</name>
+                            <run>
+                                <namingStrategy>none</namingStrategy>
+                                <privileged>true</privileged>
+                                <env>
+                                    <LICENSE>accept</LICENSE>
+                                    <DBNAME>TESTDB</DBNAME>
+                                    <DB2INSTANCE>db2inst1</DB2INSTANCE>
+                                    <DB2INST1_PASSWORD>dbz</DB2INST1_PASSWORD>
+                                    <ARCHIVE_LOGS>true</ARCHIVE_LOGS>
+                                    <AUTOCONFIG>false</AUTOCONFIG>
+                                </env>
+                                <ports>
+                                    <port>50000:50000</port>
+                                </ports>
+                                <log>
+                                    <prefix>db2-native</prefix>
+                                    <enabled>true</enabled>
+                                    <color>blue</color>
+                                </log>
+                                <wait>
+                                    <log>.*CDC setup completed successfully.*</log>
+                                    <time>600000</time>
+                                </wait>
+                            </run>
+                            <build>
+                                <dockerFileDir>${project.basedir}/../deployment/src/main/resources/db2-cdc-docker</dockerFileDir>
+                            </build>
+                        </image>
+                        <image>
+                            <alias>db2-alternative</alias>
+                            <name>debezium/db2-cdc-test:native</name>
+                            <run>
+                                <namingStrategy>alias</namingStrategy>
+                                <privileged>true</privileged>
+                                <env>
+                                    <LICENSE>accept</LICENSE>
+                                    <DBNAME>TESTDB</DBNAME>
+                                    <DB2INSTANCE>db2inst1</DB2INSTANCE>
+                                    <DB2INST1_PASSWORD>dbz</DB2INST1_PASSWORD>
+                                    <ARCHIVE_LOGS>true</ARCHIVE_LOGS>
+                                    <AUTOCONFIG>false</AUTOCONFIG>
+                                </env>
+                                <ports>
+                                    <port>50001:50000</port>
+                                </ports>
+                                <log>
+                                    <prefix>db2-alt</prefix>
+                                    <enabled>true</enabled>
+                                    <color>cyan</color>
+                                </log>
+                                <wait>
+                                    <log>.*CDC setup completed successfully.*</log>
+                                    <time>600000</time>
+                                </wait>
+                            </run>
+                            <build>
+                                <dockerFileDir>${project.basedir}/../deployment/src/main/resources/db2-cdc-docker</dockerFileDir>
+                            </build>
+
+                        </image>
+                    </images>
+                </configuration>
             </plugin>
         </plugins>
     </build>

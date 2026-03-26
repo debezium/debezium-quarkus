@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import io.debezium.connector.db2.Db2Connector;
 import io.debezium.jdbc.JdbcConfiguration;
 import io.debezium.runtime.Connector;
@@ -29,11 +33,14 @@ public class Db2EngineProducer implements ConnectorProducer {
     private final AgroalParser agroalParser;
     private final DebeziumFactory debeziumFactory;
 
+    @Inject
     public Db2EngineProducer(AgroalParser agroalParser, DebeziumFactory debeziumFactory) {
         this.agroalParser = agroalParser;
         this.debeziumFactory = debeziumFactory;
     }
 
+    @Produces
+    @Singleton
     @Override
     public DebeziumConnectorRegistry engine(DebeziumEngineConfiguration debeziumEngineConfiguration) {
         List<DebeziumConfigurationEngineParser.MultiEngineConfiguration> multiEngineConfigurations = agroalParser.parse(debeziumEngineConfiguration, DatabaseKind.DB2,
@@ -43,9 +50,13 @@ public class Db2EngineProducer implements ConnectorProducer {
             private final Map<String, Debezium> engines = multiEngineConfigurations
                     .stream()
                     .map(engine -> {
-                        // remove unnecessary configuration for sqlserver
-                        engine.configuration()
+                        // DB2 connector requires 'database.dbname'; remap from the generic 'database.database'
+                        // key that AgroalParser provides from the JDBC URL
+                        String dbName = engine.configuration()
                                 .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
+                        if (dbName != null) {
+                            engine.configuration().put("database.dbname", dbName);
+                        }
 
                         return Map.entry(engine.engineId(), debeziumFactory.get(DB2, engine));
                     })
