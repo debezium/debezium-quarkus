@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import io.debezium.engine.Header;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 
@@ -68,6 +69,11 @@ public class GeneralChangeConsumerProducer {
                             @Override
                             public SourceRecord record() {
                                 return ((EmbeddedEngineChangeEvent<Object, Object, Object>) record).sourceRecord();
+                            }
+
+                            @Override
+                            public <H> List<Header<H>> headers() {
+                                return record.headers();
                             }
 
                             @Override
