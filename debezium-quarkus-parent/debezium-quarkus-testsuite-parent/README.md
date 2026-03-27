@@ -193,22 +193,24 @@ Create `debezium-quarkus-testsuite.properties` in your test resources directory:
 
 ```properties
 # Connector-specific configuration
-quarkus.debezium.offset.storage=org.apache.kafka.connect.storage.MemoryOffsetBackingStore
-quarkus.debezium.name=test
-quarkus.debezium.topic.prefix=topic
+debezium.offset.storage=org.apache.kafka.connect.storage.MemoryOffsetBackingStore
+debezium.name=test
+debezium.topic.prefix=topic
 
 # Test scenario expectations (as documented in test suite)
-quarkus.debezium.database.include.list=inventory
-quarkus.debezium.snapshot.mode=initial
-quarkus.debezium.capturing.orders.destination=topic.inventory.orders
+debezium.database.include.list=inventory
+debezium.snapshot.mode=initial
+debezium.capturing.orders.destination=topic.inventory.orders
 
 # Dev services should be disabled
 quarkus.mongodb.devservices.enabled=false
 
 
 # Heartbeat configuration (5ms as expected by tests)
-quarkus.debezium.mongodb.heartbeat.interval.ms=5
+debezium.mongodb.heartbeat.interval.ms=5
 ```
+
+The legacy `quarkus.debezium.*` prefix is still supported for backward compatibility via a configuration interceptor, but new extensions should use the canonical `debezium.*` prefix.
 
 #### For Integration Tests
 
