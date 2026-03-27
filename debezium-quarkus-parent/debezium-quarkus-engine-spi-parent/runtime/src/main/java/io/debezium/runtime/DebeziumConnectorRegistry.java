@@ -27,4 +27,18 @@ public interface DebeziumConnectorRegistry {
      * @return the {@link Debezium} engines inside the registry
      */
     List<Debezium> engines();
+
+    /**
+     * Starts the {@link Debezium} engine assigned to the given {@link EngineManifest}.
+     *
+     * @param manifest the manifest identifying the engine to start
+     */
+    void start(EngineManifest manifest);
+
+    /**
+     * Stops the {@link Debezium} engine assigned to the given {@link EngineManifest}.
+     *
+     * @param manifest the manifest identifying the engine to stop
+     */
+    void stop(EngineManifest manifest);
 }
