@@ -5,11 +5,12 @@
  */
 package io.debezium.runtime;
 
-import io.debezium.engine.Header;
-import org.apache.kafka.connect.source.SourceRecord;
-
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.kafka.connect.source.SourceRecord;
+
+import io.debezium.engine.Header;
 
 public interface BatchEvent {
 

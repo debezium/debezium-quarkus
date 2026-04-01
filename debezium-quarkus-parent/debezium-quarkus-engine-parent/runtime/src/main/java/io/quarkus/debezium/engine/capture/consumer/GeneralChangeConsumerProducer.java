@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import io.debezium.engine.Header;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 
@@ -22,6 +21,7 @@ import io.debezium.DebeziumException;
 import io.debezium.embedded.EmbeddedEngineChangeEvent;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine.RecordCommitter;
+import io.debezium.engine.Header;
 import io.debezium.runtime.BatchEvent;
 import io.debezium.runtime.CapturingEvents;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
