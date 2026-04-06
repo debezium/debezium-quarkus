@@ -6,6 +6,10 @@
 
 package io.quarkus.debezium.engine;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
@@ -14,7 +18,14 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class DebeziumRecorder {
 
-    public void startEngine(ShutdownContext context, BeanContainer container, boolean autostart) {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumRecorder.class);
+    private static final String PROP_ENGINE_AUTOSTART = "quarkus.debezium.engine.autostart";
+
+    public void startEngine(ShutdownContext context, BeanContainer container) {
+        boolean autostart = ConfigProvider.getConfig()
+                .getOptionalValue(PROP_ENGINE_AUTOSTART, Boolean.class)
+                .orElse(true);
+
         DebeziumConnectorRegistry debeziumConnectorRegistry = container.beanInstance(DebeziumConnectorRegistry.class);
 
         debeziumConnectorRegistry
@@ -23,7 +34,15 @@ public class DebeziumRecorder {
                     if (autostart) {
                         debeziumConnectorRegistry.start(debezium.manifest());
                     }
-                    context.addShutdownTask(() -> debeziumConnectorRegistry.stop(debezium.manifest()));
+                    context.addShutdownTask(() -> {
+                        try {
+                            debeziumConnectorRegistry.stop(debezium.manifest());
+                        }
+                        catch (IllegalDebeziumStateException e) {
+                            // Engine may not have been started (e.g. autostart=false and never manually started)
+                            LOGGER.warn("Engine was not running at shutdown for manifest: {}", debezium.manifest().id());
+                        }
+                    });
                 });
     }
 }

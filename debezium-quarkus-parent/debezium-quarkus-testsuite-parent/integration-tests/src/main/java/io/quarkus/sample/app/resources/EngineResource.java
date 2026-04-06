@@ -16,6 +16,7 @@ import jakarta.ws.rs.core.Response;
 
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumStatus;
+import io.quarkus.debezium.engine.IllegalDebeziumStateException;
 import io.quarkus.sample.app.dto.EngineInformation;
 
 @Path("engine")
@@ -71,8 +72,15 @@ public class EngineResource {
     @POST
     @Path("stop")
     public Response stop() {
-        registry.engines().forEach(e -> registry.stop(e.manifest()));
-        return Response.ok().build();
+        try {
+            registry.engines().forEach(e -> registry.stop(e.manifest()));
+            return Response.ok().build();
+        }
+        catch (IllegalDebeziumStateException e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(e.getMessage())
+                    .build();
+        }
     }
 
     @POST

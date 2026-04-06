@@ -32,7 +32,6 @@ import org.apache.kafka.common.security.authenticator.SaslClientAuthenticator;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.transforms.predicates.TopicNameMatches;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
@@ -132,8 +131,6 @@ public class EngineProcessor {
             OFFSET_STORAGE.name());
     public static final String DEBEZIUM_GROUP_ID = "io.debezium";
     public static final String DEBEZIUM_CONNECTOR_PACKAGE = "debezium-connector";
-
-    private static final String PROP_ENGINE_AUTOSTART = "quarkus.debezium.engine.autostart";
 
     @BuildStep
     void features(BuildProducer<FeatureBuildItem> producer, List<DebeziumExtensionNameBuildItem> debeziumExtensionNameBuildItems) {
@@ -260,12 +257,7 @@ public class EngineProcessor {
     void startEngine(BeanContainerBuildItem beanContainerBuildItem,
                      DebeziumRecorder recorder,
                      ShutdownContextBuildItem shutdownContextBuildItem) {
-
-        boolean autostart = ConfigProvider.getConfig()
-                .getOptionalValue(PROP_ENGINE_AUTOSTART, Boolean.class)
-                .orElse(true);
-
-        recorder.startEngine(shutdownContextBuildItem, beanContainerBuildItem.getValue(), autostart);
+        recorder.startEngine(shutdownContextBuildItem, beanContainerBuildItem.getValue());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

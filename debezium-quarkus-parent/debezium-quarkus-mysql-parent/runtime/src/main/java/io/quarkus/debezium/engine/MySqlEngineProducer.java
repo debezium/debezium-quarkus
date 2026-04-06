@@ -9,15 +9,12 @@ import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.debezium.connector.mysql.MySqlConnector;
 import io.debezium.jdbc.JdbcConfiguration;
@@ -25,15 +22,12 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.ConnectorProducer;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
-import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 
 public class MySqlEngineProducer implements ConnectorProducer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MySqlEngineProducer.class);
 
     public static final Connector MYSQL = new Connector(MySqlConnector.class.getName());
 
@@ -53,77 +47,17 @@ public class MySqlEngineProducer implements ConnectorProducer {
         final List<MultiEngineConfiguration> multiEngineConfigurations = agroalParser.parse(
                 debeziumEngineConfiguration, DatabaseKind.MYSQL, MYSQL);
 
-        return new DebeziumConnectorRegistry() {
-            private final Map<String, Debezium> engines = multiEngineConfigurations
-                    .stream()
-                    .map(engine -> {
-                        // remove unnecessary configuration
-                        engine.configuration()
-                                .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
+        Map<String, Supplier<Debezium>> engineSuppliers = multiEngineConfigurations
+                .stream()
+                .map(engine -> {
+                    // remove unnecessary configuration
+                    engine.configuration()
+                            .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
 
-                        return Map.entry(engine.engineId(), debeziumFactory.get(MYSQL, engine));
-                    })
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    return Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(MYSQL, engine));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            private final Map<String, DebeziumRunner> runners = new ConcurrentHashMap<>();
-
-            @Override
-            public Connector connector() {
-                return MYSQL;
-            }
-
-            @Override
-            public Debezium get(EngineManifest manifest) {
-                return engines.get(manifest.id());
-            }
-
-            @Override
-            public List<Debezium> engines() {
-                return engines.values().stream().toList();
-            }
-
-            @Override
-            public void start(EngineManifest manifest) {
-                Debezium debezium = engines.get(manifest.id());
-
-                if (debezium == null) {
-                    throw new IllegalArgumentException("No engine found for manifest: " + manifest.id());
-                }
-
-                DebeziumRunner runner = new DebeziumRunner(
-                        DebeziumThreadHandler.getThreadFactory(debezium), debezium);
-
-                DebeziumRunner existing = runners.putIfAbsent(manifest.id(), runner);
-                if (existing != null) {
-                    LOGGER.warn("Engine already running for manifest: {}", manifest.id());
-                    return;
-                }
-
-                try {
-                    runner.start();
-                }
-                catch (Exception e) {
-                    runners.remove(manifest.id());
-                    LOGGER.error("Failed to start engine for manifest: {}", manifest.id(), e);
-                    throw e;
-                }
-            }
-
-            @Override
-            public void stop(EngineManifest manifest) {
-                DebeziumRunner runner = runners.remove(manifest.id());
-                if (runner == null) {
-                    LOGGER.warn("No running engine found for manifest: {}", manifest.id());
-                    return;
-                }
-
-                try {
-                    runner.shutdown();
-                }
-                catch (Exception e) {
-                    LOGGER.error("Failed to shutdown engine for manifest: {}", manifest.id(), e);
-                }
-            }
-        };
+        return new RunnableDebeziumConnectorRegistry(MYSQL, engineSuppliers);
     }
 }

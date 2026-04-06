@@ -10,7 +10,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,27 @@ public class ManualStartMultiEngineIT {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of("quarkus.debezium.engine.autostart", "false");
+        }
+    }
+
+    @AfterEach
+    void stopEngines() {
+        try {
+            RestAssured.given().post("/engine/stop");
+        }
+        catch (Exception ignored) {
+        }
+        try {
+            await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> assertThat(
+                    get("/engine/statuses")
+                            .then()
+                            .statusCode(200)
+                            .extract().jsonPath().getList("state", String.class)
+                            .stream()
+                            .allMatch(s -> s.equals("STOPPED")))
+                    .isTrue());
+        }
+        catch (Exception ignored) {
         }
     }
 
