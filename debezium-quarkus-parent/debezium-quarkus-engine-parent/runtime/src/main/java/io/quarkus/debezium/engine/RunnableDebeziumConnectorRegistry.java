@@ -53,10 +53,6 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
             throw new IllegalDebeziumStateException("No engine found for manifest: " + manifest.id());
         }
 
-        if (runners.containsKey(manifest.id())) {
-            throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
-        }
-
         Debezium debezium = engineSuppliers.get(manifest.id()).get();
         currentEngines.put(manifest.id(), debezium);
 
@@ -65,17 +61,18 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
 
         DebeziumRunner existing = runners.putIfAbsent(manifest.id(), runner);
         if (existing != null) {
+            currentEngines.remove(manifest.id());
             throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
         }
 
         try {
             runner.start();
         }
-        catch (Exception e) {
+        catch (RuntimeException e) {
             runners.remove(manifest.id());
+            currentEngines.remove(manifest.id());
             LOGGER.error("Failed to start engine for manifest: {}", manifest.id(), e);
-            throw new IllegalDebeziumStateException(
-                    "Failed to start engine for manifest: " + manifest.id(), e);
+            throw e;
         }
     }
 
@@ -89,10 +86,9 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         try {
             runner.shutdown();
         }
-        catch (Exception e) {
+        catch (RuntimeException e) {
             LOGGER.error("Failed to stop engine for manifest: {}", manifest.id(), e);
-            throw new IllegalDebeziumStateException(
-                    "Failed to stop engine for manifest: " + manifest.id(), e);
+            throw e;
         }
     }
 }
