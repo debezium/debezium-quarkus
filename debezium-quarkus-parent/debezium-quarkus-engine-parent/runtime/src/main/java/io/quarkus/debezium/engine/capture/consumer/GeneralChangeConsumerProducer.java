@@ -8,9 +8,11 @@ package io.quarkus.debezium.engine.capture.consumer;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 
 import org.apache.kafka.connect.source.SourceRecord;
@@ -25,13 +27,19 @@ import io.debezium.engine.Header;
 import io.debezium.runtime.BatchEvent;
 import io.debezium.runtime.CapturingEvents;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
+import io.quarkus.debezium.engine.capture.CapturingTombstoneEvents;
 
 public class GeneralChangeConsumerProducer {
 
     private final CapturingEventsInvokerRegistry<CapturingEvents> registry;
+    private final Optional<CapturingTombstoneEvents> capturingTombstoneEvents;
 
-    public GeneralChangeConsumerProducer(CapturingEventsInvokerRegistry<CapturingEvents> registry) {
+    public GeneralChangeConsumerProducer(CapturingEventsInvokerRegistry<CapturingEvents> registry,
+                                         Instance<CapturingTombstoneEvents> instances) {
         this.registry = registry;
+        this.capturingTombstoneEvents = instances
+                .stream()
+                .findFirst();
     }
 
     @Produces
@@ -126,6 +134,13 @@ public class GeneralChangeConsumerProducer {
                 catch (InterruptedException e) {
                     throw new DebeziumException(e);
                 }
+            }
+
+            @Override
+            public boolean supportsTombstoneEvents() {
+                return capturingTombstoneEvents
+                        .orElse(GeneralChangeConsumer.super::supportsTombstoneEvents)
+                        .isSupported();
             }
         };
     }
