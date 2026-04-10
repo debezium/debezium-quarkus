@@ -6,6 +6,18 @@
 
 package io.quarkus.debezium.engine.capture;
 
+/**
+ * Indicates whether an implementation supports capturing and processing tombstone events.
+ * <p>
+ * In Debezium, a tombstone event is a special change event with a null value that is emitted
+ * after a delete operation. These events are used to signal that a record has been deleted
+ * and can be used by downstream consumers (e.g., for compaction in Kafka topics).
+ * <p>
+ * Implementations of this interface can be provided as CDI beans to declare support for
+ * tombstone event processing from Debezium Server Sink side.
+ * <p>
+ * A Sink (DS Sink) may or may not handle a tombstone event.
+ */
 public interface CapturingTombstoneEvents {
     boolean isSupported();
 }
