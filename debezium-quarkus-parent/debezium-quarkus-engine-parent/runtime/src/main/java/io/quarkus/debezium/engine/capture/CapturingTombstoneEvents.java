@@ -6,6 +6,8 @@
 
 package io.quarkus.debezium.engine.capture;
 
+import io.debezium.common.annotation.Incubating;
+
 /**
  * Indicates whether an implementation supports capturing and processing tombstone events.
  * <p>
@@ -18,6 +20,7 @@ package io.quarkus.debezium.engine.capture;
  * <p>
  * A Sink (DS Sink) may or may not handle a tombstone event.
  */
+@Incubating
 public interface CapturingTombstoneEvents {
     boolean isSupported();
 }
