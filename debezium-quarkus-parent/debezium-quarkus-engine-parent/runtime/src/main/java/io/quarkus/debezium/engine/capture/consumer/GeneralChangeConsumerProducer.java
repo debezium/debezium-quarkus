@@ -37,6 +37,7 @@ public class GeneralChangeConsumerProducer {
     public GeneralChangeConsumerProducer(CapturingEventsInvokerRegistry<CapturingEvents> registry,
                                          Instance<CapturingTombstoneEvents> instances) {
         this.registry = registry;
+        /* The tombstone configuration can be applied only to one connector */
         this.capturingTombstoneEvents = instances
                 .stream()
                 .findFirst();
