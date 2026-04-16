@@ -40,7 +40,6 @@ public class CompatibilityModeTest {
     static final QuarkusUnitTest setup = new QuarkusUnitTest()
             .setForcedDependencies(List.of(
                     Dependency.of("io.debezium", "debezium-connector-informix"),
-                    Dependency.of("com.ibm.informix", "ifx-changestream-client"),
                     Dependency.of("com.ibm.informix", "jdbc")))
             .withApplicationRoot((jar) -> jar.addClasses(CaptureProductsHandler.class))
             .withConfigurationResource("debezium-quarkus.properties");
