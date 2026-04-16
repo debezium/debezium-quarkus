@@ -71,11 +71,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.ibm.informix</groupId>
-            <artifactId>ifx-changestream-client</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.debezium</groupId>
             <artifactId>debezium-testing-testcontainers</artifactId>
             <scope>test</scope>
