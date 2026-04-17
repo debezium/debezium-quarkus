@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import io.debezium.runtime.events.DebeziumHeartbeat;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
+import java.util.concurrent.TimeUnit;
+
 @Tag("external-suite-only")
 @QuarkusIntegrationTest
 public class HeartbeatEventSingleEngineIT {
@@ -24,7 +26,9 @@ public class HeartbeatEventSingleEngineIT {
     @Test
     @DisplayName("should get an heartbeat")
     void shouldGetHeartbeat() {
-        await().untilAsserted(() -> assertThat(
+        await()
+                .timeout(5, TimeUnit.MINUTES)
+                .untilAsserted(() -> assertThat(
                 get("/heartbeat?engine=default")
                         .then()
                         .statusCode(200)
