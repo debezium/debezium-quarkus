@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import io.debezium.runtime.events.DebeziumHeartbeat;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-
 @Tag("external-suite-only")
 @QuarkusIntegrationTest
 public class HeartbeatEventSingleEngineIT {
