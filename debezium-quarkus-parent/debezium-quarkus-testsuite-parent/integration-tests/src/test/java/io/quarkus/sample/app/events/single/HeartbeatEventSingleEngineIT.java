@@ -10,6 +10,8 @@ import static io.restassured.RestAssured.get;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -17,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import io.debezium.runtime.events.DebeziumHeartbeat;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-import java.util.concurrent.TimeUnit;
 
 @Tag("external-suite-only")
 @QuarkusIntegrationTest
