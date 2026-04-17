@@ -29,13 +29,13 @@ public class HeartbeatEventSingleEngineIT {
         await()
                 .timeout(5, TimeUnit.MINUTES)
                 .untilAsserted(() -> assertThat(
-                get("/heartbeat?engine=default")
-                        .then()
-                        .statusCode(200)
-                        .extract()
-                        .body()
-                        .as(DebeziumHeartbeat.class).connector().name())
-                .startsWith("io.debezium.connector"));
+                        get("/heartbeat?engine=default")
+                                .then()
+                                .statusCode(200)
+                                .extract()
+                                .body()
+                                .as(DebeziumHeartbeat.class).connector().name())
+                        .startsWith("io.debezium.connector"));
     }
 
 }
