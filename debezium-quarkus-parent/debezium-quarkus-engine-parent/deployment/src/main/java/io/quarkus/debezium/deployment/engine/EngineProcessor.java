@@ -55,6 +55,7 @@ import io.debezium.processors.spi.PostProcessor;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.BuildTimeDebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
 import io.debezium.runtime.events.Engine;
 import io.debezium.schema.SchemaTopicNamingStrategy;
