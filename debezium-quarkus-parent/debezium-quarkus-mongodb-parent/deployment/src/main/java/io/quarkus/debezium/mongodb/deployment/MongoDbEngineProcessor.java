@@ -20,7 +20,7 @@ import io.debezium.connector.mongodb.MongoDbConnectorTask;
 import io.debezium.connector.mongodb.MongoDbSourceInfoStructMaker;
 import io.debezium.connector.mongodb.connection.DefaultMongoDbAuthProvider;
 import io.debezium.connector.mongodb.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.BuildTimeDebeziumEngineConfiguration;
 import io.debezium.schema.DefaultTopicNamingStrategy;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.debezium.configuration.MongoDbDatasourceRecorder;
@@ -81,7 +81,7 @@ public class MongoDbEngineProcessor implements QuarkusEngineProcessor<MultiEngin
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
-    void devservices(BuildProducer<DevServicesResultBuildItem> devServicesProducer, DebeziumEngineConfiguration debeziumEngineConfiguration) {
+    void devservices(BuildProducer<DevServicesResultBuildItem> devServicesProducer, BuildTimeDebeziumEngineConfiguration debeziumEngineConfiguration) {
 
         var mongoDb = debeziumEngineConfiguration.devservices().get("mongodb");
         var allServices = debeziumEngineConfiguration.devservices().get("*");

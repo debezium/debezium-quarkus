@@ -32,7 +32,7 @@ import io.debezium.connector.mariadb.snapshot.lock.MinimalSnapshotLock;
 import io.debezium.connector.mariadb.snapshot.lock.NoneSnapshotLock;
 import io.debezium.connector.mariadb.snapshot.query.SelectAllSnapshotQuery;
 import io.debezium.relational.history.SchemaHistory;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.BuildTimeDebeziumEngineConfiguration;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -123,7 +123,7 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
-    void devservices(BuildProducer<DevServicesDatasourceProviderBuildItem> devServicesProducer, DebeziumEngineConfiguration debeziumEngineConfiguration) {
+    void devservices(BuildProducer<DevServicesDatasourceProviderBuildItem> devServicesProducer, BuildTimeDebeziumEngineConfiguration debeziumEngineConfiguration) {
 
         var mariadb = debeziumEngineConfiguration.devservices().get("mariadb");
         var allServices = debeziumEngineConfiguration.devservices().get("*");

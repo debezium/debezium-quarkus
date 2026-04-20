@@ -17,20 +17,20 @@ import io.smallrye.config.WithParentName;
 import io.smallrye.config.WithUnnamedKey;
 
 /**
- * Debezium runtime configuration.
+ * Build-time Debezium configuration using the legacy {@code quarkus.debezium.*} prefix.
  *
- * <p>Uses the canonical {@code debezium.*} prefix. Backward compatibility with the legacy
- * {@code quarkus.debezium.*} prefix is provided at runtime by
+ * <p>This configuration is resolved at build time and is used by deployment processors
+ * (e.g. for native-image reflection registration and DevServices).
+ *
+ * <p>The canonical {@code debezium.*} prefix is handled at runtime by
+ * {@link DebeziumEngineConfiguration} together with
  * {@link QuarkusDebeziumConfigPrefixInterceptor}.
- *
- * <p>Build-time configuration is handled separately by
- * {@link BuildTimeDebeziumEngineConfiguration}.
  */
-@ConfigMapping(prefix = "debezium")
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
-public interface DebeziumEngineConfiguration {
+@ConfigMapping(prefix = "quarkus.debezium")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface BuildTimeDebeziumEngineConfiguration {
     /**
-     * Default Configuration properties for debezium engine
+     * Default configuration properties for debezium engine
      */
     @WithParentName
     @WithUnnamedKey
