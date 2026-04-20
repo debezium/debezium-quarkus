@@ -55,7 +55,6 @@ import io.debezium.processors.spi.PostProcessor;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.BuildTimeDebeziumEngineConfiguration;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
 import io.debezium.runtime.events.Engine;
 import io.debezium.schema.SchemaTopicNamingStrategy;
@@ -212,7 +211,6 @@ public class EngineProcessor {
     void produceRegistriesForCompatibilityMode(RecorderContext recorderContext,
                                                BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
                                                CompatibleModeConnectorRecorder recorder,
-                                               DebeziumEngineConfiguration debeziumEngineConfiguration,
                                                CurateOutcomeBuildItem curateOutcomeBuildItem,
                                                List<DebeziumConnectorBuildItem> debeziumConnectorBuildItems) {
 
@@ -246,7 +244,7 @@ public class EngineProcessor {
                         SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
                                 .scope(Singleton.class)
                                 .unremovable()
-                                .supplier(recorder.engine(debeziumEngineConfiguration,
+                                .supplier(recorder.engine(
                                         (Class<? extends BaseSourceConnector>) recorderContext.classProxy(sourceConnector)))
                                 .named(DebeziumConnectorRegistry.class.getName() + sourceConnector)
                                 .setRuntimeInit()
