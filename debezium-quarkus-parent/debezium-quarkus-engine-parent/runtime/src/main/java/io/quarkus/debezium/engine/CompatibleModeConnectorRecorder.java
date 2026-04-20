@@ -11,6 +11,7 @@ import static io.debezium.embedded.EmbeddedEngineConfig.CONNECTOR_CLASS;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import io.debezium.connector.common.BaseSourceConnector;
@@ -60,6 +61,8 @@ public class CompatibleModeConnectorRecorder {
                     debeziumFactory.get(new Connector(connectorClass.getName()),
                             new MultiEngineConfiguration(EngineManifest.DEFAULT.id(), configuration)));
 
+            Map<String, DebeziumRunner> runners = new ConcurrentHashMap<>();
+
             return new DebeziumConnectorRegistry() {
                 @Override
                 public Connector connector() {
@@ -72,8 +75,38 @@ public class CompatibleModeConnectorRecorder {
                 }
 
                 @Override
+                public List<EngineManifest> manifests() {
+                    return List.of(EngineManifest.DEFAULT);
+                }
+
+                @Override
                 public List<Debezium> engines() {
-                    return engines.values().stream().toList();
+                    return engines.entrySet().stream()
+                            .filter(e -> runners.containsKey(e.getKey()))
+                            .map(Map.Entry::getValue)
+                            .toList();
+                }
+
+                @Override
+                public void start(EngineManifest manifest) {
+                    Debezium debezium = engines.get(manifest.id());
+                    if (debezium == null) {
+                        throw new IllegalDebeziumStateException("No engine found for manifest: " + manifest.id());
+                    }
+                    DebeziumRunner runner = new DebeziumRunner(DebeziumThreadHandler.getThreadFactory(debezium), debezium);
+                    if (runners.putIfAbsent(manifest.id(), runner) != null) {
+                        throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
+                    }
+                    runner.start();
+                }
+
+                @Override
+                public void stop(EngineManifest manifest) {
+                    DebeziumRunner runner = runners.remove(manifest.id());
+                    if (runner == null) {
+                        throw new IllegalDebeziumStateException("No running engine found for manifest: " + manifest.id());
+                    }
+                    runner.shutdown();
                 }
             };
         };

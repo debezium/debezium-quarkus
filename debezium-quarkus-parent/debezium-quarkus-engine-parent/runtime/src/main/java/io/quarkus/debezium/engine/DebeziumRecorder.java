@@ -29,18 +29,18 @@ public class DebeziumRecorder {
         DebeziumConnectorRegistry debeziumConnectorRegistry = container.beanInstance(DebeziumConnectorRegistry.class);
 
         debeziumConnectorRegistry
-                .engines()
-                .forEach(debezium -> {
+                .manifests()
+                .forEach(manifest -> {
                     if (autostart) {
-                        debeziumConnectorRegistry.start(debezium.manifest());
+                        debeziumConnectorRegistry.start(manifest);
                     }
                     context.addShutdownTask(() -> {
                         try {
-                            debeziumConnectorRegistry.stop(debezium.manifest());
+                            debeziumConnectorRegistry.stop(manifest);
                         }
                         catch (IllegalDebeziumStateException e) {
                             // Engine may not have been started (e.g. autostart=false and never manually started)
-                            LOGGER.warn("Engine was not running at shutdown for manifest: {}", debezium.manifest().id());
+                            LOGGER.warn("Engine was not running at shutdown for manifest: {}", manifest.id());
                         }
                     });
                 });
