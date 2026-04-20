@@ -14,6 +14,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
+import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumStatus;
 import io.quarkus.debezium.engine.IllegalDebeziumStateException;
@@ -32,40 +33,46 @@ public class EngineResource {
     @GET
     @Path("manifest")
     public Response engines() {
-        return Response.ok(registry.engines()
+        return Response.ok(registry.manifests()
                 .stream()
-                .map(engine -> new EngineInformation(engine.manifest().id(), engine.connector().name()))
+                .map(manifest -> new EngineInformation(manifest.id(), registry.connector().name()))
                 .toList()).build();
     }
 
     @GET
     @Path("status")
     public DebeziumStatus getState() {
-        return registry.engines().getFirst().status();
+        return registry.engines().stream()
+                .findFirst()
+                .map(Debezium::status)
+                .orElse(new DebeziumStatus(DebeziumStatus.State.STOPPED));
     }
 
     @GET
     @Path("statuses")
     public List<DebeziumStatus> getStatuses() {
-        return registry.engines().stream()
-                .map(e -> e.status())
+        return registry.manifests().stream()
+                .map(m -> {
+                    Debezium engine = registry.get(m);
+                    return engine != null ? engine.status() : new DebeziumStatus(DebeziumStatus.State.STOPPED);
+                })
                 .toList();
     }
 
     @POST
     @Path("start")
     public Response start() {
-        registry.engines().forEach(e -> registry.start(e.manifest()));
+        registry.manifests().forEach(m -> registry.start(m));
         return Response.ok().build();
     }
 
     @POST
     @Path("start/{id}")
     public Response start(@PathParam("id") String id) {
-        registry.engines().stream()
-                .filter(e -> e.manifest().id().equals(id))
+        registry.manifests().stream()
+                .filter(m -> m.id().equals(id))
                 .findFirst()
-                .ifPresent(e -> registry.start(e.manifest()));
+                .ifPresent(m -> registry.start(m));
         return Response.ok().build();
     }
 
@@ -73,7 +80,11 @@ public class EngineResource {
     @Path("stop")
     public Response stop() {
         try {
-            registry.engines().forEach(e -> registry.stop(e.manifest()));
+            List<Debezium> running = registry.engines();
+            if (running.isEmpty()) {
+                throw new IllegalDebeziumStateException("No running engines found");
+            }
+            running.forEach(e -> registry.stop(e.manifest()));
             return Response.ok().build();
         }
         catch (IllegalDebeziumStateException e) {

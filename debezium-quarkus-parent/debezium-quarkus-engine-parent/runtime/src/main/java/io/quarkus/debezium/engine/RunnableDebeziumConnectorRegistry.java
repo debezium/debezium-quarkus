@@ -29,7 +29,6 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
     public RunnableDebeziumConnectorRegistry(Connector connector, Map<String, Supplier<Debezium>> engineSuppliers) {
         this.connector = connector;
         this.engineSuppliers = engineSuppliers;
-        engineSuppliers.forEach((id, supplier) -> currentEngines.put(id, supplier.get()));
     }
 
     @Override
@@ -43,14 +42,28 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
     }
 
     @Override
+    public List<EngineManifest> manifests() {
+        return engineSuppliers.keySet().stream()
+                .map(EngineManifest::new)
+                .toList();
+    }
+
+    @Override
     public List<Debezium> engines() {
-        return List.copyOf(currentEngines.values());
+        return currentEngines.entrySet().stream()
+                .filter(e -> runners.containsKey(e.getKey()))
+                .map(Map.Entry::getValue)
+                .toList();
     }
 
     @Override
     public void start(EngineManifest manifest) {
         if (!engineSuppliers.containsKey(manifest.id())) {
             throw new IllegalDebeziumStateException("No engine found for manifest: " + manifest.id());
+        }
+
+        if (runners.containsKey(manifest.id())) {
+            throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
         }
 
         Debezium debezium = engineSuppliers.get(manifest.id()).get();

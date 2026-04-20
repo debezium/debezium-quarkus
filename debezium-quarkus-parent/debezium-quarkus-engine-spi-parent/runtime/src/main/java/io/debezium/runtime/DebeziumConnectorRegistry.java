@@ -24,7 +24,13 @@ public interface DebeziumConnectorRegistry {
 
     /**
      *
-     * @return the {@link Debezium} engines inside the registry
+     * @return all registered {@link EngineManifest}s, regardless of whether their engines are running
+     */
+    List<EngineManifest> manifests();
+
+    /**
+     *
+     * @return the currently running {@link Debezium} engines inside the registry
      */
     List<Debezium> engines();
 
