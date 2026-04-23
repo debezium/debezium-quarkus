@@ -18,7 +18,7 @@ public interface BatchEvent {
 
     Object value();
 
-    int partition();
+    Integer partition();
 
     SourceRecord record();
 

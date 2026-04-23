@@ -71,7 +71,7 @@ public class GeneralChangeConsumerProducer {
                             }
 
                             @Override
-                            public int partition() {
+                            public Integer partition() {
                                 return record.partition();
                             }
 
