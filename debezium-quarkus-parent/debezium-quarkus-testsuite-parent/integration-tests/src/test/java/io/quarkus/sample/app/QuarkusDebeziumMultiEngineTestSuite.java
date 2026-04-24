@@ -13,13 +13,14 @@ import org.junit.platform.suite.api.SuiteDisplayName;
 import io.quarkus.sample.app.events.multi.HeartbeatEventMultiEngineIT;
 import io.quarkus.sample.app.events.multi.LifecycleEventMultiEngineIT;
 import io.quarkus.sample.app.general.multi.CapturingMultiEngineIT;
+import io.quarkus.sample.app.general.multi.ManualStartMultiEngineIT;
 import io.quarkus.sample.app.general.multi.MultiEngineIT;
 import io.quarkus.sample.app.general.multi.NotificationMultiEngineIT;
 
 @Suite
 @SuiteDisplayName("Debezium Extensions for Quarkus - Integration Test Suite for Multi Engine")
 @SelectClasses({ CapturingMultiEngineIT.class, MultiEngineIT.class, NotificationMultiEngineIT.class, HeartbeatEventMultiEngineIT.class,
-        LifecycleEventMultiEngineIT.class })
+        LifecycleEventMultiEngineIT.class, ManualStartMultiEngineIT.class })
 public interface QuarkusDebeziumMultiEngineTestSuite {
     int TIMEOUT = Integer.parseInt(System.getenv().getOrDefault("MULTIENGINE_TIMEOUT", "30"));
 }

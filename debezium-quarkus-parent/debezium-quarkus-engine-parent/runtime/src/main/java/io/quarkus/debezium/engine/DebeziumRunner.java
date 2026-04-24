@@ -41,9 +41,14 @@ class DebeziumRunner {
         LOGGER.info("Shutting down Debezium Engine {}", debeziumThread.getName());
         try {
             engine.close();
+            debeziumThread.join();
         }
         catch (IOException e) {
             throw new RuntimeException("Impossible to shutdown Debezium Engine " + debeziumThread.getName(), e);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.warn("Interrupted while waiting for Debezium Engine {} to stop", debeziumThread.getName());
         }
         finally {
             debeziumThread.interrupt();

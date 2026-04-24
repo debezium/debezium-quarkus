@@ -257,7 +257,6 @@ public class EngineProcessor {
     void startEngine(BeanContainerBuildItem beanContainerBuildItem,
                      DebeziumRecorder recorder,
                      ShutdownContextBuildItem shutdownContextBuildItem) {
-
         recorder.startEngine(shutdownContextBuildItem, beanContainerBuildItem.getValue());
     }
 

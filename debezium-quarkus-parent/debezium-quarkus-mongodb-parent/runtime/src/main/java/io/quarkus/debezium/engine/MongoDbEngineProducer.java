@@ -11,6 +11,7 @@ import static io.debezium.embedded.EmbeddedEngineConfig.CONNECTOR_CLASS;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Produces;
@@ -22,7 +23,6 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.ConnectorProducer;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
-import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.runtime.configuration.QuarkusDatasourceConfiguration;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser;
@@ -32,7 +32,6 @@ import io.quarkus.debezium.configuration.MultiEngineMongoDbDatasourceConfigurati
 import io.quarkus.debezium.notification.QuarkusNotificationChannel;
 
 public class MongoDbEngineProducer implements ConnectorProducer {
-
     public static final Connector MONGODB = new Connector(MongoDbConnector.class.getName());
     private final Map<String, MongoDbDatasourceConfiguration> quarkusDatasourceConfigurations;
     private DebeziumFactory debeziumFactory;
@@ -57,32 +56,13 @@ public class MongoDbEngineProducer implements ConnectorProducer {
         /*
          * enrich Quarkus-like debezium configuration with quarkus datasource configuration
          */
-        List<MultiEngineConfiguration> enrichedMultiEngineConfigurations = multiEngineConfigurations
+        Map<String, Supplier<Debezium>> engineSuppliers = multiEngineConfigurations
                 .stream()
                 .map(engine -> merge(engine, quarkusDatasourceConfigurations))
-                .toList();
+                .map(engine -> Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(MONGODB, engine)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        return new DebeziumConnectorRegistry() {
-            private final Map<String, Debezium> engines = enrichedMultiEngineConfigurations
-                    .stream()
-                    .map(engine -> Map.entry(engine.engineId(), debeziumFactory.get(MONGODB, engine)))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            @Override
-            public Connector connector() {
-                return MONGODB;
-            }
-
-            @Override
-            public Debezium get(EngineManifest manifest) {
-                return engines.get(manifest.id());
-            }
-
-            @Override
-            public List<Debezium> engines() {
-                return engines.values().stream().toList();
-            }
-        };
+        return new RunnableDebeziumConnectorRegistry(MONGODB, engineSuppliers);
     }
 
     private MultiEngineConfiguration merge(MultiEngineConfiguration engine, Map<String, ? extends QuarkusDatasourceConfiguration> configurations) {

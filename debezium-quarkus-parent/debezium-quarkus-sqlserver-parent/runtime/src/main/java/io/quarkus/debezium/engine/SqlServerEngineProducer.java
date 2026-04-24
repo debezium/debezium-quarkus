@@ -10,6 +10,7 @@ import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Produces;
@@ -22,13 +23,13 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.ConnectorProducer;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
-import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 
 public class SqlServerEngineProducer implements ConnectorProducer {
+
     public static final Connector SQLSERVER = new Connector(SqlServerConnector.class.getName());
 
     private final AgroalParser agroalParser;
@@ -46,33 +47,18 @@ public class SqlServerEngineProducer implements ConnectorProducer {
     public DebeziumConnectorRegistry engine(DebeziumEngineConfiguration debeziumEngineConfiguration) {
         List<MultiEngineConfiguration> multiEngineConfigurations = agroalParser.parse(debeziumEngineConfiguration, DatabaseKind.MSSQL, SQLSERVER);
 
-        return new DebeziumConnectorRegistry() {
-            private final Map<String, Debezium> engines = multiEngineConfigurations
-                    .stream()
-                    .map(engine -> {
-                        // remove unnecessary configuration for sqlserver
-                        engine.configuration()
-                                .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
+        Map<String, Supplier<Debezium>> engineSuppliers = multiEngineConfigurations
+                .stream()
+                .map(engine -> {
+                    // remove unnecessary configuration for sqlserver
+                    engine.configuration()
+                            .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
 
-                        return Map.entry(engine.engineId(), debeziumFactory.get(SQLSERVER, engine));
-                    })
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    return Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(SQLSERVER, engine));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            @Override
-            public Connector connector() {
-                return SQLSERVER;
-            }
-
-            @Override
-            public Debezium get(EngineManifest manifest) {
-                return engines.get(manifest.id());
-            }
-
-            @Override
-            public List<Debezium> engines() {
-                return engines.values().stream().toList();
-            }
-        };
+        return new RunnableDebeziumConnectorRegistry(SQLSERVER, engineSuppliers);
     }
 
 }

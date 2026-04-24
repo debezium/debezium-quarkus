@@ -10,6 +10,7 @@ import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Produces;
@@ -22,13 +23,13 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.ConnectorProducer;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
-import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 
 public class MariaDbEngineProducer implements ConnectorProducer {
+
     public static final Connector MARIADB = new Connector(MariaDbConnector.class.getName());
 
     private final AgroalParser agroalParser;
@@ -47,32 +48,16 @@ public class MariaDbEngineProducer implements ConnectorProducer {
     public DebeziumConnectorRegistry engine(DebeziumEngineConfiguration debeziumEngineConfiguration) {
         List<MultiEngineConfiguration> multiEngineConfigurations = agroalParser.parse(debeziumEngineConfiguration, DatabaseKind.MARIADB, MARIADB);
 
-        return new DebeziumConnectorRegistry() {
-            private final Map<String, Debezium> engines = multiEngineConfigurations
-                    .stream()
-                    .map(engine -> {
-                        Map<String, String> debeziumConfiguration = engine.configuration();
+        Map<String, Supplier<Debezium>> engineSuppliers = multiEngineConfigurations
+                .stream()
+                .map(engine -> {
+                    engine.configuration()
+                            .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
 
-                        debeziumConfiguration.remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
+                    return Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(MARIADB, engine));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                        return Map.entry(engine.engineId(), debeziumFactory.get(MARIADB, engine));
-                    })
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            @Override
-            public Connector connector() {
-                return MARIADB;
-            }
-
-            @Override
-            public Debezium get(EngineManifest manifest) {
-                return engines.get(manifest.id());
-            }
-
-            @Override
-            public List<Debezium> engines() {
-                return engines.values().stream().toList();
-            }
-        };
+        return new RunnableDebeziumConnectorRegistry(MARIADB, engineSuppliers);
     }
 }

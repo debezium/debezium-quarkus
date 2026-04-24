@@ -8,6 +8,7 @@ package io.quarkus.debezium.engine;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,7 +21,6 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.ConnectorProducer;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
-import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
@@ -45,27 +45,12 @@ public class PostgresEngineProducer implements ConnectorProducer {
     public DebeziumConnectorRegistry engine(DebeziumEngineConfiguration debeziumEngineConfiguration) {
         List<MultiEngineConfiguration> multiEngineConfigurations = agroalParser.parse(debeziumEngineConfiguration, DatabaseKind.POSTGRESQL, POSTGRES);
 
-        return new DebeziumConnectorRegistry() {
-            private final Map<String, Debezium> engines = multiEngineConfigurations
-                    .stream()
-                    .map(engine -> Map.entry(engine.engineId(), debeziumFactory.get(POSTGRES, engine)))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, Supplier<Debezium>> engineSuppliers = multiEngineConfigurations
+                .stream()
+                .map(engine -> Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(POSTGRES, engine)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            @Override
-            public Connector connector() {
-                return POSTGRES;
-            }
-
-            @Override
-            public Debezium get(EngineManifest manifest) {
-                return engines.get(manifest.id());
-            }
-
-            @Override
-            public List<Debezium> engines() {
-                return engines.values().stream().toList();
-            }
-        };
+        return new RunnableDebeziumConnectorRegistry(POSTGRES, engineSuppliers);
     }
 
 }
