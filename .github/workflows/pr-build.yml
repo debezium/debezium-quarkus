@@ -129,7 +129,7 @@ jobs:
           fetch-depth: 0
       - name: Get modified files (Common)
         id: changed-files-common
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             pom.xml
@@ -138,7 +138,7 @@ jobs:
             .github/workflows/pr-build.yml
       - name: Get modified files (Outbox)
         id: changed-files-outbox
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-outbox/**
@@ -146,7 +146,7 @@ jobs:
             debezium-quarkus-outbox-reactive/**
       - name: Get modified files (Core)
         id: changed-files-core
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-engine-spi-parent/**
@@ -154,55 +154,55 @@ jobs:
             debezium-quarkus-parent/debezium-quarkus-agroal-parent/**
       - name: Get modified files (Testing)
         id: changed-files-testing
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-testsuite-parent/**
       - name: Get modified files (MongoDB)
         id: changed-files-mongodb
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-mongodb-parent/**
       - name: Get modified files (MySQL)
         id: changed-files-mysql
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-mysql-parent/**
       - name: Get modified files (MariaDB)
         id: changed-files-mariadb
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-mariadb-parent/**
       - name: Get modified files (PostgreSQL)
         id: changed-files-postgresql
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-postgresql-parent/**
       - name: Get modified files (Oracle)
         id: changed-files-oracle
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-oracle-parent/**
       - name: Get modified files (SQL Server)
         id: changed-files-sqlserver
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-sqlserver-parent/**
       - name: Get modified files (DB2)
         id: changed-files-db2
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-parent/debezium-quarkus-sqlserver-parent/**
       - name: Get modified files (Hibernate Cache)
         id: changed-files-hibernate-invalidation
-        uses: tj-actions/changed-files@v47.0.5
+        uses: tj-actions/changed-files@v47.0.6
         with:
           files: |
             debezium-quarkus-hibernate-cache-parent/**
