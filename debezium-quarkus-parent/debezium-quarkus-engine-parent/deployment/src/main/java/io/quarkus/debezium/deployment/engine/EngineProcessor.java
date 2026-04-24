@@ -63,7 +63,6 @@ import io.debezium.snapshot.mode.AlwaysSnapshotter;
 import io.debezium.snapshot.mode.ConfigurationBasedSnapshotter;
 import io.debezium.snapshot.mode.InitialOnlySnapshotter;
 import io.debezium.snapshot.mode.InitialSnapshotter;
-import io.debezium.snapshot.mode.NeverSnapshotter;
 import io.debezium.snapshot.mode.NoDataSnapshotter;
 import io.debezium.snapshot.mode.RecoverySnapshotter;
 import io.debezium.snapshot.mode.WhenNeededSnapshotter;
@@ -393,7 +392,6 @@ public class EngineProcessor {
                 NoDataSnapshotter.class,
                 RecoverySnapshotter.class,
                 WhenNeededSnapshotter.class,
-                NeverSnapshotter.class,
                 ExtractNewRecordState.class,
                 TopicNameMatches.class,
                 ConfigurationBasedSnapshotter.class,
