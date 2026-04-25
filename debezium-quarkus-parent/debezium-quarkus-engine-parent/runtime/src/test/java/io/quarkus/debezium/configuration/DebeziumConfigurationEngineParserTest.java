@@ -23,11 +23,11 @@ import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.Multi
 class DebeziumConfigurationEngineParserTest {
 
     public static final Map<String, String> DEBEZIUM_CONFIGURATION = Map.of(
-            "quarkus.debezium.offset.storage", "org.apache.kafka.connect.storage.MemoryOffsetBackingStore",
-            "quarkus.debezium.name", "native",
-            "quarkus.debezium.topic.prefix", "dbserver1",
-            "quarkus.debezium.plugin.name", "pgoutput",
-            "quarkus.debezium.snapshot.mode", "initial");
+            "debezium.offset.storage", "org.apache.kafka.connect.storage.MemoryOffsetBackingStore",
+            "debezium.name", "native",
+            "debezium.topic.prefix", "dbserver1",
+            "debezium.plugin.name", "pgoutput",
+            "debezium.snapshot.mode", "initial");
     private final DebeziumConfigurationEngineParser underTest = new DebeziumConfigurationEngineParser();
 
     @Test

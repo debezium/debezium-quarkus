@@ -54,7 +54,7 @@ import io.debezium.pipeline.txmetadata.DefaultTransactionMetadataFactory;
 import io.debezium.processors.spi.PostProcessor;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.BuildTimeDebeziumEngineConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
 import io.debezium.runtime.events.Engine;
 import io.debezium.schema.SchemaTopicNamingStrategy;
@@ -210,7 +210,6 @@ public class EngineProcessor {
     void produceRegistriesForCompatibilityMode(RecorderContext recorderContext,
                                                BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
                                                CompatibleModeConnectorRecorder recorder,
-                                               DebeziumEngineConfiguration debeziumEngineConfiguration,
                                                CurateOutcomeBuildItem curateOutcomeBuildItem,
                                                List<DebeziumConnectorBuildItem> debeziumConnectorBuildItems) {
 
@@ -244,7 +243,7 @@ public class EngineProcessor {
                         SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
                                 .scope(Singleton.class)
                                 .unremovable()
-                                .supplier(recorder.engine(debeziumEngineConfiguration,
+                                .supplier(recorder.engine(
                                         (Class<? extends BaseSourceConnector>) recorderContext.classProxy(sourceConnector)))
                                 .named(DebeziumConnectorRegistry.class.getName() + sourceConnector)
                                 .setRuntimeInit()
@@ -286,7 +285,7 @@ public class EngineProcessor {
     void registerClassesThatAreLoadedThroughReflection(
                                                        CombinedIndexBuildItem indexBuildItem,
                                                        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-                                                       DebeziumEngineConfiguration debeziumEngineConfiguration) {
+                                                       BuildTimeDebeziumEngineConfiguration debeziumEngineConfiguration) {
 
         List<String> classesAnnotatedWithInjectService = DebeziumDotNames.ANNOTATED_WITH_INJECT_SERVICE
                 .stream()
@@ -363,7 +362,7 @@ public class EngineProcessor {
         debeziumEngineConfiguration.capturing().values()
                 .stream()
                 .flatMap(capturing -> capturing.deserializers().values().stream())
-                .map(DebeziumEngineConfiguration.DeserializerConfiguration::deserializer)
+                .map(BuildTimeDebeziumEngineConfiguration.DeserializerConfiguration::deserializer)
                 .forEach(deserializer -> reflectiveClasses.produce(
                         ReflectiveClassBuildItem
                                 .builder(deserializer)
@@ -418,13 +417,13 @@ public class EngineProcessor {
                 .toList();
     }
 
-    private List<String> extractDeserializers(DebeziumEngineConfiguration debeziumEngineConfiguration) {
+    private List<String> extractDeserializers(BuildTimeDebeziumEngineConfiguration debeziumEngineConfiguration) {
         return debeziumEngineConfiguration
                 .capturing()
                 .values()
                 .stream()
                 .filter(capturing -> capturing.destination().isPresent() && capturing.deserializer().isPresent())
-                .map(DebeziumEngineConfiguration.Capturing::deserializer)
+                .map(BuildTimeDebeziumEngineConfiguration.Capturing::deserializer)
                 .flatMap(Optional::stream)
                 .toList();
     }

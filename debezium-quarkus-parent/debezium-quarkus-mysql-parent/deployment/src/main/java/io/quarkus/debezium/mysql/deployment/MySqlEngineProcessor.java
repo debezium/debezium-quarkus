@@ -31,7 +31,7 @@ import io.debezium.connector.mysql.snapshot.lock.MinimalSnapshotLock;
 import io.debezium.connector.mysql.snapshot.lock.NoneSnapshotLock;
 import io.debezium.connector.mysql.snapshot.query.SelectAllSnapshotQuery;
 import io.debezium.relational.history.SchemaHistory;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.BuildTimeDebeziumEngineConfiguration;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -120,7 +120,7 @@ public class MySqlEngineProcessor implements QuarkusEngineProcessor<AgroalDataso
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
-    void devservices(BuildProducer<DevServicesDatasourceProviderBuildItem> devServicesProducer, DebeziumEngineConfiguration debeziumEngineConfiguration) {
+    void devservices(BuildProducer<DevServicesDatasourceProviderBuildItem> devServicesProducer, BuildTimeDebeziumEngineConfiguration debeziumEngineConfiguration) {
 
         var mysql = debeziumEngineConfiguration.devservices().get("mysql");
         var allServices = debeziumEngineConfiguration.devservices().get("*");

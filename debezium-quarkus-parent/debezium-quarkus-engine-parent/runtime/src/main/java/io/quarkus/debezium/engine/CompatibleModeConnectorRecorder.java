@@ -23,20 +23,22 @@ import io.debezium.runtime.configuration.QuarkusDatasourceConfiguration;
 import io.quarkus.arc.Arc;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class CompatibleModeConnectorRecorder {
     private final DebeziumConfigurationEngineParser engineParser = new DebeziumConfigurationEngineParser();
+    private final RuntimeValue<DebeziumEngineConfiguration> debeziumEngineConfiguration;
 
-    public Supplier<DebeziumConnectorRegistry> engine(DebeziumEngineConfiguration debeziumEngineConfiguration,
-                                                      Class<? extends BaseSourceConnector> connectorClass) {
+    public CompatibleModeConnectorRecorder(RuntimeValue<DebeziumEngineConfiguration> debeziumEngineConfiguration) {
+        this.debeziumEngineConfiguration = debeziumEngineConfiguration;
+    }
+
+    public Supplier<DebeziumConnectorRegistry> engine(Class<? extends BaseSourceConnector> connectorClass) {
         return () -> {
-            /*
-             * This is a workaround, we should avoid to get statically beans but `RuntimeValue<>` doesn't work: Quarkus detect this fragment as deployment time
-             */
             DebeziumFactory debeziumFactory = Arc.container().instance(DebeziumFactory.class).get();
-            List<MultiEngineConfiguration> multiEngineConfigurations = engineParser.parse(debeziumEngineConfiguration);
+            List<MultiEngineConfiguration> multiEngineConfigurations = engineParser.parse(debeziumEngineConfiguration.getValue());
 
             if (multiEngineConfigurations.size() > 1) {
                 throw new RuntimeException("Compatibility mode error: Multi Engine feature is not supported in Compatibility mode");
