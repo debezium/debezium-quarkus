@@ -21,12 +21,12 @@ import io.debezium.connector.db2.Module;
 import io.debezium.connector.db2.snapshot.lock.ExclusiveSnapshotLock;
 import io.debezium.connector.db2.snapshot.lock.NoSnapshotLock;
 import io.debezium.connector.db2.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.relational.RelationalDatabaseConnectorConfig;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatasourceStartable;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
@@ -37,16 +37,17 @@ import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.engine.Db2EngineProducer;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.runtime.LaunchMode;
 
 class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceConfiguration> {
@@ -118,33 +119,40 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         }
 
         devServicesProducer.produce(new DevServicesDatasourceProviderBuildItem(DatabaseKind.DB2, new DevServicesDatasourceProvider() {
+
             @Override
-            public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password, String datasourceName,
-                                                              DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
-                                                              Optional<Duration> startupTimeout) {
+            public String getFeature() {
+                return Feature.JDBC_DB2.getName();
+            }
+
+            @Override
+            public DatasourceStartable createDatasourceStartable(Optional<String> username, Optional<String> password, String datasourceName,
+                                                                 DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                                                                 boolean useSharedNetwork, Optional<Duration> startupTimeout) {
 
                 String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DebeziumDb2Container.USER));
                 String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DebeziumDb2Container.PASSWORD));
                 String effectiveDbName = containerConfig.getDbName().orElse(DataSourceUtil.isDefault(datasourceName) ? DebeziumDb2Container.DATABASE : datasourceName);
 
-                DebeziumDb2Container container = new DebeziumDb2Container(effectivePassword, effectiveDbName);
-                container.start();
+                return new DebeziumDb2Container(effectiveUsername, effectivePassword, effectiveDbName);
+            }
 
-                return new RunningDevServicesDatasource(container.getContainerId(), container.getConnectionInfo(), container.getConnectionInfo(), effectiveUsername,
-                        effectivePassword, new ContainerShutdownCloseable(container, DebeziumDb2Container.SERVICE_NAME));
+            @Override
+            public Optional<RunningDevServicesDatasource> findRunningComposeDatasource(LaunchMode launchMode, boolean useSharedNetwork,
+                                                                                       DevServicesDatasourceContainerConfig containerConfig,
+                                                                                       DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+                return Optional.empty();
             }
         }));
     }
 
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void recordCdcSetup(DebeziumDb2CdcInstrumentationRecorder recorder, DebeziumEngineConfiguration debeziumEngineConfiguration) {
-        String tableIncludeList = debeziumEngineConfiguration.defaultConfiguration()
-                .getOrDefault(RelationalDatabaseConnectorConfig.TABLE_INCLUDE_LIST, "").toUpperCase();
-        recorder.setupCdcRegistration(tableIncludeList, 60);
+    void recordCdcSetup(DebeziumDb2CdcInstrumentationRecorder recorder) {
+        recorder.setupCdcRegistration(60);
     }
 
-    private static class DebeziumDb2Container extends GenericContainer<DebeziumDb2Container> {
+    private static class DebeziumDb2Container extends GenericContainer<DebeziumDb2Container> implements DatasourceStartable {
 
         public static final String USER = "db2inst1";
         public static final String PASSWORD = "dbz";
@@ -153,9 +161,11 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         public static final int DB2_PORT = 50000;
         public static final String SERVICE_NAME = "debezium-devservices-db2";
 
+        private final String username;
+        private final String password;
         private final String database;
 
-        private DebeziumDb2Container(String password, String database) {
+        private DebeziumDb2Container(String username, String password, String database) {
             super(new ImageFromDockerfile("debezium-db2-cdc", false)
                     .withFileFromClasspath("Dockerfile", "db2-cdc-docker/Dockerfile")
                     .withFileFromClasspath("asncdc.c", "db2-cdc-docker/asncdc.c")
@@ -164,6 +174,8 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
                     .withFileFromClasspath("asncdctables.sql", "db2-cdc-docker/asncdctables.sql")
                     .withFileFromClasspath("cdcsetup.sh", "db2-cdc-docker/cdcsetup.sh")
                     .withFileFromClasspath("dbsetup.sh", "db2-cdc-docker/dbsetup.sh"));
+            this.username = username;
+            this.password = password;
             this.database = database;
 
             withPrivilegedMode(true);
@@ -172,8 +184,34 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
             waitingFor(new LogMessageWaitStrategy().withRegEx(".*CDC setup completed successfully.*\\n").withStartupTimeout(Duration.ofMinutes(10)));
         }
 
+        @Override
         public String getConnectionInfo() {
+            return getEffectiveJdbcUrl();
+        }
+
+        @Override
+        public String getEffectiveJdbcUrl() {
             return "jdbc:db2://" + LOCALHOST + ":" + getMappedPort(DB2_PORT) + "/" + database;
+        }
+
+        @Override
+        public String getReactiveUrl() {
+            return getEffectiveJdbcUrl().replaceFirst("jdbc:", "vertx-reactive:");
+        }
+
+        @Override
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public void close() {
+            super.close();
         }
     }
 }

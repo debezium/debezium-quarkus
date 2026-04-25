@@ -5,17 +5,17 @@
  */
 package io.quarkus.debezium.db2.runtime;
 
+import io.quarkus.runtime.annotations.Recorder;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
-
-import io.quarkus.runtime.annotations.Recorder;
 
 /**
  * Quarkus Recorder that sets up automatic CDC registration for DB2 Dev Services.
@@ -44,24 +44,23 @@ public class DebeziumDb2CdcInstrumentationRecorder {
     /**
      * Records CDC registration setup to run at {@code RUNTIME_INIT}.
      *
-     * @param tableIncludeList the raw value of {@code quarkus.debezium.table.include.list}
-     *                         (uppercased by the caller), comma-separated {@code SCHEMA.TABLE}
-     *                         and/or {@code SCHEMA.*} entries; may be empty.
-     * @param retrySeconds     how long the background thread should keep trying before giving up.
+     * @param retrySeconds how long the background thread should keep trying before giving up.
      */
-    public void setupCdcRegistration(String tableIncludeList, int retrySeconds) {
+    public void setupCdcRegistration(int retrySeconds) {
         try {
-            Thread thread = new Thread(() -> runCdcRegistration(tableIncludeList, retrySeconds), "debezium-db2-cdc-setup");
+            Thread thread = new Thread(() -> runCdcRegistration(retrySeconds), "debezium-db2-cdc-setup");
             thread.setDaemon(true);
             thread.start();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.errorf("[CDC SETUP] CDC registration thread Failed: %s", e.getMessage());
         }
     }
 
-    private void runCdcRegistration(String tableIncludeList, int retrySeconds) {
-        Optional<ConnectionInfo> connInfo = ConnectionInfo.from(ConfigProvider.getConfig());
+    private void runCdcRegistration(int retrySeconds) {
+        Config config = ConfigProvider.getConfig();
+        Optional<ConnectionInfo> connInfo = ConnectionInfo.from(config);
+        String tableIncludeList = config.getOptionalValue("quarkus.debezium.table.include.list", String.class)
+                .orElse("").toUpperCase();
         if (connInfo.isEmpty()) {
             return;
         }
@@ -71,13 +70,11 @@ public class DebeziumDb2CdcInstrumentationRecorder {
         if (filter.isTargeted()) {
             LOG.infof("[CDC SETUP] Targeted mode: %d declared table(s), timeout %ds.",
                     filter.exactTables().size(), retrySeconds);
-        }
-        else if (!filter.wildcardSchemas().isEmpty()) {
+        } else if (!filter.wildcardSchemas().isEmpty()) {
             String label = filter.exactTables().isEmpty() ? "Schema-scoped" : "Mixed";
             LOG.infof("[CDC SETUP] %s mode: schemas [%s], timeout %ds.",
                     label, String.join(", ", filter.wildcardSchemas()), retrySeconds);
-        }
-        else {
+        } else {
             LOG.infof("[CDC SETUP] Full-scan mode: all user tables, timeout %ds.", retrySeconds);
         }
 
@@ -93,6 +90,12 @@ public class DebeziumDb2CdcInstrumentationRecorder {
             while (System.currentTimeMillis() < deadline) {
                 if (runOneCycle(ops, filter)) {
                     ops.fixStateAndReinit();
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
                 }
                 if (filter.isTargeted() && ops.allActive(filter.exactTables())) {
                     LOG.infof("[CDC SETUP] All %d declared table(s) are now registered for CDC capture.",
@@ -101,8 +104,7 @@ public class DebeziumDb2CdcInstrumentationRecorder {
                 }
                 try {
                     Thread.sleep(1000);
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
                 }
@@ -119,13 +121,11 @@ public class DebeziumDb2CdcInstrumentationRecorder {
             if (!missing.isEmpty()) {
                 LOG.warnf("[CDC SETUP] Registration timed out after %ds. Still unregistered: %s",
                         retrySeconds, missing);
-            }
-            else {
+            } else {
                 LOG.infof("[CDC SETUP] All declared tables are registered (verified at timeout boundary after %ds).",
                         retrySeconds);
             }
-        }
-        finally {
+        } finally {
             closeConnection(c);
         }
     }
@@ -134,8 +134,14 @@ public class DebeziumDb2CdcInstrumentationRecorder {
         boolean reinitNeeded = false;
 
         for (TableId tid : filter.exactTables()) {
-            if (ops.existsInSyscat(tid) && !ops.isRegistered(tid)) {
+            if (!ops.existsInSyscat(tid)) {
+                continue;
+            }
+            if (!ops.isRegistered(tid)) {
                 reinitNeeded |= ops.callAddTable(tid);
+            } else if (!ops.isActive(tid)) {
+                LOG.infof("[CDC SETUP] '%s'.'%s' is registered but STATE='I'; re-activating.", tid.schema(), tid.table());
+                reinitNeeded = true;
             }
         }
 
@@ -160,13 +166,11 @@ public class DebeziumDb2CdcInstrumentationRecorder {
                 Connection c = DriverManager.getConnection(info.jdbcUrl(), info.user(), info.password());
                 c.setAutoCommit(false);
                 return c;
-            }
-            catch (SQLException e) {
+            } catch (SQLException e) {
                 LOG.debugf("[CDC SETUP] DB2 not yet accepting connections (%s). Retrying in 1s...", e.getMessage());
                 try {
                     Thread.sleep(1000);
-                }
-                catch (InterruptedException ie) {
+                } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     return null;
                 }
@@ -178,14 +182,12 @@ public class DebeziumDb2CdcInstrumentationRecorder {
     private void closeConnection(Connection c) {
         try {
             c.rollback();
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             LOG.debugf("[CDC SETUP] Rollback failed: %s", e.getMessage());
         }
         try {
             c.close();
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             LOG.debugf("[CDC SETUP] Connection close failed: %s", e.getMessage());
         }
     }

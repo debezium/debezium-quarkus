@@ -5,6 +5,8 @@
  */
 package io.quarkus.debezium.db2.runtime;
 
+import org.jboss.logging.Logger;
+
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,8 +15,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jboss.logging.Logger;
 
 /**
  * JDBC helper for DB2 CDC operations.
@@ -77,8 +77,7 @@ class Db2CdcOperations {
                     result.add(new TableId(rs.getString(1), rs.getString(2)));
                 }
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             LOG.warnf("[CDC SETUP] Error scanning schema '%s': %s", schema, e.getMessage());
         }
         return result;
@@ -87,12 +86,11 @@ class Db2CdcOperations {
     public List<TableId> findUnregisteredAll() {
         List<TableId> result = new ArrayList<>();
         try (Statement stmt = connection.createStatement();
-                ResultSet rs = stmt.executeQuery(SQL_UNREGISTERED_ALL)) {
+             ResultSet rs = stmt.executeQuery(SQL_UNREGISTERED_ALL)) {
             while (rs.next()) {
                 result.add(new TableId(rs.getString(1), rs.getString(2)));
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             LOG.warnf("[CDC SETUP] Error in full-scan query: %s", e.getMessage());
         }
         return result;
@@ -106,8 +104,7 @@ class Db2CdcOperations {
             connection.commit();
             LOG.infof("[CDC SETUP] Registered '%s'.'%s' for CDC capture.", tid.schema(), tid.table());
             return true;
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             rollback();
             LOG.warnf("[CDC SETUP] ADDTABLE('%s','%s') failed: %s", tid.schema(), tid.table(), e.getMessage());
             return false;
@@ -116,13 +113,18 @@ class Db2CdcOperations {
 
     public void fixStateAndReinit() {
         try (Statement stmt = connection.createStatement()) {
-            stmt.execute("UPDATE ASNCDC.IBMSNAP_REGISTER SET STATE='A' WHERE STATE='I'");
+            int updated = stmt.executeUpdate(
+                    "UPDATE ASNCDC.IBMSNAP_REGISTER SET STATE='A' " +
+                            "WHERE STATE='I' AND LENGTH(TRIM(SOURCE_OWNER)) > 0 AND LENGTH(TRIM(SOURCE_TABLE)) > 0");
             connection.commit();
-            LOG.info("[CDC SETUP] Issuing asncap reinit...");
+            if (updated > 0) {
+                LOG.infof("[CDC SETUP] Activated %d registration(s) in IBMSNAP_REGISTER.", updated);
+            }
+            LOG.info("[CDC SETUP] Issuing asncap start+reinit...");
+            stmt.execute("VALUES ASNCDC.ASNCDCSERVICES('start', 'asncdc')");
             stmt.execute("VALUES ASNCDC.ASNCDCSERVICES('reinit', 'asncdc')");
-            LOG.info("[CDC SETUP] Reinit completed.");
-        }
-        catch (SQLException e) {
+            LOG.info("[CDC SETUP] Reinit signal sent.");
+        } catch (SQLException e) {
             LOG.errorf("[CDC SETUP] fixStateAndReinit failed: %s", e.getMessage());
             rollback();
         }
@@ -135,8 +137,7 @@ class Db2CdcOperations {
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             if (warnPattern != null) {
                 LOG.warnf("[CDC SETUP] " + warnPattern + ": %s", tid.schema(), tid.table(), e.getMessage());
             }
@@ -147,8 +148,7 @@ class Db2CdcOperations {
     private void rollback() {
         try {
             connection.rollback();
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             LOG.debugf("[CDC SETUP] Rollback failed: %s", e.getMessage());
         }
     }
