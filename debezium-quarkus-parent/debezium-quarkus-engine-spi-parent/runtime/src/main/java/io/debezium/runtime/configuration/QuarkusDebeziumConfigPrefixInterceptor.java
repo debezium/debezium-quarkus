@@ -5,6 +5,10 @@
  */
 package io.debezium.runtime.configuration;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigValue;
@@ -39,5 +43,19 @@ public final class QuarkusDebeziumConfigPrefixInterceptor implements ConfigSourc
 
         // If found, expose it under the canonical key
         return legacy != null ? legacy.withName(name) : null;
+    }
+
+    @Override
+    public Iterator<String> iterateNames(ConfigSourceInterceptorContext context) {
+        Set<String> names = new HashSet<>();
+        Iterator<String> iterator = context.iterateNames();
+        while (iterator.hasNext()) {
+            String name = iterator.next();
+            names.add(name);
+            if (name.startsWith(LEGACY_PREFIX)) {
+                names.add(CANONICAL_PREFIX + name.substring(LEGACY_PREFIX.length()));
+            }
+        }
+        return names.iterator();
     }
 }
