@@ -44,6 +44,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -75,6 +76,14 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         return NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("QuarkusWithJcc", "true")
                 .build();
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    SystemPropertyBuildItem quarkusWithJccRuntimeProperty() {
+        // addNativeImageSystemProperty only sets the flag for the native-image build JVM;
+        // the produced binary won't see it at runtime. Also expose it as a runtime system
+        // property so the DB2 JDBC driver's QuarkusWithJcc checks no-op TCP_KEEPIDLE etc.
+        return new SystemPropertyBuildItem("QuarkusWithJcc", "true");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
