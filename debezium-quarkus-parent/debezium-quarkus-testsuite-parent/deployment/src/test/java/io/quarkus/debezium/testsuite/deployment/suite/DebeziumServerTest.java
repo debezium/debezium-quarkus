@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.TimeUnit;
 
-import io.smallrye.config.ConfigSourceInterceptorFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -33,6 +32,7 @@ import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
 import io.quarkus.runtime.Application;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.config.ConfigSourceInterceptorFactory;
 
 @Tag(SuiteTags.DEFAULT)
 public class DebeziumServerTest {
@@ -48,8 +48,7 @@ public class DebeziumServerTest {
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(CapturingTest.CaptureProductsHandler.class, DebeziumServerInterceptorFactory.class, HeartbeatTest.class)
-                            .addAsServiceProvider(ConfigSourceInterceptorFactory.class, DebeziumServerInterceptorFactory.class)
-            )
+                            .addAsServiceProvider(ConfigSourceInterceptorFactory.class, DebeziumServerInterceptorFactory.class))
             .withConfigurationResource("debezium-server-testsuite.properties");
 
     @Test
