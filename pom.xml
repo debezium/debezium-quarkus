@@ -52,6 +52,8 @@
 
         <!-- Defines the Quarkus version used for all Debezium Quarkus Extensions -->
         <quarkus.version>3.34.1</quarkus.version>
+        <!-- the kafka clients override should be removed when quarkus is aligned to 4.2.0 -->
+        <kafka-clients.version>4.2.0</kafka-clients.version>
     </properties>
 
     <dependencyManagement>
@@ -62,6 +64,11 @@
                 <version>${version.debezium}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka-clients.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -35,10 +35,6 @@
             <artifactId>debezium-quarkus-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.debezium</groupId>
-            <artifactId>debezium-embedded</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
         </dependency>
