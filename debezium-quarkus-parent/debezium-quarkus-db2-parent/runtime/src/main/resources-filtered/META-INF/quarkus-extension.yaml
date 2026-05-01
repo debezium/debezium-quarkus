@@ -6,7 +6,7 @@ metadata:
     - "debezium"
     - "cdc"
     - "db2"
-  guide: "https://debezium.io/documentation/reference/${parsedVersion.majorVersion}.${parsedVersion.minorVersion}/integrations/debezium-quarkus-engine-extension.html"
+  guide: "https://debezium.io/documentation/reference/${parsedVersion.majorVersion}.${parsedVersion.minorVersion}/integrations/quarkus-debezium-engine-extension.html"
   categories:
     - "integration"
     - "cdc"
