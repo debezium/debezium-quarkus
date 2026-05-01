@@ -1,7 +1,7 @@
 # Debezium Extensions for Quarkus
 
 The following documentation explores how to **develop** a Quarkus extension that integrates Debezium.
-If you need some guidelines on how to **use** Quarkus extension for Debezium, please use the [official documentation](https://debezium.io/documentation/reference/stable/integrations/debezium-quarkus-engine-extension.html).
+If you need some guidelines on how to **use** Quarkus extension for Debezium, please use the [official documentation](https://debezium.io/documentation/reference/stable/integrations/quarkus-debezium-engine-extension.html).
 
 
 ## Before starting: The extension project
