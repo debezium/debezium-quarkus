@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.debezium.DebeziumException;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
@@ -59,11 +60,11 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
     @Override
     public void start(EngineManifest manifest) {
         if (!engineSuppliers.containsKey(manifest.id())) {
-            throw new IllegalDebeziumStateException("No engine found for manifest: " + manifest.id());
+            throw new DebeziumException("No engine found for manifest: " + manifest.id());
         }
 
         if (runners.containsKey(manifest.id())) {
-            throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
+            throw new DebeziumException("Engine already running for manifest: " + manifest.id());
         }
 
         Debezium debezium = engineSuppliers.get(manifest.id()).get();
@@ -75,7 +76,7 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         DebeziumRunner existing = runners.putIfAbsent(manifest.id(), runner);
         if (existing != null) {
             currentEngines.remove(manifest.id());
-            throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
+            throw new DebeziumException("Engine already running for manifest: " + manifest.id());
         }
 
         try {
@@ -93,7 +94,7 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
     public void stop(EngineManifest manifest) {
         DebeziumRunner runner = runners.remove(manifest.id());
         if (runner == null) {
-            throw new IllegalDebeziumStateException("No running engine found for manifest: " + manifest.id());
+            throw new DebeziumException("No running engine found for manifest: " + manifest.id());
         }
 
         try {

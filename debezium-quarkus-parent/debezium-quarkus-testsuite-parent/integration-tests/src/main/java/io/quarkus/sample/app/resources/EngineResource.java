@@ -14,10 +14,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
+import io.debezium.DebeziumException;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumStatus;
-import io.quarkus.debezium.engine.IllegalDebeziumStateException;
 import io.quarkus.sample.app.dto.EngineInformation;
 
 @Path("engine")
@@ -82,12 +82,12 @@ public class EngineResource {
         try {
             List<Debezium> running = registry.engines();
             if (running.isEmpty()) {
-                throw new IllegalDebeziumStateException("No running engines found");
+                throw new DebeziumException("No running engines found");
             }
             running.forEach(e -> registry.stop(e.manifest()));
             return Response.ok().build();
         }
-        catch (IllegalDebeziumStateException e) {
+        catch (DebeziumException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(e.getMessage())
                     .build();

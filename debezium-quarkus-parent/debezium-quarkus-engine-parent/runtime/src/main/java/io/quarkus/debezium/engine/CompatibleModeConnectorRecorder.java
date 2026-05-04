@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import io.debezium.DebeziumException;
 import io.debezium.connector.common.BaseSourceConnector;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.Debezium;
@@ -96,11 +97,11 @@ public class CompatibleModeConnectorRecorder {
                 public void start(EngineManifest manifest) {
                     Debezium debezium = engines.get(manifest.id());
                     if (debezium == null) {
-                        throw new IllegalDebeziumStateException("No engine found for manifest: " + manifest.id());
+                        throw new DebeziumException("No engine found for manifest: " + manifest.id());
                     }
                     DebeziumRunner runner = new DebeziumRunner(DebeziumThreadHandler.getThreadFactory(debezium), debezium);
                     if (runners.putIfAbsent(manifest.id(), runner) != null) {
-                        throw new IllegalDebeziumStateException("Engine already running for manifest: " + manifest.id());
+                        throw new DebeziumException("Engine already running for manifest: " + manifest.id());
                     }
                     runner.start();
                 }
@@ -109,7 +110,7 @@ public class CompatibleModeConnectorRecorder {
                 public void stop(EngineManifest manifest) {
                     DebeziumRunner runner = runners.remove(manifest.id());
                     if (runner == null) {
-                        throw new IllegalDebeziumStateException("No running engine found for manifest: " + manifest.id());
+                        throw new DebeziumException("No running engine found for manifest: " + manifest.id());
                     }
                     runner.shutdown();
                 }

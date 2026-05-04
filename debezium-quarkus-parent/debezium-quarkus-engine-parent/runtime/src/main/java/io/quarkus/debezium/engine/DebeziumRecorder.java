@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.debezium.DebeziumException;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
@@ -38,7 +39,7 @@ public class DebeziumRecorder {
                         try {
                             debeziumConnectorRegistry.stop(manifest);
                         }
-                        catch (IllegalDebeziumStateException e) {
+                        catch (DebeziumException e) {
                             // Engine may not have been started (e.g. autostart=false and never manually started)
                             LOGGER.warn("Engine was not running at shutdown for manifest: {}", manifest.id());
                         }

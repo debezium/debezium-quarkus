@@ -8,6 +8,8 @@ package io.debezium.runtime;
 
 import java.util.List;
 
+import io.debezium.DebeziumException;
+
 public interface DebeziumConnectorRegistry {
     /**
      *
@@ -38,6 +40,7 @@ public interface DebeziumConnectorRegistry {
      * Starts the {@link Debezium} engine assigned to the given {@link EngineManifest}.
      *
      * @param manifest the manifest identifying the engine to start
+     * @throws DebeziumException if no engine is registered for the manifest, or if the engine is already running
      */
     void start(EngineManifest manifest);
 
@@ -45,6 +48,7 @@ public interface DebeziumConnectorRegistry {
      * Stops the {@link Debezium} engine assigned to the given {@link EngineManifest}.
      *
      * @param manifest the manifest identifying the engine to stop
+     * @throws DebeziumException if no running engine is found for the manifest
      */
     void stop(EngineManifest manifest);
 }
