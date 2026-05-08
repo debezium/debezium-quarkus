@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.smallrye.config.ConfigSourceContext;
@@ -19,12 +20,13 @@ import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.common.MapBackedConfigSource;
 
+@StaticInitSafe
 public class DebeziumServerConfigSourceFactory implements ConfigSourceFactory {
+    private static final String DEBEZIUM_SOURCE_PREFIX = "debezium.source.";
+    private static final String QUARKUS_DEBEZIUM_PREFIX = "quarkus.debezium.";
+    private static final String QUARKUS_DATASOURCE_PREFIX = "quarkus.datasource.";
+    private static final String DEBEZIUM_DATASOURCE_PREFIX = DEBEZIUM_SOURCE_PREFIX + "datasource.";
 
-    static final String DEBEZIUM_SOURCE_PREFIX = "debezium.source.";
-    static final String QUARKUS_DEBEZIUM_PREFIX = "quarkus.debezium.";
-    static final String DEBEZIUM_DATASOURCE_PREFIX = "debezium.source.datasource.";
-    static final String QUARKUS_DATASOURCE_PREFIX = "quarkus.datasource.";
     static final int ORDINAL = 100;
 
     @Override
@@ -63,11 +65,11 @@ public class DebeziumServerConfigSourceFactory implements ConfigSourceFactory {
             return Collections.emptyList();
         }
 
-        return List.of(new DebeziumRemappedConfigSource(remapped));
+        return List.of(new DebeziumServerConfigSource(remapped));
     }
 
-    static class DebeziumRemappedConfigSource extends MapBackedConfigSource {
-        public DebeziumRemappedConfigSource(Map<String, String> properties) {
+    static class DebeziumServerConfigSource extends MapBackedConfigSource {
+        DebeziumServerConfigSource(Map<String, String> properties) {
             super("DebeziumServerConfigSource", properties, ORDINAL);
         }
     }
