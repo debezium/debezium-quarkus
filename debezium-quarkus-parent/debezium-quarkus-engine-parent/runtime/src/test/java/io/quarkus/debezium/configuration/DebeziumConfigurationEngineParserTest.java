@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.debezium.runtime.configuration.DevServicesConfig;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 
@@ -33,7 +33,7 @@ class DebeziumConfigurationEngineParserTest {
     @Test
     @DisplayName("should parse the unnamed default configuration")
     void shouldParseDefaultConfiguration() {
-        List<MultiEngineConfiguration> configurations = underTest.parse(new DebeziumEngineConfiguration() {
+        List<MultiEngineConfiguration> configurations = underTest.parse(new DebeziumEngineRuntimeConfiguration() {
             @Override
             public Map<String, String> defaultConfiguration() {
                 return DEBEZIUM_CONFIGURATION;
@@ -82,7 +82,7 @@ class DebeziumConfigurationEngineParserTest {
     @Test
     @DisplayName("should parse named default configuration")
     void shouldParseNamedDefaultConfiguration() {
-        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineConfiguration() {
+        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineRuntimeConfiguration() {
             @Override
             public Map<String, String> defaultConfiguration() {
                 return Map.of();
@@ -105,7 +105,7 @@ class DebeziumConfigurationEngineParserTest {
     @Test
     @DisplayName("should not contains two default configuration")
     void shouldNotContainsTwoDefaultConfiguration() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> underTest.parse(new DebeziumEngineConfiguration() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> underTest.parse(new DebeziumEngineRuntimeConfiguration() {
             @Override
             public Map<String, String> defaultConfiguration() {
                 return DEBEZIUM_CONFIGURATION;
@@ -128,7 +128,7 @@ class DebeziumConfigurationEngineParserTest {
     @Test
     @DisplayName("should parse multiple configurations")
     void shouldParseMultipleConfigurations() {
-        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineConfiguration() {
+        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineRuntimeConfiguration() {
             @Override
             public Map<String, String> defaultConfiguration() {
                 return Map.of();
@@ -154,7 +154,7 @@ class DebeziumConfigurationEngineParserTest {
     @Test
     @DisplayName("should parse multiple configurations with a default")
     void shouldParseMultipleWithDefaultConfigurations() {
-        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineConfiguration() {
+        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineRuntimeConfiguration() {
             @Override
             public Map<String, String> defaultConfiguration() {
                 return Map.of();
@@ -182,7 +182,7 @@ class DebeziumConfigurationEngineParserTest {
     @Test
     @DisplayName("should parse multiple configurations with an unnamed default")
     void shouldParseMultipleWithUnnamedDefaultConfigurations() {
-        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineConfiguration() {
+        List<MultiEngineConfiguration> actual = underTest.parse(new DebeziumEngineRuntimeConfiguration() {
             @Override
             public Map<String, String> defaultConfiguration() {
                 return DEBEZIUM_CONFIGURATION;
@@ -206,8 +206,8 @@ class DebeziumConfigurationEngineParserTest {
                 new MultiEngineConfiguration("default", DEBEZIUM_CONFIGURATION));
     }
 
-    private DebeziumEngineConfiguration.Capturing capturingWithEngineId(String products) {
-        return new DebeziumEngineConfiguration.Capturing() {
+    private DebeziumEngineRuntimeConfiguration.Capturing capturingWithEngineId(String products) {
+        return new DebeziumEngineRuntimeConfiguration.Capturing() {
             @Override
             public Optional<String> engineId() {
                 return Optional.of(products);
@@ -224,7 +224,7 @@ class DebeziumConfigurationEngineParserTest {
             }
 
             @Override
-            public Map<String, DebeziumEngineConfiguration.DeserializerConfiguration> deserializers() {
+            public Map<String, DebeziumEngineRuntimeConfiguration.DeserializerConfiguration> deserializers() {
                 return Map.of();
             }
 

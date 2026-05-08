@@ -15,20 +15,20 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 
 public class DebeziumConfigurationEngineParser {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumConfigurationEngineParser.class);
     public static final String CAPTURING = "capturing";
 
-    public List<MultiEngineConfiguration> parse(DebeziumEngineConfiguration globalConfiguration) {
+    public List<MultiEngineConfiguration> parse(DebeziumEngineRuntimeConfiguration globalConfiguration) {
         Map<String, Map<String, String>> configurations = globalConfiguration
                 .capturing()
                 .values()
                 .stream()
                 .filter(configuration -> configuration.engineId().isPresent())
-                .collect(Collectors.toMap(configuration -> configuration.engineId().get(), DebeziumEngineConfiguration.Capturing::configurations));
+                .collect(Collectors.toMap(configuration -> configuration.engineId().get(), DebeziumEngineRuntimeConfiguration.Capturing::configurations));
 
         /*
          * SmallRye Config in Quarkus is not able to map configuration on multiple fields if are used raw types
