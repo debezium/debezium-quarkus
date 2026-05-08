@@ -19,7 +19,7 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.quarkus.debezium.engine.CapturingEventDeserializer;
 import io.quarkus.debezium.engine.SourceRecordDeserializer;
 
@@ -30,13 +30,13 @@ public class CapturingEventDeserializerRegistryProducer {
 
     @Produces
     @Singleton
-    public CapturingEventDeserializerRegistry<SourceRecord, SourceRecord> produce(DebeziumEngineConfiguration configuration) {
+    public CapturingEventDeserializerRegistry<SourceRecord, SourceRecord> produce(DebeziumEngineRuntimeConfiguration configuration) {
         Map<String, CapturingEventDeserializer<?, SourceRecord, SourceRecord>> nestedDeserializers = configuration
                 .capturing()
                 .values()
                 .stream()
                 .flatMap(a -> a.deserializers().values().stream())
-                .collect(toMap(DebeziumEngineConfiguration.DeserializerConfiguration::destination,
+                .collect(toMap(DebeziumEngineRuntimeConfiguration.DeserializerConfiguration::destination,
                         config -> getDeserializer(config.deserializer())));
 
         Map<String, CapturingEventDeserializer<?, SourceRecord, SourceRecord>> deserializers = configuration

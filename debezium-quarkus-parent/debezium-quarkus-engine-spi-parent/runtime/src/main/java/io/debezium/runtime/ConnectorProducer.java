@@ -7,7 +7,7 @@
 package io.debezium.runtime;
 
 import io.debezium.common.annotation.Incubating;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 
 /**
  * The producer should be implemented by a Debezium Connector extended in Quarkus. It defines:
@@ -18,10 +18,10 @@ import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 public interface ConnectorProducer {
 
     /**
-     * given a set of {@link DebeziumEngineConfiguration} it creates a {@link DebeziumConnectorRegistry}
+     * given a set of {@link DebeziumEngineRuntimeConfiguration} it creates a {@link DebeziumConnectorRegistry}
      * that contains the related {@link Debezium} engines
      * @param debeziumEngineConfiguration
      * @return the registry that contains the {@link Debezium} engines
      */
-    DebeziumConnectorRegistry engine(DebeziumEngineConfiguration debeziumEngineConfiguration);
+    DebeziumConnectorRegistry engine(DebeziumEngineRuntimeConfiguration debeziumEngineConfiguration);
 }

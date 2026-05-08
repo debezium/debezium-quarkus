@@ -20,7 +20,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import io.debezium.runtime.Connector;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.debezium.runtime.configuration.QuarkusDatasourceConfiguration;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser;
@@ -39,7 +39,7 @@ public class AgroalParser {
         this.agroalInstances = agroalInstances;
     }
 
-    public List<MultiEngineConfiguration> parse(DebeziumEngineConfiguration debeziumEngineConfiguration, String dbKind, Connector connector) {
+    public List<MultiEngineConfiguration> parse(DebeziumEngineRuntimeConfiguration debeziumEngineConfiguration, String dbKind, Connector connector) {
         List<MultiEngineConfiguration> multiEngineConfigurations = engineParser.parse(debeziumEngineConfiguration);
 
         Map<String, AgroalDatasourceConfiguration> configurationMaps = agroalInstances
