@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -25,14 +24,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumStatus;
 import io.debezium.runtime.EngineManifest;
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
-import io.debezium.runtime.configuration.EngineConfigurationOverride;
-import io.quarkus.debezium.configuration.DebeziumServerConfiguration;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
 import io.quarkus.runtime.Application;
 import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.config.ConfigSourceInterceptorFactory;
+import io.smallrye.config.ConfigSourceFactory;
 
 @Tag(SuiteTags.DEFAULT)
 public class DebeziumServerTest {
@@ -47,8 +43,8 @@ public class DebeziumServerTest {
     static final QuarkusUnitTest setup = new QuarkusUnitTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CapturingTest.CaptureProductsHandler.class, DebeziumServerInterceptorFactory.class, HeartbeatTest.class)
-                            .addAsServiceProvider(ConfigSourceInterceptorFactory.class, DebeziumServerInterceptorFactory.class))
+                            .addClasses(CapturingTest.CaptureProductsHandler.class, HeartbeatTest.class)
+                            .addAsServiceProvider(ConfigSourceFactory.class, DebeziumServerConfigSourceFactory.class))
             .withConfigurationResource("debezium-server-testsuite.properties");
 
     @Test
@@ -76,15 +72,6 @@ public class DebeziumServerTest {
         Awaitility.given().await()
                 .atMost(TestSuiteConfigurations.TIMEOUT, TimeUnit.SECONDS)
                 .untilAsserted(() -> assertThat(heartbeatHandler.isInvoked()).isTrue());
-    }
-
-    @Singleton
-    static class DebeziumServerConfigurationOverride implements EngineConfigurationOverride {
-
-        @Override
-        public Class<? extends DebeziumEngineConfiguration> get() {
-            return DebeziumServerConfiguration.class;
-        }
     }
 
 }
