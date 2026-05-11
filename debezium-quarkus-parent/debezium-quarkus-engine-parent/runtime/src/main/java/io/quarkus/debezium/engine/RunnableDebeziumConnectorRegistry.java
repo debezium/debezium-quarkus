@@ -68,16 +68,16 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         }
 
         Debezium debezium = engineSuppliers.get(manifest.id()).get();
-        currentEngines.put(manifest.id(), debezium);
 
         DebeziumRunner runner = new DebeziumRunner(
                 DebeziumThreadHandler.getThreadFactory(debezium), debezium);
 
         DebeziumRunner existing = runners.putIfAbsent(manifest.id(), runner);
         if (existing != null) {
-            currentEngines.remove(manifest.id());
             throw new DebeziumException("Engine already running for manifest: " + manifest.id());
         }
+
+        currentEngines.put(manifest.id(), debezium);
 
         try {
             runner.start();
@@ -96,7 +96,6 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         if (runner == null) {
             throw new DebeziumException("No running engine found for manifest: " + manifest.id());
         }
-
         try {
             runner.shutdown();
         }

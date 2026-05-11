@@ -6,6 +6,8 @@
 package io.quarkus.sample.app.resources;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
@@ -14,7 +16,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
-import io.debezium.DebeziumException;
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumStatus;
@@ -51,9 +52,12 @@ public class EngineResource {
     @GET
     @Path("statuses")
     public List<DebeziumStatus> getStatuses() {
+        Set<String> runningIds = registry.engines().stream()
+                .map(e -> e.manifest().id())
+                .collect(Collectors.toSet());
         return registry.manifests().stream()
                 .map(m -> {
-                    Debezium engine = registry.get(m);
+                    Debezium engine = runningIds.contains(m.id()) ? registry.get(m) : null;
                     return engine != null ? engine.status() : new DebeziumStatus(DebeziumStatus.State.STOPPED);
                 })
                 .toList();
@@ -79,19 +83,14 @@ public class EngineResource {
     @POST
     @Path("stop")
     public Response stop() {
-        try {
-            List<Debezium> running = registry.engines();
-            if (running.isEmpty()) {
-                throw new DebeziumException("No running engines found");
-            }
-            running.forEach(e -> registry.stop(e.manifest()));
-            return Response.ok().build();
-        }
-        catch (DebeziumException e) {
+        List<Debezium> running = registry.engines();
+        if (running.isEmpty()) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(e.getMessage())
+                    .entity("No running engines found")
                     .build();
         }
+        running.forEach(e -> registry.stop(e.manifest()));
+        return Response.ok().build();
     }
 
     @POST
