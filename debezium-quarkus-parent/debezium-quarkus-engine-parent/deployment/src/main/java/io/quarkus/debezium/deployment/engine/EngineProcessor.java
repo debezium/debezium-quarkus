@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
@@ -55,7 +56,6 @@ import io.debezium.processors.spi.PostProcessor;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
-import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
 import io.debezium.runtime.events.Engine;
 import io.debezium.schema.SchemaTopicNamingStrategy;
@@ -363,7 +363,7 @@ public class EngineProcessor {
         debeziumEngineConfiguration.capturing().values()
                 .stream()
                 .flatMap(capturing -> capturing.deserializers().values().stream())
-                .map(DebeziumEngineRuntimeConfiguration.DeserializerConfiguration::deserializer)
+                .map(DebeziumEngineConfiguration.DeserializerConfiguration::deserializer)
                 .forEach(deserializer -> reflectiveClasses.produce(
                         ReflectiveClassBuildItem
                                 .builder(deserializer)
@@ -424,7 +424,7 @@ public class EngineProcessor {
                 .values()
                 .stream()
                 .filter(capturing -> capturing.destination().isPresent() && capturing.deserializer().isPresent())
-                .map(DebeziumEngineRuntimeConfiguration.Capturing::deserializer)
+                .map(DebeziumEngineConfiguration.Capturing::deserializer)
                 .flatMap(Optional::stream)
                 .toList();
     }
