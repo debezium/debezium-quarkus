@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
@@ -56,6 +55,7 @@ import io.debezium.processors.spi.PostProcessor;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
+import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
 import io.debezium.runtime.events.Engine;
 import io.debezium.schema.SchemaTopicNamingStrategy;
