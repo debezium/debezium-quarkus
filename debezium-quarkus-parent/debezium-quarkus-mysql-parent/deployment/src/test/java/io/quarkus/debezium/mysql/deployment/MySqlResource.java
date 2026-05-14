@@ -54,6 +54,9 @@ public class MySqlResource {
         System.setProperty("MYSQL_JDBC", MYSQL_CONTAINER.getJdbcUrl());
         System.setProperty("MYSQL_PASSWORD", MYSQL_CONTAINER.getPassword());
         System.setProperty("MYSQL_USERNAME", MYSQL_CONTAINER.getUsername());
+        System.setProperty("MYSQL_HOSTNAME", MYSQL_CONTAINER.getHost());
+        System.setProperty("MYSQL_PORT", MYSQL_CONTAINER.getMappedPort(3306).toString());
+        System.setProperty("MYSQL_DATABASE", "inventory");
     }
 
     public void stop() {

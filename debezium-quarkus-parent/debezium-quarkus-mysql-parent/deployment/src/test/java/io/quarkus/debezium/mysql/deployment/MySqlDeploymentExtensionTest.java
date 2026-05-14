@@ -12,7 +12,7 @@ import org.junit.platform.suite.api.SuiteDisplayName;
 import io.quarkus.debezium.testsuite.deployment.QuarkusDebeziumSqlExtensionTestSuite;
 
 @SuiteDisplayName("MySQL Debezium Extensions for Quarkus Test Suite")
-public class MySqlDeploymentExtensionTest implements QuarkusDebeziumNoSqlExtensionTestSuite {
+public class MySqlDeploymentExtensionTest implements QuarkusDebeziumSqlExtensionTestSuite {
 
     private static final MySqlResource mySqlResource = new MySqlResource();
 
