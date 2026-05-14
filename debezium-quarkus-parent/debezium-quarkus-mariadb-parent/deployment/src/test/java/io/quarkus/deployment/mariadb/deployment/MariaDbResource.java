@@ -39,6 +39,9 @@ public class MariaDbResource {
         System.setProperty("MARIADB_JDBC", MARIADB_CONTAINER.getJdbcUrl());
         System.setProperty("MARIADB_PASSWORD", MARIADB_CONTAINER.getPassword());
         System.setProperty("MARIADB_USERNAME", MARIADB_CONTAINER.getUsername());
+        System.setProperty("MARIADB_HOSTNAME", MARIADB_CONTAINER.getHost());
+        System.setProperty("MARIADB_PORT", MARIADB_CONTAINER.getMappedPort(3306).toString());
+        System.setProperty("MARIADB_DATABASE", "inventory");
     }
 
     public void stop() {
