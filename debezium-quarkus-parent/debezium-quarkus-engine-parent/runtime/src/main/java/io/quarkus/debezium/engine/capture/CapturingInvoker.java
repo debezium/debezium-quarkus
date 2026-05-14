@@ -8,6 +8,7 @@ package io.quarkus.debezium.engine.capture;
 
 import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvent;
+import io.debezium.runtime.CapturingEvents;
 
 /**
  *
@@ -43,5 +44,9 @@ public interface CapturingInvoker<T> {
 
     static String getAllDestinations(CapturingEvent event) {
         return event.engine() + "_" + Capturing.ALL;
+    }
+
+    static String getAllDestinations(CapturingEvents events) {
+        return events.engine() + "_" + Capturing.ALL;
     }
 }

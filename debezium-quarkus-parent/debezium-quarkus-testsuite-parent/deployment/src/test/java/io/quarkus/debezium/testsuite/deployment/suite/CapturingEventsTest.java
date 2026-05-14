@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testcontainers.shaded.org.awaitility.Awaitility.given;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.debezium.doc.FixFor;
 import io.debezium.runtime.BatchEvent;
 import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvents;
@@ -45,19 +47,37 @@ public class CapturingEventsTest {
                 .untilAsserted(() -> assertThat(captureProductsHandler.filteredEvent()).isEqualTo(2));
     }
 
+    @Test
+    @FixFor("debezium/dbz#1943")
+    @DisplayName("should call the default destination capture")
+    void shouldInvokeDefaultDestinationCapture() {
+        given().await()
+                .atMost(TestSuiteConfigurations.TIMEOUT, TimeUnit.SECONDS)
+                .untilAsserted(() -> assertThat(captureProductsHandler.isDefaultCapturing()).isTrue());
+    }
+
     @ApplicationScoped
     static class CaptureProductsHandler {
         private final AtomicInteger isCapturingFilteredEvent = new AtomicInteger(0);
+        private final AtomicBoolean isDefaultInvoked = new AtomicBoolean(false);
 
         @Capturing(destination = "topic.inventory.products")
         public void capture(CapturingEvents<BatchEvent> events) {
             isCapturingFilteredEvent.set(events.records().size());
         }
 
+        @Capturing
+        public void defaultCapture(CapturingEvents<BatchEvent> events) {
+            isDefaultInvoked.set(true);
+        }
+
         public int filteredEvent() {
             return isCapturingFilteredEvent.get();
         }
 
+        public boolean isDefaultCapturing() {
+            return isDefaultInvoked.get();
+        }
     }
 
 }
