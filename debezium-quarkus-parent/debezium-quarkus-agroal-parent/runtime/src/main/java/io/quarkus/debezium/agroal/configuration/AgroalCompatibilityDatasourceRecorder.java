@@ -16,6 +16,14 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
+/**
+ * A Quarkus {@link Recorder} that bridges Debezium's runtime database configuration into an
+ * {@link AgroalDatasourceConfiguration}, enabling Agroal-based datasource setup from Debezium
+ * connector properties.
+ *
+ * @see AgroalDatasourceConfiguration
+ * @see DebeziumEngineRuntimeConfiguration
+ */
 @Recorder
 public class AgroalCompatibilityDatasourceRecorder {
 
@@ -40,6 +48,13 @@ public class AgroalCompatibilityDatasourceRecorder {
         };
     }
 
+    /**
+     * Converts a Debezium connector name to the corresponding Quarkus {@link DatabaseKind} constant.
+     *
+     * @param name the connector name
+     * @return the matching {@link DatabaseKind} value
+     * @throws IllegalStateException if the name is not recognized
+     */
     private String convert(String name) {
         return switch (name) {
             case "postgresql" -> DatabaseKind.POSTGRESQL;

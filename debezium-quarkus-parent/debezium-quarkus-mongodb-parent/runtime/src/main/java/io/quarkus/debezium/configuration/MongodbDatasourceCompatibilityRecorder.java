@@ -17,6 +17,14 @@ import io.debezium.runtime.recorder.DatasourceRecorder;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
+/**
+ * A Quarkus {@link Recorder} that bridges Debezium's MongoDB runtime configuration into a
+ * {@link MultiEngineMongoDbDatasourceConfiguration}.
+ *
+ * @see DatasourceRecorder
+ * @see MultiEngineMongoDbDatasourceConfiguration
+ * @see DebeziumEngineRuntimeConfiguration
+ */
 @Recorder
 public class MongodbDatasourceCompatibilityRecorder implements DatasourceRecorder<MultiEngineMongoDbDatasourceConfiguration> {
 
