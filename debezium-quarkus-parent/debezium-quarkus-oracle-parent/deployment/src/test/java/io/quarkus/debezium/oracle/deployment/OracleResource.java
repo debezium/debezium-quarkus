@@ -61,6 +61,8 @@ public class OracleResource {
         System.setProperty("ORACLE_JDBC", ORACLE_CONTAINER.getJdbcUrl());
         System.setProperty("ORACLE_PASSWORD", ORACLE_CONTAINER.getPassword());
         System.setProperty("ORACLE_USERNAME", ORACLE_CONTAINER.getUsername());
+        System.setProperty("ORACLE_HOSTNAME", ORACLE_CONTAINER.getHost());
+        System.setProperty("ORACLE_PORT", ORACLE_CONTAINER.getMappedPort(1521).toString());
     }
 
     public void stop() {
