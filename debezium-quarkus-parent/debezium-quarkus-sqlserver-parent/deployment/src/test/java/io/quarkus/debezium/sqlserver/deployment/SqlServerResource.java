@@ -39,6 +39,9 @@ public class SqlServerResource {
         System.setProperty("SQLSERVER_JDBC", SQL_SERVER_CONTAINER.getJdbcUrl());
         System.setProperty("SQLSERVER_PASSWORD", SQL_SERVER_CONTAINER.getPassword());
         System.setProperty("SQLSERVER_USERNAME", SQL_SERVER_CONTAINER.getUsername());
+        System.setProperty("SQLSERVER_HOSTNAME", SQL_SERVER_CONTAINER.getHost());
+        System.setProperty("SQLSERVER_PORT", SQL_SERVER_CONTAINER.getMappedPort(1433).toString());
+        System.setProperty("SQLSERVER_DATABASE", "inventory");
     }
 
     public void stop() {
