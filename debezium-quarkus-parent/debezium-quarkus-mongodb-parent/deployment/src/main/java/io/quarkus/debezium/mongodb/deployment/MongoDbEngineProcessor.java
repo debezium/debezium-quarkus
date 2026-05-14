@@ -24,8 +24,10 @@ import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
 import io.debezium.schema.DefaultTopicNamingStrategy;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.debezium.configuration.MongoDbDatasourceRecorder;
+import io.quarkus.debezium.configuration.MongodbDatasourceCompatibilityRecorder;
 import io.quarkus.debezium.configuration.MultiEngineMongoDbDatasourceConfiguration;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
+import io.quarkus.debezium.deployment.engine.DebeziumCompatibility;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.engine.MongoDbEngineProducer;
@@ -74,9 +76,16 @@ public class MongoDbEngineProcessor implements QuarkusEngineProcessor<MultiEngin
         return MultiEngineMongoDbDatasourceConfiguration.class;
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = DebeziumCompatibility.DebeziumServerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void produceMongoDbDatasourceConfig(MongoDbDatasourceRecorder mongoDbDatasourceRecorder, BuildProducer<SyntheticBeanBuildItem> producer) {
+        produceQuarkusDatasourceConfiguration(mongoDbDatasourceRecorder.convert(null, false), producer, MONGODB);
+    }
+
+    @BuildStep(onlyIf = DebeziumCompatibility.DebeziumServerEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void produceMongoDbDatasourceConfigFromDebeziumServer(MongodbDatasourceCompatibilityRecorder mongoDbDatasourceRecorder,
+                                                                 BuildProducer<SyntheticBeanBuildItem> producer) {
         produceQuarkusDatasourceConfiguration(mongoDbDatasourceRecorder.convert(null, false), producer, MONGODB);
     }
 
