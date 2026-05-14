@@ -13,9 +13,12 @@ import jakarta.inject.Singleton;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.debezium.agroal.configuration.AgroalCompatibilityDatasourceRecorder;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceRecorder;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
+import io.quarkus.debezium.deployment.engine.DebeziumCompatibility;
+import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -31,7 +34,7 @@ public class AgroalEngineProcessor {
                 .build());
     }
 
-    @BuildStep
+    @BuildStep(onlyIfNot = DebeziumCompatibility.DebeziumServerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void produceAgroalDatasourceConfigurations(List<JdbcDataSourceBuildItem> jdbcDataSources,
                                                       AgroalDatasourceRecorder recorder,
@@ -43,5 +46,18 @@ public class AgroalEngineProcessor {
                 .setRuntimeInit()
                 .named(item.getDbKind() + item.getName())
                 .done()));
+    }
+
+    @BuildStep(onlyIf = DebeziumCompatibility.DebeziumServerEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void produceAgroalDatasourceConfigurationFromDebeziumServer(BuildProducer<SyntheticBeanBuildItem> producer,
+                                                                       List<DebeziumExtensionNameBuildItem> items,
+                                                                       AgroalCompatibilityDatasourceRecorder recorder) {
+        producer.produce(SyntheticBeanBuildItem
+                .configure(AgroalDatasourceConfiguration.class)
+                .scope(Singleton.class)
+                .supplier(recorder.get(items.get(0).getName()))
+                .setRuntimeInit()
+                .done());
     }
 }

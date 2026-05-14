@@ -9,7 +9,7 @@ import org.junit.platform.suite.api.AfterSuite;
 import org.junit.platform.suite.api.BeforeSuite;
 import org.junit.platform.suite.api.SuiteDisplayName;
 
-import io.quarkus.debezium.testsuite.deployment.QuarkusDebeziumNoSqlExtensionTestSuite;
+import io.quarkus.debezium.testsuite.deployment.QuarkusDebeziumSqlExtensionTestSuite;
 
 @SuiteDisplayName("MySQL Debezium Extensions for Quarkus Test Suite")
 public class MySqlDeploymentExtensionTest implements QuarkusDebeziumNoSqlExtensionTestSuite {
