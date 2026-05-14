@@ -33,6 +33,7 @@ public class CapturingEventsInvokerRegistryProducer {
             return null;
         }
 
-        return event -> handlers.get(event.engine() + "_" + event.destination());
+        return events -> handlers.getOrDefault(events.engine() + "_" + events.destination(),
+                handlers.get(CapturingInvoker.getAllDestinations(events)));
     }
 }
