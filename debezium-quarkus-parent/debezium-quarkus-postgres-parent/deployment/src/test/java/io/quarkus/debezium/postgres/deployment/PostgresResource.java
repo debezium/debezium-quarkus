@@ -19,13 +19,15 @@ public class PostgresResource {
     private static final DockerImageName POSTGRES_DOCKER_IMAGE_NAME = DockerImageName.parse(POSTGRES_IMAGE)
             .asCompatibleSubstituteFor("postgres");
 
+    public static final String DATABASE_NAME = "postgres";
+
     private static final PostgreSQLContainer<?> POSTGRES_CONTAINER = new PostgreSQLContainer<>(POSTGRES_DOCKER_IMAGE_NAME)
             .waitingFor(Wait.forLogMessage(".*database system is ready to accept connections.*", 2))
             .withEnv("POSTGRES_INITDB_ARGS", "-E UTF8")
             .withEnv("LANG", "en_US.utf8")
             .withUsername("postgres")
             .withPassword("postgres")
-            .withDatabaseName("postgres")
+            .withDatabaseName(DATABASE_NAME)
             .withInitScript("initialize-postgres-database.sql")
             .withStartupTimeout(Duration.ofSeconds(30));
 
@@ -35,6 +37,9 @@ public class PostgresResource {
         System.setProperty("POSTGRES_JDBC", POSTGRES_CONTAINER.getJdbcUrl());
         System.setProperty("POSTGRES_PASSWORD", POSTGRES_CONTAINER.getPassword());
         System.setProperty("POSTGRES_USERNAME", POSTGRES_CONTAINER.getUsername());
+        System.setProperty("POSTGRES_HOSTNAME", POSTGRES_CONTAINER.getHost());
+        System.setProperty("POSTGRES_PORT", POSTGRES_CONTAINER.getMappedPort(5432).toString());
+        System.setProperty("POSTGRES_DATABASE", DATABASE_NAME);
     }
 
     public void stop() {
