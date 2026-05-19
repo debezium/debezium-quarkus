@@ -16,6 +16,7 @@ import io.debezium.runtime.Debezium;
 
 class DebeziumRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumRunner.class);
+    private static final long SHUTDOWN_TIMEOUT_MS = 30_000L;
 
     private final ThreadFactory threadFactory;
     private final RunnableDebezium engine;
@@ -41,7 +42,11 @@ class DebeziumRunner {
         LOGGER.info("Shutting down Debezium Engine {}", debeziumThread.getName());
         try {
             engine.close();
-            debeziumThread.join();
+            debeziumThread.join(SHUTDOWN_TIMEOUT_MS);
+            if (debeziumThread.isAlive()) {
+                LOGGER.warn("Debezium Engine {} did not stop within {}ms; interrupting",
+                        debeziumThread.getName(), SHUTDOWN_TIMEOUT_MS);
+            }
         }
         catch (IOException e) {
             throw new RuntimeException("Impossible to shutdown Debezium Engine " + debeziumThread.getName(), e);

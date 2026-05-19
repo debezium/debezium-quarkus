@@ -72,8 +72,8 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         DebeziumRunner runner = new DebeziumRunner(
                 DebeziumThreadHandler.getThreadFactory(debezium), debezium);
 
-        DebeziumRunner existing = runners.putIfAbsent(manifest.id(), runner);
-        if (existing != null) {
+        if (runners.putIfAbsent(manifest.id(), runner) != null) {
+            closeQuietly(debezium, manifest);
             throw new DebeziumException("Engine already running for manifest: " + manifest.id());
         }
 
@@ -85,6 +85,7 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         catch (RuntimeException e) {
             runners.remove(manifest.id());
             currentEngines.remove(manifest.id());
+            closeQuietly(debezium, manifest);
             LOGGER.error("Failed to start engine for manifest: {}", manifest.id(), e);
             throw e;
         }
@@ -102,6 +103,17 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
         catch (RuntimeException e) {
             LOGGER.error("Failed to stop engine for manifest: {}", manifest.id(), e);
             throw e;
+        }
+    }
+
+    private static void closeQuietly(Debezium debezium, EngineManifest manifest) {
+        try {
+            ((RunnableDebezium) debezium).close();
+        }
+        catch (Exception closeError) {
+            // Log instead of rethrow: this runs on the failure path of start(), and the caller needs to seethe original start() failure,
+            // not a secondary close error that would shadow it.
+            LOGGER.warn("Failed to close engine after failed start for manifest: {}", manifest.id(), closeError);
         }
     }
 }
