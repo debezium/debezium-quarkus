@@ -103,7 +103,13 @@ public class CompatibleModeConnectorRecorder {
                     if (runners.putIfAbsent(manifest.id(), runner) != null) {
                         throw new DebeziumException("Engine already running for manifest: " + manifest.id());
                     }
-                    runner.start();
+                    try {
+                        runner.start();
+                    }
+                    catch (RuntimeException e) {
+                        runners.remove(manifest.id());
+                        throw e;
+                    }
                 }
 
                 @Override
