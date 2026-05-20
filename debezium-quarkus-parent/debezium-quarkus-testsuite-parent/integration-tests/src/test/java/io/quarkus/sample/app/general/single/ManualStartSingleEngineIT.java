@@ -101,7 +101,10 @@ public class ManualStartSingleEngineIT {
                         .extract().body().as(DebeziumStatus.class))
                 .isEqualTo(new DebeziumStatus(DebeziumStatus.State.STOPPED)));
 
-        RestAssured.given().post("/engine/start").then().statusCode(200);
+        // Engine-layer stop does not guarantee connector-specific external resources
+        // (e.g. SQL Server CDC capture cursors) have been released. Retry start until
+        // those resources become available again.
+        await().untilAsserted(() -> RestAssured.given().post("/engine/start").then().statusCode(200));
         await().untilAsserted(() -> assertThat(
                 get("/engine/status").then().statusCode(200)
                         .extract().body().as(DebeziumStatus.class))
