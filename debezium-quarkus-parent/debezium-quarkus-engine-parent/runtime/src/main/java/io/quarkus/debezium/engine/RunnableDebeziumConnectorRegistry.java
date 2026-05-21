@@ -59,21 +59,36 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
 
     @Override
     public void start(EngineManifest manifest) {
+        LOGGER.info("start({}) called; known engines={}, currently running={}",
+                manifest.id(), engineSuppliers.keySet(), runners.keySet());
+
         if (!engineSuppliers.containsKey(manifest.id())) {
+            LOGGER.warn("start({}) rejected: no engine registered for manifest. Known: {}",
+                    manifest.id(), engineSuppliers.keySet());
             throw new DebeziumException("No engine found for manifest: " + manifest.id());
         }
 
         if (runners.containsKey(manifest.id())) {
+            LOGGER.warn("start({}) rejected: engine already running for manifest", manifest.id());
             throw new DebeziumException("Engine already running for manifest: " + manifest.id());
         }
 
-        Debezium debezium = engineSuppliers.get(manifest.id()).get();
+        Debezium debezium;
+        try {
+            debezium = engineSuppliers.get(manifest.id()).get();
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("start({}) failed while creating Debezium instance ({}: {})",
+                    manifest.id(), e.getClass().getName(), e.getMessage(), e);
+            throw e;
+        }
 
         DebeziumRunner runner = new DebeziumRunner(
                 DebeziumThreadHandler.getThreadFactory(debezium), debezium);
 
         if (runners.putIfAbsent(manifest.id(), runner) != null) {
             closeQuietly(debezium, manifest);
+            LOGGER.warn("start({}) lost putIfAbsent race; treating as already running", manifest.id());
             throw new DebeziumException("Engine already running for manifest: " + manifest.id());
         }
 
@@ -81,27 +96,34 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
 
         try {
             runner.start();
+            LOGGER.info("start({}) success; runner thread launched", manifest.id());
         }
         catch (RuntimeException e) {
             runners.remove(manifest.id());
             currentEngines.remove(manifest.id());
             closeQuietly(debezium, manifest);
-            LOGGER.error("Failed to start engine for manifest: {}", manifest.id(), e);
+            LOGGER.error("Failed to start engine for manifest: {} ({}: {})",
+                    manifest.id(), e.getClass().getName(), e.getMessage(), e);
             throw e;
         }
     }
 
     @Override
     public void stop(EngineManifest manifest) {
+        LOGGER.info("stop({}) called; currently running={}", manifest.id(), runners.keySet());
         DebeziumRunner runner = runners.remove(manifest.id());
         if (runner == null) {
+            LOGGER.warn("stop({}) rejected: no running engine. Current runners: {}",
+                    manifest.id(), runners.keySet());
             throw new DebeziumException("No running engine found for manifest: " + manifest.id());
         }
         try {
             runner.shutdown();
+            LOGGER.info("stop({}) success", manifest.id());
         }
         catch (RuntimeException e) {
-            LOGGER.error("Failed to stop engine for manifest: {}", manifest.id(), e);
+            LOGGER.error("Failed to stop engine for manifest: {} ({}: {})",
+                    manifest.id(), e.getClass().getName(), e.getMessage(), e);
             throw e;
         }
     }

@@ -16,6 +16,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumStatus;
@@ -24,6 +27,8 @@ import io.quarkus.sample.app.dto.EngineInformation;
 @Path("engine")
 @ApplicationScoped
 public class EngineResource {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EngineResource.class);
 
     private final DebeziumConnectorRegistry registry;
 
@@ -66,40 +71,75 @@ public class EngineResource {
     @POST
     @Path("start")
     public Response start() {
-        registry.manifests().forEach(m -> registry.start(m));
-        return Response.ok().build();
+        LOGGER.info("[engine/start] called; running engines before start: {}",
+                registry.engines().stream().map(e -> e.manifest().id()).toList());
+        try {
+            registry.manifests().forEach(m -> registry.start(m));
+            LOGGER.info("[engine/start] success");
+            return Response.ok().build();
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("[engine/start] FAILED ({}: {})", e.getClass().getName(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @POST
     @Path("start/{id}")
     public Response start(@PathParam("id") String id) {
-        registry.manifests().stream()
-                .filter(m -> m.id().equals(id))
-                .findFirst()
-                .ifPresent(m -> registry.start(m));
-        return Response.ok().build();
+        LOGGER.info("[engine/start/{}] called", id);
+        try {
+            registry.manifests().stream()
+                    .filter(m -> m.id().equals(id))
+                    .findFirst()
+                    .ifPresent(m -> registry.start(m));
+            LOGGER.info("[engine/start/{}] success", id);
+            return Response.ok().build();
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("[engine/start/{}] FAILED ({}: {})", id, e.getClass().getName(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @POST
     @Path("stop")
     public Response stop() {
         List<Debezium> running = registry.engines();
+        LOGGER.info("[engine/stop] called; running engines: {}",
+                running.stream().map(e -> e.manifest().id()).toList());
         if (running.isEmpty()) {
+            LOGGER.info("[engine/stop] no running engines, returning 500");
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("No running engines found")
                     .build();
         }
-        running.forEach(e -> registry.stop(e.manifest()));
-        return Response.ok().build();
+        try {
+            running.forEach(e -> registry.stop(e.manifest()));
+            LOGGER.info("[engine/stop] success");
+            return Response.ok().build();
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("[engine/stop] FAILED ({}: {})", e.getClass().getName(), e.getMessage(), e);
+            throw e;
+        }
     }
 
     @POST
     @Path("stop/{id}")
     public Response stop(@PathParam("id") String id) {
-        registry.engines().stream()
-                .filter(e -> e.manifest().id().equals(id))
-                .findFirst()
-                .ifPresent(e -> registry.stop(e.manifest()));
-        return Response.ok().build();
+        LOGGER.info("[engine/stop/{}] called", id);
+        try {
+            registry.engines().stream()
+                    .filter(e -> e.manifest().id().equals(id))
+                    .findFirst()
+                    .ifPresent(e -> registry.stop(e.manifest()));
+            LOGGER.info("[engine/stop/{}] success", id);
+            return Response.ok().build();
+        }
+        catch (RuntimeException e) {
+            LOGGER.error("[engine/stop/{}] FAILED ({}: {})", id, e.getClass().getName(), e.getMessage(), e);
+            throw e;
+        }
     }
 }

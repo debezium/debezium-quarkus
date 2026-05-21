@@ -40,9 +40,13 @@ public class ManualStartSingleEngineIT {
     @AfterEach
     void stopEngine() {
         try {
-            RestAssured.given().post("/engine/stop");
+            var statusBefore = get("/engine/status").then().extract().body().asString();
+            System.out.println("[AfterEach] status before stop: " + statusBefore);
+            var stopResp = RestAssured.given().post("/engine/stop");
+            System.out.println("[AfterEach] /engine/stop -> " + stopResp.statusCode() + " body=" + stopResp.body().asString());
         }
-        catch (Exception ignored) {
+        catch (Exception e) {
+            System.out.println("[AfterEach] stop call threw: " + e.getClass().getName() + ": " + e.getMessage());
         }
     }
 
