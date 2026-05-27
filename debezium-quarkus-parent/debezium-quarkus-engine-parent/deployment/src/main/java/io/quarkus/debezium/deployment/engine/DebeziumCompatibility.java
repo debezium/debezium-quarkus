@@ -26,6 +26,12 @@ public interface DebeziumCompatibility {
     @WithDefault("false")
     boolean server();
 
+    /**
+     * global flag that disable compatibility mode for the engine
+     */
+    @WithDefault("false")
+    boolean compatibilityMode();
+
     class DebeziumServerEnabled implements BooleanSupplier {
 
         final DebeziumCompatibility debeziumCompatibility;
@@ -39,5 +45,19 @@ public interface DebeziumCompatibility {
             return debeziumCompatibility.server();
         }
     }
+
+    class DebeziumCompatibilityDisabled implements BooleanSupplier {
+        final DebeziumCompatibility debeziumCompatibility;
+
+        public DebeziumCompatibilityDisabled(DebeziumCompatibility debeziumCompatibility) {
+            this.debeziumCompatibility = debeziumCompatibility;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return debeziumCompatibility.compatibilityMode();
+        }
+    }
+
 
 }

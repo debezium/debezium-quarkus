@@ -206,7 +206,7 @@ public class EngineProcessor {
                 .build());
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = DebeziumCompatibility.DebeziumCompatibilityDisabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void produceRegistriesForCompatibilityMode(RecorderContext recorderContext,
                                                BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
