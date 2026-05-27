@@ -13,7 +13,7 @@ public interface CapturingEvents<V> {
     List<V> records();
 
     /**
-     * @return logical destination for which the event are intended
+     * @return logical destination for which the event are intended. null in case of unordered capturing, use instead {@link BatchEvent#destination }
      */
     String destination();
 

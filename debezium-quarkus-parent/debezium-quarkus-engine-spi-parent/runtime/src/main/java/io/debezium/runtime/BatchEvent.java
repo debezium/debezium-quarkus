@@ -10,8 +10,10 @@ import java.util.List;
 
 import org.apache.kafka.connect.source.SourceRecord;
 
+import io.debezium.common.annotation.Incubating;
 import io.debezium.engine.Header;
 
+@Incubating
 public interface BatchEvent {
 
     Object key();
@@ -21,6 +23,8 @@ public interface BatchEvent {
     Integer partition();
 
     SourceRecord record();
+
+    String destination();
 
     void commit();
 

@@ -25,6 +25,7 @@ import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine.RecordCommitter;
 import io.debezium.engine.Header;
 import io.debezium.runtime.BatchEvent;
+import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvents;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
 import io.quarkus.debezium.engine.capture.CapturingTombstoneEvents;
@@ -58,7 +59,92 @@ public class GeneralChangeConsumerProducer {
                                     RecordCommitter<ChangeEvent<Object, Object>> committer) {
                 logger.trace("receiving events for engine id {}", manifest.id());
 
-                Map<String, List<BatchEvent>> mappedBatchEvents = records.stream()
+                captureRecordsWithDefaultConsumer(records, committer);
+
+                captureOrderedRecordsWithConsumerByDestination(records, committer);
+            }
+
+            private void captureRecordsWithDefaultConsumer(List<ChangeEvent<Object, Object>> records, RecordCommitter<ChangeEvent<Object, Object>> committer) {
+                List<BatchEvent> batchEvents = records.stream()
+                        .map(record -> new BatchEvent() {
+                            @Override
+                            public Object key() {
+                                return record.key();
+                            }
+
+                            @Override
+                            public Object value() {
+                                return record.value();
+                            }
+
+                            @Override
+                            public Integer partition() {
+                                return record.partition();
+                            }
+
+                            @Override
+                            public SourceRecord record() {
+                                return ((EmbeddedEngineChangeEvent<Object, Object, Object>) record).sourceRecord();
+                            }
+
+                            @Override
+                            public String destination() {
+                                return record.destination();
+                            }
+
+                            @Override
+                            public <H> List<Header<H>> headers() {
+                                return record.headers();
+                            }
+
+                            @Override
+                            public void commit() {
+                                try {
+                                    committer.markProcessed(record);
+                                }
+                                catch (InterruptedException e) {
+                                    throw new DebeziumException(e);
+                                }
+                            }
+                        })
+                        .collect(Collectors.toList());
+
+                CapturingEvents<BatchEvent> capturingEvents = new CapturingEvents<>() {
+                    @Override
+                    public List<BatchEvent> records() {
+                        return batchEvents;
+                    }
+
+                    @Override
+                    public String destination() {
+                        return null;
+                    }
+
+                    @Override
+                    public String source() {
+                        return "NOT_AVAILABLE";
+                    }
+
+                    @Override
+                    public String engine() {
+                        return manifest.id();
+                    }
+                };
+
+                try {
+                    committer.markBatchFinished();
+                }
+                catch (InterruptedException e) {
+                    throw new DebeziumException(e);
+                }
+
+                registry.get(capturingEvents).capture(capturingEvents);
+            }
+
+            private void captureOrderedRecordsWithConsumerByDestination(List<ChangeEvent<Object, Object>> records,
+                                                                        RecordCommitter<ChangeEvent<Object, Object>> committer) {
+                Map<String, List<BatchEvent>> mappedBatchEvents = records
+                        .stream()
                         .map(record -> Map.entry(record.destination(), new BatchEvent() {
                             @Override
                             public Object key() {
@@ -81,6 +167,11 @@ public class GeneralChangeConsumerProducer {
                             }
 
                             @Override
+                            public String destination() {
+                                return record.destination();
+                            }
+
+                            @Override
                             public <H> List<Header<H>> headers() {
                                 return record.headers();
                             }
@@ -97,7 +188,7 @@ public class GeneralChangeConsumerProducer {
                         }))
                         .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
 
-                List<CapturingEvents<BatchEvent>> capturingEvents = mappedBatchEvents
+                List<CapturingEvents<BatchEvent>> orderedEvents = mappedBatchEvents
                         .entrySet()
                         .stream()
                         .map(entry -> new CapturingEvents<BatchEvent>() {
@@ -123,18 +214,10 @@ public class GeneralChangeConsumerProducer {
                         })
                         .collect(Collectors.toList());
 
-                capturingEvents
+                orderedEvents
                         .stream()
-                        .filter(events -> registry.get(events) != null)
-                        .map(events -> Map.entry(events, registry.get(events)))
-                        .forEach(entry -> entry.getValue().capture(entry.getKey()));
-
-                try {
-                    committer.markBatchFinished();
-                }
-                catch (InterruptedException e) {
-                    throw new DebeziumException(e);
-                }
+                        .filter(events -> !registry.get(events).destination().equals(Capturing.ALL))
+                        .forEach(events -> registry.get(events).capture(events));
             }
 
             @Override
