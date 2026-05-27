@@ -55,15 +55,17 @@ public class AgroalParser {
 
     private MultiEngineConfiguration enrichConfiguration(MultiEngineConfiguration engine, Map<String, ? extends QuarkusDatasourceConfiguration> collect,
                                                          Connector connector) {
-        HashMap<String, String> mutableMap = new HashMap<>(engine.configuration());
+        HashMap<String, String> configuration = new HashMap<>(engine.configuration());
 
-        mutableMap.compute(NOTIFICATION_ENABLED_CHANNELS.name(),
+        configuration.compute(NOTIFICATION_ENABLED_CHANNELS.name(),
                 (key, value) -> value == null ? channel.name() : value.concat("," + channel.name()));
 
-        mutableMap.putAll(getQuarkusDatasourceConfigurationByEngineId(engine.engineId(), collect).asDebezium());
-        mutableMap.put(CONNECTOR_CLASS.name(), connector.name());
+        Map<String, String> datasourceConfiguration = getQuarkusDatasourceConfigurationByEngineId(engine.engineId(), collect).asDebezium();
 
-        return new MultiEngineConfiguration(engine.engineId(), mutableMap);
+        datasourceConfiguration.forEach(configuration::putIfAbsent);
+        configuration.put(CONNECTOR_CLASS.name(), connector.name());
+
+        return new MultiEngineConfiguration(engine.engineId(), configuration);
     }
 
     private QuarkusDatasourceConfiguration getQuarkusDatasourceConfigurationByEngineId(String engineId, Map<String, ? extends QuarkusDatasourceConfiguration> collect) {
