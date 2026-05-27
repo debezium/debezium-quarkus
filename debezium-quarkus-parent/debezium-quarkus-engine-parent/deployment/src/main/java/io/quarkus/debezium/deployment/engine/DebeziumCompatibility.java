@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Debezium Compatibility configuration
@@ -29,7 +30,8 @@ public interface DebeziumCompatibility {
     /**
      * global flag that disable compatibility mode for the engine
      */
-    @WithDefault("false")
+    @WithDefault("true")
+    @WithName("compatibility-mode")
     boolean compatibilityMode();
 
     class DebeziumServerEnabled implements BooleanSupplier {
@@ -58,6 +60,5 @@ public interface DebeziumCompatibility {
             return debeziumCompatibility.compatibilityMode();
         }
     }
-
 
 }
