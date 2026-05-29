@@ -17,18 +17,36 @@ public class DynamicCapturingInvokerSupplier {
 
     public static final String BASE_NAME = "invoker";
 
-    public Supplier<CapturingInvoker> createInvoker(Class<?> mediatorClazz, Class<? extends CapturingInvoker> invokerClazz) {
+    public Supplier<CapturingInvoker> createInvoker(Class<?> mediatorClazz, Class<?> filterClazz, Class<? extends CapturingInvoker> invokerClazz) {
         try {
             Object mediator = Arc.container().instance(mediatorClazz).get();
-            CapturingInvoker instance = invokerClazz
-                    .getDeclaredConstructor(Object.class)
-                    .newInstance(mediator);
 
-            return () -> instance;
+            if (filterClazz != null) {
+                return createInvokerWithFilter(filterClazz, invokerClazz, mediator);
+            }
+
+            return createInvokerWithoutFilter(invokerClazz, mediator);
 
         }
         catch (InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static Supplier<CapturingInvoker> createInvokerWithoutFilter(Class<? extends CapturingInvoker> invokerClazz, Object mediator)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        CapturingInvoker instance = invokerClazz
+                .getDeclaredConstructor(Object.class)
+                .newInstance(mediator);
+        return () -> instance;
+    }
+
+    private static Supplier<CapturingInvoker> createInvokerWithFilter(Class<?> filterClazz, Class<? extends CapturingInvoker> invokerClazz, Object mediator)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        Object filter = Arc.container().instance(filterClazz).get();
+        CapturingInvoker instance = invokerClazz
+                .getDeclaredConstructor(Object.class, Object.class)
+                .newInstance(mediator, filter);
+        return () -> instance;
     }
 }

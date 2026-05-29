@@ -6,6 +6,8 @@
 
 package io.quarkus.debezium.engine.capture;
 
+import org.apache.kafka.connect.source.SourceRecord;
+
 import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvent;
 import io.debezium.runtime.CapturingEvents;
@@ -34,19 +36,49 @@ public interface CapturingInvoker<T> {
      */
     String engine();
 
-    static String generateKey(CapturingInvoker invoker) {
-        return invoker.engine() + "_" + invoker.destination();
+    /**
+     * Determines whether the given event should be captured by this invoker.
+     * Delegates to the {@link io.debezium.runtime.CapturingFilterStrategy} when a custom filter
+     * is configured via {@link io.debezium.runtime.Capturing#filter()}.
+     *
+     * @param event the captured event to evaluate
+     * @return {@code true} if the event should be captured, {@code false} to skip it
+     */
+    default boolean shouldCapture(CapturingEvent<SourceRecord, SourceRecord> event) {
+        return true;
     }
 
-    static String getKey(CapturingEvent event) {
-        return event.engine() + "_" + event.destination();
+    /**
+     * Indicates whether this invoker has a custom {@link io.debezium.runtime.CapturingFilterStrategy} configured
+     *
+     * @return {@code true} if a custom filter is configured, {@code false} otherwise
+     */
+    default boolean hasFilter() {
+        return false;
     }
 
-    static String getAllDestinations(CapturingEvent event) {
-        return event.engine() + "_" + Capturing.ALL;
+    static CapturingInvokerKey generateKey(CapturingInvoker invoker) {
+        return new CapturingInvokerKey(invoker.engine(), invoker.destination());
     }
 
-    static String getAllDestinations(CapturingEvents events) {
-        return events.engine() + "_" + Capturing.ALL;
+    static CapturingInvokerKey getKey(CapturingEvent event) {
+        return new CapturingInvokerKey(event.engine(), event.destination());
+    }
+
+    static CapturingInvokerKey getKey(CapturingEvents<Object> event) {
+        return new CapturingInvokerKey(event.engine(), event.destination());
+    }
+
+    static CapturingInvokerKey getAllDestinations(CapturingEvent event) {
+        return new CapturingInvokerKey(event.engine(), Capturing.ALL);
+    }
+
+    static CapturingInvokerKey getAllDestinations(CapturingEvents events) {
+        return new CapturingInvokerKey(events.engine(), Capturing.ALL);
+    }
+
+    record CapturingInvokerKey(
+            String engine,
+            String destination) {
     }
 }

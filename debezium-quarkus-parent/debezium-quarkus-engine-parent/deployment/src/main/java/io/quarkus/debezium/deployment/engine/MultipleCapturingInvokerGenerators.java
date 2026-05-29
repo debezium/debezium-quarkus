@@ -24,13 +24,13 @@ public class MultipleCapturingInvokerGenerators implements CapturingInvokerGener
     }
 
     @Override
-    public GeneratedClassMetaData generate(MethodInfo methodInfo, BeanInfo beanInfo) {
+    public GeneratedClassMetaData generate(MethodInfo methodInfo, BeanInfo beanInfo, BeanInfo filter) {
         return generators
                 .stream()
                 .filter(generator -> generator.isCompatible(methodInfo.parameters().getFirst().type()))
                 .findFirst()
-                .map(generator -> generator.generate(methodInfo, beanInfo))
-                .orElseGet(() -> defaultGenerator.generate(methodInfo, beanInfo));
+                .map(generator -> generator.generate(methodInfo, beanInfo, filter))
+                .orElseGet(() -> defaultGenerator.generate(methodInfo, beanInfo, filter));
     }
 
 }

@@ -24,5 +24,5 @@ public interface CapturingInvokerGenerator {
         return false;
     }
 
-    GeneratedClassMetaData generate(MethodInfo methodInfo, BeanInfo beanInfo);
+    GeneratedClassMetaData generate(MethodInfo methodInfo, BeanInfo beanInfo, BeanInfo filter);
 }
