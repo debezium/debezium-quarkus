@@ -54,6 +54,7 @@ import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
 import io.debezium.pipeline.signal.channels.process.InProcessSignalChannel;
 import io.debezium.pipeline.txmetadata.DefaultTransactionMetadataFactory;
 import io.debezium.processors.spi.PostProcessor;
+import io.debezium.runtime.CapturingFilterStrategy;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
@@ -94,6 +95,7 @@ import io.quarkus.debezium.engine.DebeziumRecorder;
 import io.quarkus.debezium.engine.DefaultStateHandler;
 import io.quarkus.debezium.engine.capture.CapturingEventInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistryProducer;
+import io.quarkus.debezium.engine.capture.CapturingFilterInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.CapturingInvoker;
 import io.quarkus.debezium.engine.capture.CapturingObjectInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.DynamicCapturingInvokerSupplier;
@@ -172,6 +174,7 @@ public class EngineProcessor {
                 .builder()
                 .addBeanClasses(
                         CapturingEventInvokerRegistryProducer.class,
+                        CapturingFilterInvokerRegistryProducer.class,
                         CapturingObjectInvokerRegistryProducer.class,
                         CapturingEventsInvokerRegistryProducer.class)
                 .setDefaultScope(DotNames.APPLICATION_SCOPED)
@@ -456,12 +459,32 @@ public class EngineProcessor {
                 .filter(item -> item.getDotName().equals(DebeziumDotNames.FIELD_FILTER_STRATEGY))
                 .collect(Collectors.toMap(item -> item.getBean().getProviderType(), item -> item));
 
+        Map<Type, DebeziumMediatorBuildItem> capturingFilterByClassName = mediatorBuildItems.stream()
+                .filter(item -> item.getDotName().equals(DebeziumDotNames.CAPTURING_FILTER_STRATEGY))
+                .collect(Collectors.toMap(item -> item.getBean().getProviderType(), item -> item));
+
         mediatorBuildItems.forEach(item -> {
             if (item.getDotName().equals(DebeziumDotNames.CAPTURING)) {
+                BeanInfo filter = Optional.ofNullable(item.getMethodInfo().annotation(DebeziumDotNames.CAPTURING).value("filter"))
+                        .map(AnnotationValue::asClass)
+                        .map(capturingFilterByClassName::get)
+                        .map(DebeziumMediatorBuildItem::getBean)
+                        .orElse(null);
+
+                if (filter != null) {
+                    var annotation = item.getMethodInfo().annotation(DebeziumDotNames.CAPTURING);
+                    if (annotation.value("destination") != null || annotation.value("engine") != null) {
+                        throw new IllegalArgumentException(
+                                "@Capturing on method " + item.getMethodInfo().declaringClass().name() + "."
+                                        + item.getMethodInfo().name()
+                                        + " cannot set 'destination' or 'engine' when 'filter' is specified");
+                    }
+                }
+
                 GeneratedClassMetaData metadata = capturingInvokerGenerator.generate(item.getMethodInfo(),
-                        item.getBean());
+                        item.getBean(), filter);
                 debeziumGeneratedInvokerBuildItemBuildProducer.produce(new DebeziumGeneratedInvokerBuildItem(metadata.generatedClassName(),
-                        metadata.mediator(), metadata.getShortIdentifier(), metadata.clazz()));
+                        metadata.mediator(), metadata.getShortIdentifier(), metadata.clazz(), filter));
                 reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(metadata.generatedClassName()).build());
             }
 
@@ -510,6 +533,7 @@ public class EngineProcessor {
                         .unremovable()
                         .supplier(dynamicCapturingInvokerSupplier.createInvoker(
                                 recorderContext.classProxy(item.getMediator().getImplClazz().name().toString()),
+                                item.getFilter() != null ? recorderContext.classProxy(item.getFilter().getImplClazz().name().toString()) : null,
                                 (Class<? extends CapturingInvoker<?>>) recorderContext.classProxy(item.getGeneratedClassName())))
                         .named(DynamicCapturingInvokerSupplier.BASE_NAME + item.getMediator().getImplClazz().name() + item.getId())
                         .done()));
@@ -581,6 +605,15 @@ public class EngineProcessor {
                 .stream()
                 .map(info -> new DebeziumMediatorBuildItem(info, null, DebeziumDotNames.FIELD_FILTER_STRATEGY))
                 .forEach(mediatorBuildItemBuildProducer::produce);
+
+        beanDiscoveryFinished
+                .beanStream()
+                .classBeans()
+                .filter(info -> info.getTypes().stream()
+                        .anyMatch(type -> type.name().equals(DebeziumDotNames.CAPTURING_FILTER_STRATEGY)))
+                .stream()
+                .map(info -> new DebeziumMediatorBuildItem(info, null, DebeziumDotNames.CAPTURING_FILTER_STRATEGY))
+                .forEach(mediatorBuildItemBuildProducer::produce);
     }
 
     @BuildStep
@@ -592,8 +625,10 @@ public class EngineProcessor {
     }
 
     @BuildStep
-    public UnremovableBeanBuildItem avoidRemovalIfNotReferenced() {
-        return UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class);
+    public List<UnremovableBeanBuildItem> avoidRemovalIfNotReferenced() {
+        return List.of(
+                UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class),
+                UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {

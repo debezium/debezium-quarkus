@@ -16,6 +16,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import io.debezium.runtime.CapturingEvents;
+import io.quarkus.debezium.engine.capture.CapturingInvoker.CapturingInvokerKey;
 
 public class CapturingEventsInvokerRegistryProducer {
 
@@ -25,7 +26,7 @@ public class CapturingEventsInvokerRegistryProducer {
     @Produces
     @Dependent
     public CapturingEventsInvokerRegistry<CapturingEvents<Object>> produce() {
-        Map<String, CapturingEventsInvoker> handlers = this.invokers
+        Map<CapturingInvokerKey, CapturingEventsInvoker> handlers = this.invokers
                 .stream()
                 .collect(Collectors.toMap(CapturingInvoker::generateKey, Function.identity()));
 
@@ -33,7 +34,7 @@ public class CapturingEventsInvokerRegistryProducer {
             return null;
         }
 
-        return events -> handlers.getOrDefault(events.engine() + "_" + events.destination(),
+        return events -> handlers.getOrDefault(CapturingInvoker.getKey(events),
                 handlers.get(CapturingInvoker.getAllDestinations(events)));
     }
 }

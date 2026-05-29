@@ -14,12 +14,18 @@ public final class DebeziumGeneratedInvokerBuildItem extends MultiBuildItem {
     private final BeanInfo mediator;
     private final String id;
     private final Class<?> clazz;
+    private final BeanInfo filter;
 
     public DebeziumGeneratedInvokerBuildItem(String generatedClassName, BeanInfo mediator, String id, Class<?> clazz) {
+        this(generatedClassName, mediator, id, clazz, null);
+    }
+
+    public DebeziumGeneratedInvokerBuildItem(String generatedClassName, BeanInfo mediator, String id, Class<?> clazz, BeanInfo filter) {
         this.generatedClassName = generatedClassName;
         this.mediator = mediator;
         this.id = id;
         this.clazz = clazz;
+        this.filter = filter;
     }
 
     public String getGeneratedClassName() {
@@ -36,5 +42,9 @@ public final class DebeziumGeneratedInvokerBuildItem extends MultiBuildItem {
 
     public Class<?> getClazz() {
         return clazz;
+    }
+
+    public BeanInfo getFilter() {
+        return filter;
     }
 }

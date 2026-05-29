@@ -12,6 +12,8 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.MethodInfo;
 
 import io.debezium.runtime.Capturing;
+import io.debezium.runtime.CapturingEvent;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.debezium.deployment.dotnames.DebeziumDotNames;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -75,4 +77,62 @@ interface GizmoBasedCapturingInvokerGenerator extends CapturingInvokerGenerator 
                             () -> engine.returnValue(engine.load(Capturing.DEFAULT)));
         }
     }
+
+    default void handleFilterMethod(BeanInfo filter, ClassCreator invoker, FieldDescriptor beanInstanceField) {
+        boolean hasFilter = filter != null;
+        createHasFilterMethod(invoker, hasFilter);
+        if (hasFilter) {
+            FieldDescriptor filterInstanceField = createFilterField(invoker, beanInstanceField, filter);
+            createShouldCaptureMethod(invoker, filter, filterInstanceField);
+        }
+    }
+
+    private FieldDescriptor createFilterField(ClassCreator invoker, FieldDescriptor beanInstanceField, BeanInfo filter) {
+        FieldDescriptor filterInstanceField = invoker.getFieldCreator("filter", filter
+                .getImplClazz()
+                .name()
+                .toString())
+                .setModifiers(Modifier.PRIVATE)
+                .getFieldDescriptor();
+
+        try (MethodCreator constructor = invoker.getMethodCreator("<init>", void.class, Object.class, Object.class)) {
+            constructor.setModifiers(Modifier.PUBLIC);
+            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), constructor.getThis());
+            ResultHandle constructorThis = constructor.getThis();
+
+            ResultHandle beanInstance = constructor.getMethodParam(0);
+            constructor.writeInstanceField(beanInstanceField, constructorThis, beanInstance);
+
+            ResultHandle filterInstance = constructor.getMethodParam(1);
+            constructor.writeInstanceField(filterInstanceField, constructorThis, filterInstance);
+
+            constructor.returnValue(null);
+        }
+
+        return filterInstanceField;
+    }
+
+    private void createHasFilterMethod(ClassCreator invoker, boolean hasFilter) {
+        try (MethodCreator method = invoker.getMethodCreator("hasFilter", boolean.class)) {
+            method.returnValue(method.load(hasFilter));
+        }
+    }
+
+    private void createShouldCaptureMethod(ClassCreator invoker, BeanInfo filter, FieldDescriptor filterInstanceField) {
+        try (MethodCreator shouldCapture = invoker.getMethodCreator("shouldCapture", boolean.class, CapturingEvent.class)) {
+            ResultHandle filterThis = shouldCapture.getThis();
+            ResultHandle delegate = shouldCapture.readInstanceField(filterInstanceField, filterThis);
+            ResultHandle event = shouldCapture.getMethodParam(0);
+
+            MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(
+                    filter.getImplClazz().toString(),
+                    "shouldCapture",
+                    boolean.class,
+                    CapturingEvent.class);
+
+            ResultHandle result = shouldCapture.invokeVirtualMethod(methodDescriptor, delegate, event);
+            shouldCapture.returnValue(result);
+        }
+    }
+
 }
