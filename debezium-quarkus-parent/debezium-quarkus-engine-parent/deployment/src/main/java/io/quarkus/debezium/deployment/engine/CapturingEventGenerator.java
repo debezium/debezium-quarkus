@@ -41,10 +41,11 @@ public class CapturingEventGenerator implements GizmoBasedCapturingInvokerGenera
     }
 
     /**
-     * it generates concrete classes based on the {@link io.quarkus.debezium.engine.capture.CapturingEventInvoker} interface using gizmo:
+     * it generates concrete classes based on the {@link CapturingEventInvoker} interface using gizmo:
      * <p>
      * public class GeneratedCapturingInvoker {
      * private final Object beanInstance;
+     * private final Object filter;
      * <p>
      * void capture(CapturingEvent<SourceRecord> event) {
      * beanInstance.method(event);
@@ -54,10 +55,11 @@ public class CapturingEventGenerator implements GizmoBasedCapturingInvokerGenera
      *
      * @param methodInfo
      * @param beanInfo
+     * @param filter
      * @return
      */
     @Override
-    public GeneratedClassMetaData generate(MethodInfo methodInfo, BeanInfo beanInfo) {
+    public GeneratedClassMetaData generate(MethodInfo methodInfo, BeanInfo beanInfo, BeanInfo filter) {
         String name = generateClassName(beanInfo, methodInfo);
 
         try (ClassCreator invoker = ClassCreator.builder()
@@ -84,6 +86,7 @@ public class CapturingEventGenerator implements GizmoBasedCapturingInvokerGenera
             }
 
             createEngineMethod(methodInfo, invoker);
+            handleFilterMethod(filter, invoker, beanInstanceField);
 
             return new GeneratedClassMetaData(UUID.randomUUID(), name.replace('/', '.'), beanInfo, CapturingEventInvoker.class);
         }

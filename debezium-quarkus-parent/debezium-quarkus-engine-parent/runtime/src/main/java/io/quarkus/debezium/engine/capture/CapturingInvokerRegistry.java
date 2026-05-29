@@ -6,6 +6,8 @@
 
 package io.quarkus.debezium.engine.capture;
 
+import java.util.Optional;
+
 import io.debezium.runtime.CapturingEvent;
 
 /**
@@ -13,5 +15,5 @@ import io.debezium.runtime.CapturingEvent;
  * @param <T> the event
  */
 public interface CapturingInvokerRegistry<T> {
-    CapturingInvoker<T> get(CapturingEvent identifier);
+    Optional<CapturingInvoker<T>> get(CapturingEvent identifier);
 }

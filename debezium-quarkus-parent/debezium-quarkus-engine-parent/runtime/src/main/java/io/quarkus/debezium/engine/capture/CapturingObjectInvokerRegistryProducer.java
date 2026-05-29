@@ -6,7 +6,11 @@
 
 package io.quarkus.debezium.engine.capture;
 
+import static io.quarkus.debezium.engine.capture.CapturingInvoker.CapturingInvokerKey;
+import static io.quarkus.debezium.engine.capture.CapturingInvoker.getKey;
+
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -28,11 +32,11 @@ public class CapturingObjectInvokerRegistryProducer {
                 .stream()
                 .toList());
 
-        Map<String, CapturingObjectInvoker> invokers = this.invokers
+        Map<CapturingInvokerKey, CapturingObjectInvoker> invokers = this.invokers
                 .stream()
                 .collect(Collectors.toMap(CapturingInvoker::generateKey, Function.identity()));
 
-        return event -> invokers.get(CapturingInvoker.getKey(event));
+        return event -> Optional.ofNullable(invokers.get(getKey(event)));
     }
 
 }

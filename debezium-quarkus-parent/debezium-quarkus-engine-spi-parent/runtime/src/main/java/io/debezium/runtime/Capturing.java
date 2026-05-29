@@ -12,6 +12,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import io.debezium.common.annotation.Incubating;
+import io.debezium.runtime.CapturingFilterStrategy.DefaultCapturingFilterStrategy;
 import io.debezium.runtime.configuration.QuarkusDatasourceConfiguration;
 
 @Target(ElementType.METHOD)
@@ -31,4 +32,9 @@ public @interface Capturing {
      * the engine assigned
      */
     String engine() default DEFAULT;
+
+    /**
+     * class instance that implements {@link CapturingFilterStrategy}
+     */
+    Class<? extends CapturingFilterStrategy> filter() default DefaultCapturingFilterStrategy.class;
 }

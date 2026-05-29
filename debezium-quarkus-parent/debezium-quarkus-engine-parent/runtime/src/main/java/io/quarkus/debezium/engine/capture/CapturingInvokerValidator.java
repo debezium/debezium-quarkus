@@ -9,16 +9,20 @@ package io.quarkus.debezium.engine.capture;
 import java.util.Collections;
 import java.util.List;
 
+import io.quarkus.debezium.engine.capture.CapturingInvoker.CapturingInvokerKey;
+
 class CapturingInvokerValidator<T extends CapturingInvoker<?>> {
     void validate(List<T> invokers) {
-        List<String> destinations = invokers
+        List<CapturingInvokerKey> keys = invokers
                 .stream()
-                .map(CapturingInvoker::destination)
+                .map(CapturingInvoker::generateKey)
                 .toList();
 
         invokers.forEach(invoker -> {
-            if (Collections.frequency(destinations, invoker.destination()) > 1) {
-                throw new IllegalArgumentException("Two or more methods are annotated with @Capturing and have the same destination " + invoker.destination());
+            if (Collections.frequency(keys, CapturingInvoker.generateKey(invoker)) > 1) {
+                throw new IllegalArgumentException(
+                        "Two or more methods are annotated with @Capturing and have the same destination '"
+                                + invoker.destination() + "' and engine '" + invoker.engine() + "'");
             }
         });
     }
