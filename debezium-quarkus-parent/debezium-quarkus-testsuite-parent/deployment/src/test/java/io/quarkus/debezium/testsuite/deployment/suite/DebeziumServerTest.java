@@ -43,7 +43,7 @@ public class DebeziumServerTest {
     static final QuarkusUnitTest setup = new QuarkusUnitTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CapturingTest.CaptureProductsHandler.class, HeartbeatTest.class)
+                            .addClasses(HeartbeatTest.class)
                             .addAsServiceProvider(ConfigSourceFactory.class, DebeziumServerConfigSourceFactory.class))
             .withConfigurationResource("debezium-server-testsuite.properties");
 
