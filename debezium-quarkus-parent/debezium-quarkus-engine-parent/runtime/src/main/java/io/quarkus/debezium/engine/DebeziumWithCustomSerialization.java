@@ -9,6 +9,7 @@ package io.quarkus.debezium.engine;
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumWithCustomSerialization.class.getName());
     private final Map<String, String> configuration;
-    private final DebeziumEngine<?> engine;
+    private final Supplier<DebeziumEngine<?>> engine;
     private final Connector connector;
     private final StateHandler stateHandler;
     private final EngineManifest engineManifest;
@@ -40,25 +41,27 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
         this.connector = connector;
         this.stateHandler = stateHandler;
         this.engineManifest = engineManifest;
-        LOGGER.trace("Creating Debezium with Custom Serialization for engine {}", engineManifest);
-        this.engine = DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
-                debeziumSerialization.getValueFormat(),
-                debeziumSerialization.getHeaderFormat(),
-                ConvertingAsyncEngineBuilderFactory.class.getName())
-                .using(Configuration.empty()
-                        .withSystemProperties(Function.identity())
-                        .edit()
-                        .with(Configuration.from(configuration))
-                        .build().asProperties())
-                .using(this.stateHandler.connectorCallback(engineManifest, this))
-                .using(this.stateHandler.completionCallback(engineManifest, this))
-                .notifying(batchConsumer)
-                .build();
+        this.engine = () -> {
+            LOGGER.trace("Creating Debezium with Custom Serialization for engine {}", engineManifest);
+            return DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
+                            debeziumSerialization.getValueFormat(),
+                            debeziumSerialization.getHeaderFormat(),
+                            ConvertingAsyncEngineBuilderFactory.class.getName())
+                    .using(Configuration.empty()
+                            .withSystemProperties(Function.identity())
+                            .edit()
+                            .with(Configuration.from(configuration))
+                            .build().asProperties())
+                    .using(this.stateHandler.connectorCallback(engineManifest, this))
+                    .using(this.stateHandler.completionCallback(engineManifest, this))
+                    .notifying(batchConsumer)
+                    .build();
+        };
     }
 
     @Override
     public DebeziumEngine.Signaler signaler() {
-        return engine.getSignaler();
+        return engine.get().getSignaler();
     }
 
     @Override
@@ -82,10 +85,10 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
     }
 
     protected void run() {
-        this.engine.run();
+        this.engine.get().run();
     }
 
     protected void close() throws IOException {
-        this.engine.close();
+        this.engine.get().close();
     }
 }
