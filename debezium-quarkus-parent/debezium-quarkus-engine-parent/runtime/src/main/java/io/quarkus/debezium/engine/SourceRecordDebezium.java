@@ -32,7 +32,8 @@ class SourceRecordDebezium extends RunnableDebezium {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceRecordDebezium.class.getName());
     private final Map<String, String> configuration;
-    private final Supplier<DebeziumEngine<?>> engine;
+    private final Supplier<DebeziumEngine<?>> engineInstance;
+    private DebeziumEngine<?> engine;
     private final Connector connector;
     private final StateHandler stateHandler;
     private final EngineManifest engineManifest;
@@ -44,7 +45,7 @@ class SourceRecordDebezium extends RunnableDebezium {
                          EngineManifest engineManifest) {
         this.configuration = configuration;
         this.stateHandler = stateHandler;
-        this.engine = ()-> {
+        this.engineInstance = ()-> {
             LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
             return DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()
@@ -70,7 +71,7 @@ class SourceRecordDebezium extends RunnableDebezium {
         this.connector = connector;
         this.stateHandler = stateHandler;
         this.engineManifest = engineManifest;
-        this.engine = ()-> {
+        this.engineInstance = ()-> {
             LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
             return DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()
@@ -87,7 +88,7 @@ class SourceRecordDebezium extends RunnableDebezium {
 
     @Override
     public Signaler signaler() {
-        return engine.get().getSignaler();
+        return getEngine().getSignaler();
     }
 
     @Override
@@ -111,11 +112,20 @@ class SourceRecordDebezium extends RunnableDebezium {
     }
 
     protected void run() {
-        this.engine.get().run();
+        this.engine = this.engineInstance.get();
+        getEngine().run();
     }
 
     protected void close() throws IOException {
-        this.engine.get().close();
+        getEngine().close();
+    }
+
+    private DebeziumEngine<?> getEngine() {
+        if (engine == null) {
+            throw new IllegalStateException("Debezium Engine is not started");
+        }
+
+        return engine;
     }
 
 }
