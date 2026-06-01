@@ -8,6 +8,7 @@ package io.quarkus.debezium.agroal.deployment;
 
 import java.util.List;
 
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import jakarta.inject.Singleton;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -53,11 +54,11 @@ public class AgroalEngineProcessor {
     public void produceAgroalDatasourceConfigurationFromDebeziumServer(BuildProducer<SyntheticBeanBuildItem> producer,
                                                                        List<DebeziumExtensionNameBuildItem> items,
                                                                        AgroalCompatibilityDatasourceRecorder recorder) {
-        producer.produce(SyntheticBeanBuildItem
+        items.forEach(item -> producer.produce(SyntheticBeanBuildItem
                 .configure(AgroalDatasourceConfiguration.class)
                 .scope(Singleton.class)
                 .supplier(recorder.get(items.get(0).getName()))
                 .setRuntimeInit()
-                .done());
+                .done()));
     }
 }
