@@ -26,7 +26,8 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DebeziumWithCustomSerialization.class.getName());
     private final Map<String, String> configuration;
-    private final Supplier<DebeziumEngine<?>> engine;
+    private final Supplier<DebeziumEngine<?>> engineInstance;
+    private DebeziumEngine<?> engine;
     private final Connector connector;
     private final StateHandler stateHandler;
     private final EngineManifest engineManifest;
@@ -41,12 +42,12 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
         this.connector = connector;
         this.stateHandler = stateHandler;
         this.engineManifest = engineManifest;
-        this.engine = () -> {
+        this.engineInstance = () -> {
             LOGGER.trace("Creating Debezium with Custom Serialization for engine {}", engineManifest);
             return DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
-                            debeziumSerialization.getValueFormat(),
-                            debeziumSerialization.getHeaderFormat(),
-                            ConvertingAsyncEngineBuilderFactory.class.getName())
+                    debeziumSerialization.getValueFormat(),
+                    debeziumSerialization.getHeaderFormat(),
+                    ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()
                             .withSystemProperties(Function.identity())
                             .edit()
@@ -61,7 +62,7 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
 
     @Override
     public DebeziumEngine.Signaler signaler() {
-        return engine.get().getSignaler();
+        return getEngine().getSignaler();
     }
 
     @Override
@@ -85,10 +86,18 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
     }
 
     protected void run() {
-        this.engine.get().run();
+        this.engine = this.engineInstance.get();
+        getEngine().run();
     }
 
     protected void close() throws IOException {
-        this.engine.get().close();
+        getEngine().close();
+    }
+
+    private DebeziumEngine<?> getEngine() {
+        if (engine == null) {
+            throw new IllegalStateException("");
+        }
+        return engine;
     }
 }
