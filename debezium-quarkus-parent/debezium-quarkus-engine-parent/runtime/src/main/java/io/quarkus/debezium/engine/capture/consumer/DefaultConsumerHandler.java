@@ -142,7 +142,7 @@ public final class DefaultConsumerHandler implements ChangeConsumerHandler {
 
     private final class RoutedQuarkusChangeConsumer implements DestinationChangeConsumer {
 
-        private static final Logger logger = LoggerFactory.getLogger(RoutedQuarkusChangeConsumer.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(RoutedQuarkusChangeConsumer.class);
         private final List<DestinationChangeConsumer> consumers;
         private final Optional<CapturingTombstoneEvents> capturingTombstoneEvents;
 
@@ -154,7 +154,7 @@ public final class DefaultConsumerHandler implements ChangeConsumerHandler {
 
         @Override
         public void handle(EngineManifest manifest, List<ChangeEvent<Object, Object>> records, DebeziumEngine.RecordCommitter<ChangeEvent<Object, Object>> committer) {
-            logger.trace("receiving events for engine id {}", manifest.id());
+            LOGGER.trace("receiving events for engine id {}", manifest.id());
 
             try {
                 for (DestinationChangeConsumer consumer : consumers) {
@@ -256,6 +256,7 @@ public final class DefaultConsumerHandler implements ChangeConsumerHandler {
                 committer.markProcessed(record);
             }
             catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new DebeziumException(e);
             }
         }
