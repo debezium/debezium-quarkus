@@ -49,13 +49,18 @@ public class QuarkusHeartbeatEmitter implements Heartbeat {
 
     @Override
     public void emit(Map<String, ?> partition, OffsetContext offset) {
-        DefaultEngine.Literal.selectDefault(heartbeat.select(Engine.Literal.of(context().manifest().id())),
-                context().manifest())
-                .fire(new DebeziumHeartbeat(
-                        this.registries.getFirst().engines().getFirst().connector(),
-                        this.registries.getFirst().engines().getFirst().status(),
-                        partition,
-                        offset.getOffset()));
+        this.registries
+                .stream()
+                .flatMap(registry -> registry.engines().stream())
+                .filter(engine -> engine.manifest().equals(context().manifest()))
+                .map(engine -> Map.entry(engine, DefaultEngine.Literal.selectDefault(
+                        heartbeat.select(Engine.Literal.of(engine.manifest().id())), engine.manifest())))
+                .forEach(entry -> entry.getValue().fire(
+                        new DebeziumHeartbeat(
+                                entry.getKey().connector(),
+                                entry.getKey().status(),
+                                partition,
+                                offset.getOffset())));
     }
 
     @Override

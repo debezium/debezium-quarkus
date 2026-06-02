@@ -7,11 +7,13 @@
 package io.quarkus.debezium.heartbeat;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.event.Event;
@@ -60,7 +62,28 @@ class QuarkusHeartbeatEmitterTest {
         verify(event).fire(new DebeziumHeartbeat(CONNECTOR, DEBEZIUM_STATUS, PARTITION, Map.of("offset", "value")));
     }
 
+    @Test
+    @DisplayName("should only fire event for the engine matching the current thread context")
+    void shouldOnlyFireForEngineMatchingContext() {
+        Connector otherConnector = new Connector("other.connector");
+        DebeziumStatus otherStatus = new DebeziumStatus(DebeziumStatus.State.CREATING);
+
+        Debezium matching = generate("testing", DEBEZIUM_STATUS, CONNECTOR);
+        Debezium other = generate("alternative", otherStatus, otherConnector);
+
+        when(registry.engines()).thenReturn(List.of(matching, other));
+
+        underTest.emit(PARTITION, OFFSET);
+
+        verify(event).fire(new DebeziumHeartbeat(CONNECTOR, DEBEZIUM_STATUS, PARTITION, Map.of("offset", "value")));
+        verify(event, never()).fire(new DebeziumHeartbeat(otherConnector, otherStatus, PARTITION, Map.of("offset", "value")));
+    }
+
     public Debezium generate(DebeziumStatus status) {
+        return generate("testing", status, CONNECTOR);
+    }
+
+    public Debezium generate(String manifestId, DebeziumStatus status, Connector connector) {
         return new Debezium() {
             @Override
             public DebeziumEngine.Signaler signaler() {
@@ -79,12 +102,12 @@ class QuarkusHeartbeatEmitterTest {
 
             @Override
             public Connector connector() {
-                return CONNECTOR;
+                return connector;
             }
 
             @Override
             public EngineManifest manifest() {
-                return null;
+                return new EngineManifest(manifestId);
             }
         };
     }
