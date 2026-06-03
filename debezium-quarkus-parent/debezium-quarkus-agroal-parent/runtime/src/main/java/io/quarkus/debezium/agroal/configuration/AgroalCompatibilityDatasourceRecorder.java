@@ -6,8 +6,10 @@
 
 package io.quarkus.debezium.agroal.configuration;
 
+import static io.debezium.config.CommonConnectorConfig.CONNECTOR_CLASS;
 import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 import io.debezium.jdbc.JdbcConfiguration;
@@ -33,18 +35,23 @@ public class AgroalCompatibilityDatasourceRecorder {
         this.debeziumEngineConfigurationRuntimeValue = debeziumEngineConfigurationRuntimeValue;
     }
 
-    public Supplier<AgroalDatasourceConfiguration> get(String name) {
+    public Supplier<AgroalDatasourceConfiguration> get(List<Datasource> datasourceList) {
         return () -> {
             DebeziumEngineRuntimeConfiguration configuration = debeziumEngineConfigurationRuntimeValue.getValue();
-            return new AgroalDatasourceConfiguration(
-                    configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name()),
-                    configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.USER.name()),
-                    configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PASSWORD.name()),
-                    configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name()),
-                    configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name()),
-                    true,
-                    "default",
-                    convert(name));
+
+            return datasourceList.stream()
+                    .filter(datasource -> datasource.connector.getName().equals(configuration.defaultConfiguration().get(CONNECTOR_CLASS)))
+                    .findFirst()
+                    .map(item -> new AgroalDatasourceConfiguration(
+                            configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name()),
+                            configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.USER.name()),
+                            configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PASSWORD.name()),
+                            configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name()),
+                            configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name()),
+                            true,
+                            "default",
+                            convert(item.name)))
+                    .orElseThrow();
         };
     }
 
@@ -66,4 +73,8 @@ public class AgroalCompatibilityDatasourceRecorder {
             default -> throw new IllegalStateException("Unexpected value: " + name);
         };
     }
+
+    public record Datasource(String name, Class<?> connector) {
+    }
+
 }

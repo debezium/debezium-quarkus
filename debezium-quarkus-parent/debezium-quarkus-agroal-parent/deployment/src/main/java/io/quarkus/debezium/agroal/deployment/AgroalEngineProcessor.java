@@ -8,7 +8,6 @@ package io.quarkus.debezium.agroal.deployment;
 
 import java.util.List;
 
-import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import jakarta.inject.Singleton;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -19,7 +18,7 @@ import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceRecorder;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
 import io.quarkus.debezium.deployment.engine.DebeziumCompatibility;
-import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -52,13 +51,18 @@ public class AgroalEngineProcessor {
     @BuildStep(onlyIf = DebeziumCompatibility.DebeziumServerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void produceAgroalDatasourceConfigurationFromDebeziumServer(BuildProducer<SyntheticBeanBuildItem> producer,
-                                                                       List<DebeziumExtensionNameBuildItem> items,
+                                                                       List<DebeziumConnectorBuildItem> items,
                                                                        AgroalCompatibilityDatasourceRecorder recorder) {
-        items.forEach(item -> producer.produce(SyntheticBeanBuildItem
+        List<AgroalCompatibilityDatasourceRecorder.Datasource> datasourceList = items.stream()
+                .map(item -> new AgroalCompatibilityDatasourceRecorder.Datasource(item.name(), item.getConnector()))
+                .toList();
+
+        producer.produce(SyntheticBeanBuildItem
                 .configure(AgroalDatasourceConfiguration.class)
                 .scope(Singleton.class)
-                .supplier(recorder.get(items.get(0).getName()))
+                .supplier(recorder.get(datasourceList))
                 .setRuntimeInit()
-                .done()));
+                .done());
+
     }
 }

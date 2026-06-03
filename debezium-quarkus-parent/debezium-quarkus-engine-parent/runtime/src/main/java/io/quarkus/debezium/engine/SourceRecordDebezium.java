@@ -45,7 +45,7 @@ class SourceRecordDebezium extends RunnableDebezium {
                          EngineManifest engineManifest) {
         this.configuration = configuration;
         this.stateHandler = stateHandler;
-        this.engineInstance = ()-> {
+        this.engineInstance = () -> {
             LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
             return DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()
@@ -71,7 +71,7 @@ class SourceRecordDebezium extends RunnableDebezium {
         this.connector = connector;
         this.stateHandler = stateHandler;
         this.engineManifest = engineManifest;
-        this.engineInstance = ()-> {
+        this.engineInstance = () -> {
             LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
             return DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()

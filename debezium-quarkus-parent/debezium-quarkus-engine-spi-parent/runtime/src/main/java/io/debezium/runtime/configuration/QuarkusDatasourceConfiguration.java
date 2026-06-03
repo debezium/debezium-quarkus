@@ -6,6 +6,8 @@
 
 package io.debezium.runtime.configuration;
 
+import static java.util.Collections.emptyMap;
+
 import java.util.Map;
 
 /**
@@ -29,4 +31,23 @@ public interface QuarkusDatasourceConfiguration {
      * get the sanitized name (without special characters like <>) associated to this configuration
      */
     String getSanitizedName();
+
+    static QuarkusDatasourceConfiguration empty(String engineId) {
+        return new QuarkusDatasourceConfiguration() {
+            @Override
+            public Map<String, String> asDebezium() {
+                return emptyMap();
+            }
+
+            @Override
+            public boolean isDefault() {
+                return engineId.equals("default");
+            }
+
+            @Override
+            public String getSanitizedName() {
+                return engineId;
+            }
+        };
+    }
 }

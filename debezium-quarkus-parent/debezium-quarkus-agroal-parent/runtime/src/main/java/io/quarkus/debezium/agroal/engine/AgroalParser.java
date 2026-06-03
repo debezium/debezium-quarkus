@@ -19,6 +19,9 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.debezium.runtime.configuration.QuarkusDatasourceConfiguration;
@@ -29,6 +32,7 @@ import io.quarkus.debezium.notification.QuarkusNotificationChannel;
 
 @Singleton
 public class AgroalParser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AgroalParser.class);
     private final DebeziumConfigurationEngineParser engineParser = new DebeziumConfigurationEngineParser();
     private final QuarkusNotificationChannel channel;
     private final Instance<AgroalDatasourceConfiguration> agroalInstances;
@@ -72,7 +76,8 @@ public class AgroalParser {
         QuarkusDatasourceConfiguration configuration = collect.get(engineId);
 
         if (configuration == null) {
-            throw new IllegalArgumentException("No datasource configuration found for engine " + engineId);
+            LOGGER.warn("No datasource configuration found for engine {}", engineId);
+            return QuarkusDatasourceConfiguration.empty(engineId);
         }
 
         return configuration;
