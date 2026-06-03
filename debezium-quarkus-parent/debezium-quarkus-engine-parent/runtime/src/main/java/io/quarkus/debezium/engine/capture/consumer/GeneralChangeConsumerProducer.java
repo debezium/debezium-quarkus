@@ -32,12 +32,12 @@ public class GeneralChangeConsumerProducer {
 
     @Produces
     @Dependent
-    public ChangeConsumerHandler produce() {
+    public ChangeConsumerFactory produce() {
         if (registry == null) {
             return null;
         }
 
-        return new DefaultConsumerHandler(registry, capturingTombstoneEvents);
+        return new DefaultChangeConsumerFactory(registry, capturingTombstoneEvents);
     }
 
 }

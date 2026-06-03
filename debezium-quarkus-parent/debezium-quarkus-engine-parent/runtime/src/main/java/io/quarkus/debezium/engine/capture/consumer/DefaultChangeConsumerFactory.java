@@ -28,13 +28,20 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
 import io.quarkus.debezium.engine.capture.CapturingTombstoneEvents;
 
-public final class DefaultConsumerHandler implements ChangeConsumerHandler {
+/**
+ * Default {@link ChangeConsumerFactory} implementation.
+ * <p>
+ * Creates a {@link QuarkusChangeConsumer} that routes CDC events to the appropriate
+ * {@link io.debezium.runtime.Capturing}-annotated handlers, supporting both all-destinations
+ * and destination-specific routing strategies.
+ */
+public final class DefaultChangeConsumerFactory implements ChangeConsumerFactory {
 
     private final RoutedQuarkusChangeConsumer routedQuarkusChangeConsumer;
     private final Optional<CapturingTombstoneEvents> capturingTombstoneEvents;
 
-    DefaultConsumerHandler(CapturingEventsInvokerRegistry<CapturingEvents> registry,
-                           Optional<CapturingTombstoneEvents> capturingTombstoneEvents) {
+    DefaultChangeConsumerFactory(CapturingEventsInvokerRegistry<CapturingEvents> registry,
+                                 Optional<CapturingTombstoneEvents> capturingTombstoneEvents) {
         this.capturingTombstoneEvents = capturingTombstoneEvents;
         this.routedQuarkusChangeConsumer = new RoutedQuarkusChangeConsumer(
                 capturingTombstoneEvents,

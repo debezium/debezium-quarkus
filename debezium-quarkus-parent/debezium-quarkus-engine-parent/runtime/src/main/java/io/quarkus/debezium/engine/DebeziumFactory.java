@@ -17,7 +17,7 @@ import io.debezium.runtime.Debezium;
 import io.debezium.runtime.DebeziumSerialization;
 import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
-import io.quarkus.debezium.engine.capture.consumer.ChangeConsumerHandler;
+import io.quarkus.debezium.engine.capture.consumer.ChangeConsumerFactory;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
 
 public class DebeziumFactory {
@@ -26,7 +26,7 @@ public class DebeziumFactory {
     private final StateHandler stateHandler;
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final List<DebeziumConfigurationEnhancer> enhancers;
-    private final ChangeConsumerHandler changeConsumerHandler;
+    private final ChangeConsumerFactory changeConsumerHandler;
 
     @Inject
     public DebeziumFactory(
@@ -34,7 +34,7 @@ public class DebeziumFactory {
                            Instance<DebeziumSerialization<?, ?, ?>> serializations,
                            StateHandler stateHandler,
                            SourceRecordConsumerHandler sourceRecordConsumerHandler,
-                           ChangeConsumerHandler changeConsumerHandler) {
+                           ChangeConsumerFactory changeConsumerHandler) {
         this.serializations = serializations;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;

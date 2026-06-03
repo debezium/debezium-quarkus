@@ -9,14 +9,14 @@ package io.quarkus.debezium.engine.capture.consumer;
 import io.debezium.runtime.EngineManifest;
 
 /**
- * Resolves a {@link QuarkusChangeConsumer} for a specific engine instance.
+ * Factory for creating a {@link QuarkusChangeConsumer} for a specific engine instance.
  * <p>
- * Given an {@link EngineManifest}, implementations return a consumer configured
+ * Given an {@link EngineManifest}, implementations create and return a consumer configured
  * to dispatch CDC events according to the engine's routing strategy
  * (e.g., by destination, tombstone support).
  *
- * @see DefaultConsumerHandler
+ * @see DefaultChangeConsumerFactory
  */
-public interface ChangeConsumerHandler {
+public interface ChangeConsumerFactory {
     QuarkusChangeConsumer get(EngineManifest engineManifest);
 }
