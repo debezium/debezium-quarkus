@@ -48,6 +48,9 @@ class DebeziumRunner {
                         debeziumThread.getName(), SHUTDOWN_TIMEOUT_MS);
             }
         }
+        catch (IllegalStateException alreadyClosed) {
+            LOGGER.info("Engine {} had already self-terminated", debeziumThread.getName());
+        }
         catch (IOException e) {
             throw new RuntimeException("Impossible to shutdown Debezium Engine " + debeziumThread.getName(), e);
         }
