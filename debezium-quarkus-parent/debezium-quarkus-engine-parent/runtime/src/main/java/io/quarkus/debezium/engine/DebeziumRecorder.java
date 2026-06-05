@@ -32,9 +32,11 @@ public class DebeziumRecorder {
                 .create()
                 .get();
 
-        boolean autostart = ConfigProvider.getConfig()
+        boolean autostart = ConfigProvider
+                .getConfig()
                 .getOptionalValue(PROP_ENGINE_AUTOSTART, Boolean.class)
                 .orElse(true);
+
 
         debeziumConnectorsRegistry
                 .engines()
