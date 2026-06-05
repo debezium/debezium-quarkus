@@ -86,10 +86,18 @@ public class CompatibleModeConnectorRecorder {
                 }
 
                 @Override
-                public List<Debezium> engines() {
+                public List<Debezium> runningEngines() {
                     return engines.entrySet().stream()
                             .filter(e -> runners.containsKey(e.getKey()))
                             .map(Map.Entry::getValue)
+                            .toList();
+                }
+
+                @Override
+                public List<Debezium> engines() {
+                    return engines
+                            .values()
+                            .stream()
                             .toList();
                 }
 

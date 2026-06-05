@@ -37,7 +37,6 @@ public class DebeziumRecorder {
                 .getOptionalValue(PROP_ENGINE_AUTOSTART, Boolean.class)
                 .orElse(true);
 
-
         debeziumConnectorsRegistry
                 .engines()
                 .stream()

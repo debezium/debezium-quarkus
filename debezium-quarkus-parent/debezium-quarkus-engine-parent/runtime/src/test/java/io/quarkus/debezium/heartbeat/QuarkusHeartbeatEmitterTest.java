@@ -55,7 +55,7 @@ class QuarkusHeartbeatEmitterTest {
     @Test
     @DisplayName("should fire an event when called")
     void shouldFireEventWhenCalled() {
-        when(registry.engines()).thenReturn(Collections.singletonList(generate(DEBEZIUM_STATUS)));
+        when(registry.runningEngines()).thenReturn(Collections.singletonList(generate(DEBEZIUM_STATUS)));
 
         underTest.emit(PARTITION, OFFSET);
 
@@ -71,7 +71,7 @@ class QuarkusHeartbeatEmitterTest {
         Debezium matching = generate("testing", DEBEZIUM_STATUS, CONNECTOR);
         Debezium other = generate("alternative", otherStatus, otherConnector);
 
-        when(registry.engines()).thenReturn(List.of(matching, other));
+        when(registry.runningEngines()).thenReturn(List.of(matching, other));
 
         underTest.emit(PARTITION, OFFSET);
 

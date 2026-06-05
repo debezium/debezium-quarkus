@@ -50,10 +50,19 @@ public class RunnableDebeziumConnectorRegistry implements DebeziumConnectorRegis
     }
 
     @Override
-    public List<Debezium> engines() {
+    public List<Debezium> runningEngines() {
         return currentEngines.entrySet().stream()
                 .filter(e -> runners.containsKey(e.getKey()))
                 .map(Map.Entry::getValue)
+                .toList();
+    }
+
+    @Override
+    public List<Debezium> engines() {
+        return engineSuppliers
+                .values()
+                .stream()
+                .map(Supplier::get)
                 .toList();
     }
 

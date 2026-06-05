@@ -45,12 +45,25 @@ public class DebeziumConnectorsRegistryProducer {
             }
 
             @Override
+            public List<DebeziumConnectorRegistry> registries() {
+                return registries;
+            }
+
+            @Override
             public Optional<Debezium> get(EngineManifest manifest) {
                 return registries
                         .stream()
-                        .flatMap(registry -> registry.engines().stream())
-                        .filter(engine -> engine.manifest().equals(manifest))
+                        .filter(registry -> registry.manifests().contains(manifest))
+                        .map(registry -> registry.get(manifest))
                         .findFirst();
+            }
+
+            @Override
+            public List<Debezium> runningEngines() {
+                return registries
+                        .stream()
+                        .flatMap(registry -> registry.runningEngines().stream())
+                        .toList();
             }
 
             @Override
@@ -59,6 +72,22 @@ public class DebeziumConnectorsRegistryProducer {
                         .stream()
                         .flatMap(registry -> registry.engines().stream())
                         .toList();
+            }
+
+            @Override
+            public void start(EngineManifest manifest) {
+                registries
+                        .stream()
+                        .filter(registry -> registry.manifests().contains(manifest))
+                        .forEach(registry -> registry.start(manifest));
+            }
+
+            @Override
+            public void stop(EngineManifest manifest) {
+                registries
+                        .stream()
+                        .filter(registry -> registry.manifests().contains(manifest))
+                        .forEach(registry -> registry.stop(manifest));
             }
         };
     }

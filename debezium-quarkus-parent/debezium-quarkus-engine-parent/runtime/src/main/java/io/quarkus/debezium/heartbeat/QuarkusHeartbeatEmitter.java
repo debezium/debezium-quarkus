@@ -51,7 +51,7 @@ public class QuarkusHeartbeatEmitter implements Heartbeat {
     public void emit(Map<String, ?> partition, OffsetContext offset) {
         this.registries
                 .stream()
-                .flatMap(registry -> registry.engines().stream())
+                .flatMap(registry -> registry.runningEngines().stream())
                 .filter(engine -> engine.manifest().equals(context().manifest()))
                 .map(engine -> Map.entry(engine, DefaultEngine.Literal.selectDefault(
                         heartbeat.select(Engine.Literal.of(engine.manifest().id())), engine.manifest())))

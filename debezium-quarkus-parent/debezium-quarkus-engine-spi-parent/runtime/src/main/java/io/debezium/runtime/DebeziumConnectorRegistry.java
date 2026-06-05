@@ -34,6 +34,12 @@ public interface DebeziumConnectorRegistry {
      *
      * @return the currently running {@link Debezium} engines inside the registry
      */
+    List<Debezium> runningEngines();
+
+    /**
+     *
+     * @return the {@link Debezium} engines inside the registry
+     */
     List<Debezium> engines();
 
     /**

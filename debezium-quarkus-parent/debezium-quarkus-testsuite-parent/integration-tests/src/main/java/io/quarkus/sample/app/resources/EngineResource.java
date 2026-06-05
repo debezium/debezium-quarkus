@@ -48,7 +48,7 @@ public class EngineResource {
     @GET
     @Path("status")
     public DebeziumStatus getState() {
-        return registry.engines().stream()
+        return registry.runningEngines().stream()
                 .findFirst()
                 .map(Debezium::status)
                 .orElse(new DebeziumStatus(DebeziumStatus.State.STOPPED));
@@ -57,7 +57,7 @@ public class EngineResource {
     @GET
     @Path("statuses")
     public List<DebeziumStatus> getStatuses() {
-        Set<String> runningIds = registry.engines().stream()
+        Set<String> runningIds = registry.runningEngines().stream()
                 .map(e -> e.manifest().id())
                 .collect(Collectors.toSet());
         return registry.manifests().stream()
@@ -72,7 +72,7 @@ public class EngineResource {
     @Path("start")
     public Response start() {
         LOGGER.info("[engine/start] called; running engines before start: {}",
-                registry.engines().stream().map(e -> e.manifest().id()).toList());
+                registry.runningEngines().stream().map(e -> e.manifest().id()).toList());
         try {
             registry.manifests().forEach(m -> registry.start(m));
             LOGGER.info("[engine/start] success");
@@ -105,7 +105,7 @@ public class EngineResource {
     @POST
     @Path("stop")
     public Response stop() {
-        List<Debezium> running = registry.engines();
+        List<Debezium> running = registry.runningEngines();
         LOGGER.info("[engine/stop] called; running engines: {}",
                 running.stream().map(e -> e.manifest().id()).toList());
         if (running.isEmpty()) {
@@ -130,7 +130,7 @@ public class EngineResource {
     public Response stop(@PathParam("id") String id) {
         LOGGER.info("[engine/stop/{}] called", id);
         try {
-            registry.engines().stream()
+            registry.runningEngines().stream()
                     .filter(e -> e.manifest().id().equals(id))
                     .findFirst()
                     .ifPresent(e -> registry.stop(e.manifest()));

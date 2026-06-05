@@ -9,6 +9,8 @@ package io.debezium.runtime;
 import java.util.List;
 import java.util.Optional;
 
+import io.debezium.DebeziumException;
+
 /**
  * A top-level registry that aggregates {@link DebeziumConnectorRegistry} instances across all
  * active Debezium connectors.
@@ -28,6 +30,13 @@ public interface DebeziumConnectorsRegistry {
     Optional<DebeziumConnectorRegistry> registry(Connector connector);
 
     /**
+     * Returns all the {@link DebeziumConnectorRegistry} for all the connectors.
+     *
+     * @return an unmodifiable list of all registered registries; never {@code null}
+     */
+    List<DebeziumConnectorRegistry> registries();
+
+    /**
      * Returns the {@link Debezium} engine instance identified by the given manifest.
      *
      * @param manifest the manifest that uniquely identifies the engine
@@ -37,9 +46,32 @@ public interface DebeziumConnectorsRegistry {
     Optional<Debezium> get(EngineManifest manifest);
 
     /**
-     * Returns all {@link Debezium} engine instances currently held across every connector registry.
+     * Returns all the running {@link Debezium} engines inside the registry currently held across every connector registry.
+     *
+     * @return an unmodifiable list of all registered engines; never {@code null}
+     */
+    List<Debezium> runningEngines();
+
+    /**
+     * Returns all the {@link Debezium} engines inside the registry currently held across every connector registry.
      *
      * @return an unmodifiable list of all registered engines; never {@code null}
      */
     List<Debezium> engines();
+
+    /**
+     * Starts the {@link Debezium} engine assigned to the given {@link EngineManifest}.
+     *
+     * @param manifest the manifest identifying the engine to start
+     * @throws DebeziumException if no engine is registered for the manifest, or if the engine is already running
+     */
+    void start(EngineManifest manifest);
+
+    /**
+     * Stops the {@link Debezium} engine assigned to the given {@link EngineManifest}.
+     *
+     * @param manifest the manifest identifying the engine to stop
+     * @throws DebeziumException if no running engine is found for the manifest
+     */
+    void stop(EngineManifest manifest);
 }
