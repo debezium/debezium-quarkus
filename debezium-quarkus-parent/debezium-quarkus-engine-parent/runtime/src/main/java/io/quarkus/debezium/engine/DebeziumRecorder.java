@@ -24,32 +24,37 @@ public class DebeziumRecorder {
     private static final String PROP_ENGINE_AUTOSTART = "quarkus.debezium.engine.autostart";
 
     public void startEngine(ShutdownContext context, BeanContainer container) {
-        DebeziumConnectorsRegistry debeziumConnectorRegistry = container.beanInstance(DebeziumConnectorsRegistry.class);
+        DebeziumConnectorsRegistry debeziumConnectorsRegistry = container.beanInstance(DebeziumConnectorsRegistry.class);
+
         DebeziumEngineFilterStrategy debeziumEngineFilterStrategy = container
                 .beanInstanceFactory(() -> () -> () -> DebeziumEngineFilterStrategy.DEFAULT,
                         DebeziumEngineFilterStrategy.class)
                 .create()
                 .get();
+
         boolean autostart = ConfigProvider.getConfig()
                 .getOptionalValue(PROP_ENGINE_AUTOSTART, Boolean.class)
                 .orElse(true);
 
-
-        debeziumConnectorRegistry
+        debeziumConnectorsRegistry
                 .engines()
                 .stream()
                 .filter(debeziumEngineFilterStrategy)
                 .forEach(debezium -> {
                     if (autostart) {
-                        debeziumConnectorRegistry.start(debezium.manifest());
+                        debeziumConnectorsRegistry
+                                .registry(debezium.connector())
+                                .ifPresent(registry -> registry.start(debezium.manifest()));
                     }
                     context.addShutdownTask(() -> {
                         try {
-                            debeziumConnectorRegistry.stop(debezium.manifest());
+                            debeziumConnectorsRegistry
+                                    .registry(debezium.connector())
+                                    .ifPresent(registry -> registry.stop(debezium.manifest()));
                         }
                         catch (DebeziumException e) {
                             // Engine may not have been started (e.g. autostart=false and never manually started)
-                            LOGGER.warn("Engine was not running at shutdown for manifest: {}", manifest.id());
+                            LOGGER.warn("Engine was not running at shutdown for manifest: {}", debezium.manifest().id());
                         }
                     });
                 });
