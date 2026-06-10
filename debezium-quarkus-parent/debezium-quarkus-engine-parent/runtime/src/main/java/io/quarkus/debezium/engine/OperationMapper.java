@@ -30,6 +30,30 @@ public class OperationMapper {
         this.engine = engine;
     }
 
+    public CapturingEvent<SourceRecord, SourceRecord> from(SourceRecord sourceRecord, String destination) {
+        return from(new ChangeEvent<>() {
+            @Override
+            public SourceRecord key() {
+                return null;
+            }
+
+            @Override
+            public SourceRecord value() {
+                return sourceRecord;
+            }
+
+            @Override
+            public String destination() {
+                return destination;
+            }
+
+            @Override
+            public Integer partition() {
+                return null;
+            }
+        });
+    }
+
     public CapturingEvent<SourceRecord, SourceRecord> from(ChangeEvent<SourceRecord, SourceRecord> record) {
         Struct payload = (Struct) record.value().value();
 

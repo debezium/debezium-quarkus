@@ -23,9 +23,12 @@ import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.Header;
 import io.debezium.runtime.BatchEvent;
 import io.debezium.runtime.Capturing;
+import io.debezium.runtime.CapturingEvent;
 import io.debezium.runtime.CapturingEvents;
 import io.debezium.runtime.EngineManifest;
+import io.quarkus.debezium.engine.OperationMapper;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
+import io.quarkus.debezium.engine.capture.CapturingInvoker;
 import io.quarkus.debezium.engine.capture.CapturingTombstoneEvents;
 
 /**
@@ -40,11 +43,13 @@ public final class DefaultChangeConsumerFactory implements ChangeConsumerFactory
     private final RoutedQuarkusChangeConsumer routedQuarkusChangeConsumer;
     private final Optional<CapturingTombstoneEvents> capturingTombstoneEvents;
 
-    DefaultChangeConsumerFactory(CapturingEventsInvokerRegistry<CapturingEvents> registry,
+    DefaultChangeConsumerFactory(CapturingEventsInvokerRegistry<CapturingEvents> filterRegistry,
+                                 CapturingEventsInvokerRegistry<CapturingEvents> registry,
                                  Optional<CapturingTombstoneEvents> capturingTombstoneEvents) {
         this.capturingTombstoneEvents = capturingTombstoneEvents;
         this.routedQuarkusChangeConsumer = new RoutedQuarkusChangeConsumer(
                 capturingTombstoneEvents,
+                new FilterChangeConsumer(filterRegistry),
                 new AllDestinationsChangeConsumer(registry),
                 new DestinationSpecificChangeConsumer(registry));
     }
@@ -64,6 +69,49 @@ public final class DefaultChangeConsumerFactory implements ChangeConsumerFactory
                         .isSupported();
             }
         };
+    }
+
+    /**
+     * {@link FilterChangeConsumer} triggers handlers annotated with {@link Capturing#filter()}.
+     * For each event in the batch, converts it to a {@link CapturingEvent} and checks {@code shouldCapture}.
+     * Only matching events are delivered to the filter invoker.
+     */
+    private static final class FilterChangeConsumer implements DestinationChangeConsumer {
+
+        private final CapturingEventsInvokerRegistry<CapturingEvents> filterRegistry;
+
+        private FilterChangeConsumer(CapturingEventsInvokerRegistry<CapturingEvents> filterRegistry) {
+            this.filterRegistry = filterRegistry;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void handle(EngineManifest manifest, List<ChangeEvent<Object, Object>> records, DebeziumEngine.RecordCommitter<ChangeEvent<Object, Object>> committer) {
+            if (filterRegistry == null) {
+                return;
+            }
+
+            OperationMapper operationMapper = new OperationMapper(manifest.id());
+
+            List<BatchEvent> batchEvents = records.stream()
+                    .map(record -> new DefaultBatchEvent<>(record, committer))
+                    .collect(Collectors.toList());
+
+            CapturingEvents<BatchEvent> capturingEvents = new DefaultCapturingEvents<>(batchEvents, manifest, null);
+            CapturingInvoker invoker = filterRegistry.get(capturingEvents);
+
+            if (invoker == null) {
+                return;
+            }
+
+            List<BatchEvent> filtered = batchEvents.stream()
+                    .filter(batchEvent -> invoker.shouldCapture(operationMapper.from(batchEvent.record(), batchEvent.destination())))
+                    .toList();
+
+            if (!filtered.isEmpty()) {
+                invoker.capture(new DefaultCapturingEvents(filtered, manifest, null));
+            }
+        }
     }
 
     /**
