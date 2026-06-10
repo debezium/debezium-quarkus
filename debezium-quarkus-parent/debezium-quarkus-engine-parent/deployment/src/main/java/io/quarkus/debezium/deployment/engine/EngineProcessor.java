@@ -95,6 +95,7 @@ import io.quarkus.debezium.engine.DebeziumRecorder;
 import io.quarkus.debezium.engine.DefaultStateHandler;
 import io.quarkus.debezium.engine.capture.CapturingEventInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistryProducer;
+import io.quarkus.debezium.engine.capture.CapturingFilterEventsInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.CapturingFilterInvokerRegistryProducer;
 import io.quarkus.debezium.engine.capture.CapturingInvoker;
 import io.quarkus.debezium.engine.capture.CapturingObjectInvokerRegistryProducer;
@@ -175,6 +176,7 @@ public class EngineProcessor {
                 .addBeanClasses(
                         CapturingEventInvokerRegistryProducer.class,
                         CapturingFilterInvokerRegistryProducer.class,
+                        CapturingFilterEventsInvokerRegistryProducer.class,
                         CapturingObjectInvokerRegistryProducer.class,
                         CapturingEventsInvokerRegistryProducer.class)
                 .setDefaultScope(DotNames.APPLICATION_SCOPED)

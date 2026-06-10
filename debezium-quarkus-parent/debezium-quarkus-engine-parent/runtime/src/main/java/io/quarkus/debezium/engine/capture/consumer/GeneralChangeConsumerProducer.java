@@ -11,6 +11,7 @@ import java.util.Optional;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Named;
 
 import io.debezium.runtime.CapturingEvents;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
@@ -18,13 +19,15 @@ import io.quarkus.debezium.engine.capture.CapturingTombstoneEvents;
 
 public class GeneralChangeConsumerProducer {
 
+    private final CapturingEventsInvokerRegistry<CapturingEvents> filterRegistry;
     private final CapturingEventsInvokerRegistry<CapturingEvents> registry;
     private final Optional<CapturingTombstoneEvents> capturingTombstoneEvents;
 
-    public GeneralChangeConsumerProducer(CapturingEventsInvokerRegistry<CapturingEvents> registry,
+    public GeneralChangeConsumerProducer(@Named("capturingFilterEventsInvokerRegistry") CapturingEventsInvokerRegistry<CapturingEvents> filterRegistry,
+                                         @Named("capturingEventsInvokerRegistry") CapturingEventsInvokerRegistry<CapturingEvents> registry,
                                          Instance<CapturingTombstoneEvents> instances) {
+        this.filterRegistry = filterRegistry;
         this.registry = registry;
-        /* The tombstone configuration can be applied only to one connector */
         this.capturingTombstoneEvents = instances
                 .stream()
                 .findFirst();
@@ -37,7 +40,7 @@ public class GeneralChangeConsumerProducer {
             return null;
         }
 
-        return new DefaultChangeConsumerFactory(registry, capturingTombstoneEvents);
+        return new DefaultChangeConsumerFactory(filterRegistry, registry, capturingTombstoneEvents);
     }
 
 }
