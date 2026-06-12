@@ -67,6 +67,11 @@ class DebeziumConfigurationEngineParserTest {
                             public Map<String, String> configurations() {
                                 return Map.of();
                             }
+
+                            @Override
+                            public Optional<String> engineFactory() {
+                                return Optional.empty();
+                            }
                         });
             }
 
@@ -231,6 +236,11 @@ class DebeziumConfigurationEngineParserTest {
             @Override
             public Map<String, String> configurations() {
                 return DEBEZIUM_CONFIGURATION;
+            }
+
+            @Override
+            public Optional<String> engineFactory() {
+                return Optional.empty();
             }
 
         };

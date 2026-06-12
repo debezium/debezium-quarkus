@@ -66,6 +66,12 @@ public interface DebeziumEngineConfiguration {
          */
         @WithParentName
         Map<String, String> configurations();
+
+        /**
+         * engine builder factory class
+         */
+        @WithName("engine.factory")
+        Optional<String> engineFactory();
     }
 
     /**
