@@ -47,7 +47,7 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
             return DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
                     debeziumSerialization.getValueFormat(),
                     debeziumSerialization.getHeaderFormat(),
-                    ConvertingAsyncEngineBuilderFactory.class.getName())
+                    configuration.getOrDefault("engine.factory", ConvertingAsyncEngineBuilderFactory.class.getName()))
                     .using(Configuration.empty()
                             .withSystemProperties(Function.identity())
                             .edit()
