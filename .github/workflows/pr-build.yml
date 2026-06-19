@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Debezium Quarkus Extensions repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: debezium-quarkus
       - name: Check if pull request branch exists in debezium main repository
@@ -49,25 +49,25 @@ jobs:
           done < SORTED_PULLS.txt
       - name: Checkout core repository with pull request branch
         if: ${{ steps.branch.outputs.BRANCH_FOUND == 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ github.event.pull_request.user.login }}/debezium
           ref: ${{ github.head_ref }}
           path: core
       - name: Checkout core repository with default base branch
         if: ${{ steps.branch.outputs.BRANCH_FOUND != 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: debezium/debezium
           ref: ${{ github.base_ref }}
           path: core
       - name: Checkout db2 repository with default base branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: debezium/debezium-connector-db2
           path: db2
       - name: Checkout informix repository with default base branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: debezium/debezium-connector-informix
           path: informix
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: debezium/debezium/.github/actions/checkstyle-format@main
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
@@ -124,7 +124,7 @@ jobs:
       changed_connectors: ${{ steps.aggregate.outputs.changed_connectors }}
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Get modified files (Common)
@@ -240,7 +240,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-outbox
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
@@ -251,7 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-quarkus-runtime-core
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
@@ -268,7 +268,7 @@ jobs:
         connectors: ${{ fromJSON(needs.file_changes.outputs.changed_connectors) }}
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-quarkus-runtime-extension
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
@@ -282,7 +282,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-hibernate-cache
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}

@@ -26,21 +26,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Debezium Quarkus Extensions repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: debezium-quarkus
       - name: Checkout core repository with default base branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: debezium/debezium
           path: core
       - name: Checkout db2 repository with default base branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: debezium/debezium-connector-db2
           path: db2
       - name: Checkout informix repository with default base branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: debezium/debezium-connector-informix
           path: informix
@@ -65,7 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: debezium/debezium/.github/actions/checkstyle-format@main
         with:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-outbox
         with:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-quarkus-runtime-core
         with:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
@@ -110,7 +110,7 @@ jobs:
           - 200
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-quarkus-runtime-extension
         with:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
@@ -123,7 +123,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-hibernate-cache
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
