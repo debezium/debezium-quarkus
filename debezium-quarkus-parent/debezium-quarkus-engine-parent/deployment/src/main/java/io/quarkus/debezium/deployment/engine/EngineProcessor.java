@@ -30,6 +30,8 @@ import jakarta.inject.Singleton;
 
 import org.apache.kafka.common.security.authenticator.SaslClientAuthenticator;
 import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.kafka.connect.runtime.rest.entities.ConfigInfo;
+import org.apache.kafka.connect.runtime.rest.entities.ConfigInfos;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.transforms.predicates.TopicNameMatches;
 import org.jboss.jandex.AnnotationValue;
@@ -400,6 +402,9 @@ public class EngineProcessor {
                                 .builder(deserializer)
                                 .reason(getClass().getName())
                                 .build()));
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigInfo.class).methods(true).build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigInfos.class).methods(true).build());
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 ConcurrentMapTableMappingStorage.class,
