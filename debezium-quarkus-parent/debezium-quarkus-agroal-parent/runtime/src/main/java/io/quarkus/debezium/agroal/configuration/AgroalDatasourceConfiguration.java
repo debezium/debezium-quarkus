@@ -9,6 +9,7 @@ package io.quarkus.debezium.agroal.configuration;
 import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 import static io.quarkus.debezium.engine.Quarkus.QUARKUS_DATASOURCE_BRACKETS;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import io.debezium.jdbc.JdbcConfiguration;
@@ -44,22 +45,19 @@ public class AgroalDatasourceConfiguration implements QuarkusDatasourceConfigura
 
     @Override
     public Map<String, String> asDebezium() {
-        if (database == null) {
-            return Map.of(
-                    "name", name.replaceAll(QUARKUS_DATASOURCE_BRACKETS, ""),
-                    DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name(), host,
-                    DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name(), port,
-                    DATABASE_CONFIG_PREFIX + JdbcConfiguration.USER.name(), username,
-                    DATABASE_CONFIG_PREFIX + JdbcConfiguration.PASSWORD.name(), password);
+        HashMap<String, String> debeziumConfiguration = new HashMap<>();
+
+        if (database != null) {
+            debeziumConfiguration.put(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name(), database);
         }
 
-        return Map.of(
-                "name", name.replaceAll("[<>]", ""),
-                DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name(), host,
-                DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name(), port,
-                DATABASE_CONFIG_PREFIX + JdbcConfiguration.USER.name(), username,
-                DATABASE_CONFIG_PREFIX + JdbcConfiguration.PASSWORD.name(), password,
-                DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name(), database);
+        debeziumConfiguration.put("name", name.replaceAll("[<>]", ""));
+        debeziumConfiguration.put(DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name(), host);
+        debeziumConfiguration.put(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name(), port);
+        debeziumConfiguration.put(DATABASE_CONFIG_PREFIX + JdbcConfiguration.USER.name(), username);
+        debeziumConfiguration.put(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PASSWORD.name(), password);
+
+        return debeziumConfiguration;
     }
 
     @Override
