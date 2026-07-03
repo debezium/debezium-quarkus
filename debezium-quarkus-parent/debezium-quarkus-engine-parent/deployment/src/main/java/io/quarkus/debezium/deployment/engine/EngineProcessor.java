@@ -407,6 +407,10 @@ public class EngineProcessor {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(ConfigInfos.class).methods(true).build());
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
+                "java.util.HashMap",
+                "[B").serialization().build());
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
                 ConcurrentMapTableMappingStorage.class,
                 DefaultQueueProvider.class,
                 QueueProviderService.class,
