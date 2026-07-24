@@ -56,7 +56,7 @@ public class DebeziumTracerEventDispatcher extends AbstractEventDispatcher {
         }
         spanBuilder.setAttribute(AGGREGATE_TYPE, event.getAggregateType())
                 .setAttribute(AGGREGATE_ID, event.getAggregateId().toString())
-                .setAttribute(TYPE, event.getAggregateType())
+                .setAttribute(TYPE, event.getType())
                 .setAttribute(TIMESTAMP, event.getTimestamp().toString())
                 .setSpanKind(SpanKind.INTERNAL);
 
