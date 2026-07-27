@@ -5,14 +5,15 @@
  */
 package io.quarkus.debezium.engine;
 
-import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
-
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import io.debezium.connector.db2.Db2Connector;
-import io.debezium.jdbc.JdbcConfiguration;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.ConnectorProducer;
 import io.debezium.runtime.Debezium;
@@ -28,22 +29,21 @@ public class Db2EngineProducer implements ConnectorProducer {
     private final AgroalParser agroalParser;
     private final DebeziumFactory debeziumFactory;
 
+    @Inject
     public Db2EngineProducer(AgroalParser agroalParser, DebeziumFactory debeziumFactory) {
         this.agroalParser = agroalParser;
         this.debeziumFactory = debeziumFactory;
     }
 
+    @Produces
+    @Singleton
     @Override
     public DebeziumConnectorRegistry engine(DebeziumEngineRuntimeConfiguration debeziumEngineConfiguration) {
         Map<String, Supplier<Debezium>> engineSuppliers = agroalParser.parse(debeziumEngineConfiguration, DatabaseKind.DB2, DB2)
                 .stream()
-                .map(engine -> {
-                    // remove unnecessary configuration for db2
-                    engine.configuration()
-                            .remove(DATABASE_CONFIG_PREFIX + JdbcConfiguration.DATABASE.name());
-
-                    return Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(DB2, engine));
-                })
+                // Unlike the other JDBC connectors, the Db2 connector requires 'database.dbname',
+                // so it must NOT be stripped from the engine configuration here.
+                .map(engine -> Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(DB2, engine)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         return new RunnableDebeziumConnectorRegistry(DB2, engineSuppliers);

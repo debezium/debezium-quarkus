@@ -10,6 +10,7 @@ import static io.debezium.config.CommonConnectorConfig.CONNECTOR_CLASS;
 import static io.debezium.config.CommonConnectorConfig.DATABASE_CONFIG_PREFIX;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -51,6 +52,9 @@ public class AgroalCompatibilityDatasourceRecorder {
 
             return datasourceList.stream()
                     .filter(datasource -> datasource.connector.getName().equals(configuration.defaultConfiguration().get(CONNECTOR_CLASS)))
+                    // Skip non-JDBC connectors (e.g. MongoDB): they have no Agroal datasource shape
+                    // (hostname/port/user/database) and must not be routed through the JDBC path.
+                    .filter(datasource -> convert(datasource.name).isPresent())
                     .findFirst()
                     .map(item -> new AgroalDatasourceConfiguration(
                             configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.HOSTNAME.name()),
@@ -60,8 +64,11 @@ public class AgroalCompatibilityDatasourceRecorder {
                             configuration.defaultConfiguration().get(DATABASE_CONFIG_PREFIX + JdbcConfiguration.PORT.name()),
                             true,
                             "default",
-                            convert(item.name)))
-                    .orElseThrow();
+                            convert(item.name).orElseThrow()))
+                    // When the default engine is not a JDBC connector (e.g. MongoDB), there is no
+                    // Agroal datasource to build. Return an inert configuration (empty dbKind) so it
+                    // matches no JDBC engine producer, instead of failing the whole application start.
+                    .orElseGet(() -> new AgroalDatasourceConfiguration(null, null, null, null, null, false, "default", ""));
         };
     }
 
@@ -69,18 +76,18 @@ public class AgroalCompatibilityDatasourceRecorder {
      * Converts a Debezium connector name to the corresponding Quarkus {@link DatabaseKind} constant.
      *
      * @param name the connector name
-     * @return the matching {@link DatabaseKind} value
-     * @throws IllegalStateException if the name is not recognized
+     * @return the matching {@link DatabaseKind} value, or {@link Optional#empty()} if the connector
+     *         is not a JDBC/Agroal-compatible one (e.g. MongoDB)
      */
-    private String convert(String name) {
+    private Optional<String> convert(String name) {
         return switch (name) {
-            case "postgresql" -> DatabaseKind.POSTGRESQL;
-            case "mysql" -> DatabaseKind.MYSQL;
-            case "oracle" -> DatabaseKind.ORACLE;
-            case "sqlserver" -> DatabaseKind.MSSQL;
-            case "mariadb" -> DatabaseKind.MARIADB;
-            case "db2" -> DatabaseKind.DB2;
-            default -> throw new IllegalStateException("Unexpected value: " + name);
+            case "postgresql" -> Optional.of(DatabaseKind.POSTGRESQL);
+            case "mysql" -> Optional.of(DatabaseKind.MYSQL);
+            case "oracle" -> Optional.of(DatabaseKind.ORACLE);
+            case "sqlserver" -> Optional.of(DatabaseKind.MSSQL);
+            case "mariadb" -> Optional.of(DatabaseKind.MARIADB);
+            case "db2" -> Optional.of(DatabaseKind.DB2);
+            default -> Optional.empty();
         };
     }
 
