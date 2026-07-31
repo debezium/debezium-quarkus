@@ -41,8 +41,6 @@ public class Db2EngineProducer implements ConnectorProducer {
     public DebeziumConnectorRegistry engine(DebeziumEngineRuntimeConfiguration debeziumEngineConfiguration) {
         Map<String, Supplier<Debezium>> engineSuppliers = agroalParser.parse(debeziumEngineConfiguration, DatabaseKind.DB2, DB2)
                 .stream()
-                // Unlike the other JDBC connectors, the Db2 connector requires 'database.dbname',
-                // so it must NOT be stripped from the engine configuration here.
                 .map(engine -> Map.entry(engine.engineId(), (Supplier<Debezium>) () -> debeziumFactory.get(DB2, engine)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

@@ -14,6 +14,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.debezium.agroal.configuration.AgroalCompatibilityDatasourceRecorder;
+import io.quarkus.debezium.agroal.configuration.AgroalConnectors;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceRecorder;
 import io.quarkus.debezium.agroal.engine.AgroalParser;
@@ -49,12 +50,27 @@ public class AgroalEngineProcessor {
     }
 
     @BuildStep(onlyIf = DebeziumCompatibility.DebeziumServerEnabled.class)
+    public void collectAgroalConnectors(List<DebeziumConnectorBuildItem> items,
+                                        BuildProducer<AgroalConnectorBuildItem> producer) {
+        items.stream()
+                .filter(item -> AgroalConnectors.isAgroalCompatible(item.name()))
+                .forEach(item -> producer.produce(new AgroalConnectorBuildItem(item.name(), item.getConnector())));
+    }
+
+    @BuildStep(onlyIf = DebeziumCompatibility.DebeziumServerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void produceAgroalDatasourceConfigurationFromDebeziumServer(BuildProducer<SyntheticBeanBuildItem> producer,
-                                                                       List<DebeziumConnectorBuildItem> items,
+                                                                       List<AgroalConnectorBuildItem> connectors,
                                                                        AgroalCompatibilityDatasourceRecorder recorder) {
-        List<AgroalCompatibilityDatasourceRecorder.Datasource> datasourceList = items.stream()
-                .map(item -> new AgroalCompatibilityDatasourceRecorder.Datasource(item.name(), item.getConnector()))
+        // Only JDBC/Agroal-compatible connectors reach this point (see collectAgroalConnectors). If none
+        // is present (e.g. a MongoDB-only Debezium Server), there is no Agroal datasource to build, so we
+        // skip producing the configuration bean altogether rather than materializing an inert one.
+        if (connectors.isEmpty()) {
+            return;
+        }
+
+        List<AgroalCompatibilityDatasourceRecorder.Datasource> datasourceList = connectors.stream()
+                .map(connector -> new AgroalCompatibilityDatasourceRecorder.Datasource(connector.name(), connector.connector()))
                 .toList();
 
         producer.produce(SyntheticBeanBuildItem
