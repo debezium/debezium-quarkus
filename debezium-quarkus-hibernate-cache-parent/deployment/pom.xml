@@ -48,11 +48,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-jcache</artifactId>
             <version>${hibernate-jcache.version}</version>
