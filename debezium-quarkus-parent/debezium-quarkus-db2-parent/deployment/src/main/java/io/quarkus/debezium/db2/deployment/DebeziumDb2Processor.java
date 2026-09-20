@@ -44,9 +44,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.LaunchMode;
@@ -68,22 +67,11 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    NativeImageConfigBuildItem nativeImageConfiguration() {
-        // The DB2 JDBC driver has been updated with conditional checks for the
-        // "QuarkusWithJcc" system property which will no-op some code paths that
-        // are not needed for T4 JDBC usage and are incompatible with native mode,
-        // including setting TCP_KEEPIDLE which is unsupported in GraalVM native image.
-        return NativeImageConfigBuildItem.builder()
-                .addNativeImageSystemProperty("QuarkusWithJcc", "true")
-                .build();
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    SystemPropertyBuildItem quarkusWithJccRuntimeProperty() {
-        // addNativeImageSystemProperty only sets the flag for the native-image build JVM;
-        // the produced binary won't see it at runtime. Also expose it as a runtime system
-        // property so the DB2 JDBC driver's QuarkusWithJcc checks no-op TCP_KEEPIDLE etc.
-        return new SystemPropertyBuildItem("QuarkusWithJcc", "true");
+    RuntimeInitializedClassBuildItem socketOptionsInitializedAtRuntime() {
+        // Initialized at build time, sun.nio.ch.NioSocketImpl caches socket options that the
+        // running binary no longer recognizes, so the DB2 driver cannot set TCP_KEEPIDLE and
+        // fails to connect. GraalVM does the same from version 25 on (oracle/graal#6457).
+        return new RuntimeInitializedClassBuildItem("sun.nio.ch.NioSocketImpl");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
