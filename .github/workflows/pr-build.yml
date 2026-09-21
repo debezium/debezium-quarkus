@@ -79,6 +79,7 @@ jobs:
       - uses: debezium/debezium/.github/actions/maven-cache@main
         with:
           key: debezium-quarkus-PR-build-${{ hashFiles('debezium-quarkus/**/pom.xml') }}
+          save: 'true'
       - name: Maven build core
         run: ./debezium-quarkus/mvnw clean install -f core/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
       - name: Maven build db2
