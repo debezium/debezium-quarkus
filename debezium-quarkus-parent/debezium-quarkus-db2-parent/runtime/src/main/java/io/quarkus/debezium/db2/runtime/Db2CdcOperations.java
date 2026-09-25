@@ -7,7 +7,6 @@ package io.quarkus.debezium.db2.runtime;
 
 import java.sql.CallableStatement;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -15,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.logging.Logger;
+
+import io.debezium.relational.TableId;
 
 /**
  * JDBC helper for DB2 CDC operations.
@@ -28,23 +29,14 @@ class Db2CdcOperations {
 
     private static final String EXCLUDED_SCHEMAS = "'SYSIBM','SYSCAT','SYSSTAT','SYSPROC','SYSIBMADM','SYSTOOLS','ASNCDC','NULLID','SQLJ'";
 
-    private static final String SQL_EXISTS_IN_SYSCAT = "SELECT 1 FROM SYSCAT.TABLES WHERE TRIM(TABSCHEMA)=? AND TRIM(TABNAME)=? AND TYPE='T'";
-
-    private static final String SQL_IS_REGISTERED = "SELECT 1 FROM ASNCDC.IBMSNAP_REGISTER WHERE SOURCE_OWNER=? AND SOURCE_TABLE=?";
-
-    private static final String SQL_IS_ACTIVE = "SELECT 1 FROM ASNCDC.IBMSNAP_REGISTER WHERE SOURCE_OWNER=? AND SOURCE_TABLE=? AND STATE='A'";
-
-    private static final String SQL_UNREGISTERED_IN_SCHEMA = "SELECT TRIM(t.TABSCHEMA), TRIM(t.TABNAME) FROM SYSCAT.TABLES t "
-            + "WHERE t.TYPE='T' AND t.TABSCHEMA=? "
-            + "AND NOT EXISTS (SELECT 1 FROM ASNCDC.IBMSNAP_REGISTER r "
-            + "  WHERE r.SOURCE_OWNER=TRIM(t.TABSCHEMA) AND r.SOURCE_TABLE=TRIM(t.TABNAME)) "
-            + "ORDER BY t.TABNAME";
-
-    private static final String SQL_UNREGISTERED_ALL = "SELECT TRIM(t.TABSCHEMA), TRIM(t.TABNAME) FROM SYSCAT.TABLES t "
-            + "WHERE t.TYPE='T' AND t.TABSCHEMA NOT IN (" + EXCLUDED_SCHEMAS + ") "
+    private static final String SQL_UNREGISTERED_USER_TABLES = "SELECT TRIM(t.TABSCHEMA), TRIM(t.TABNAME) FROM SYSCAT.TABLES t "
+            + "WHERE t.TYPE='T' AND TRIM(t.TABSCHEMA) NOT IN (" + EXCLUDED_SCHEMAS + ") "
             + "AND NOT EXISTS (SELECT 1 FROM ASNCDC.IBMSNAP_REGISTER r "
             + "  WHERE r.SOURCE_OWNER=TRIM(t.TABSCHEMA) AND r.SOURCE_TABLE=TRIM(t.TABNAME)) "
             + "ORDER BY t.TABSCHEMA, t.TABNAME";
+
+    private static final String SQL_INACTIVE_REGISTERED_TABLES = "SELECT TRIM(SOURCE_OWNER), TRIM(SOURCE_TABLE) FROM ASNCDC.IBMSNAP_REGISTER "
+            + "WHERE STATE='I' AND LENGTH(TRIM(SOURCE_OWNER)) > 0 AND LENGTH(TRIM(SOURCE_TABLE)) > 0";
 
     private final Connection connection;
 
@@ -52,50 +44,12 @@ class Db2CdcOperations {
         this.connection = connection;
     }
 
-    public boolean existsInSyscat(TableId tid) {
-        return queryExists(SQL_EXISTS_IN_SYSCAT, tid, "Failed to check SYSCAT.TABLES for '%s'.'%s'");
+    public List<TableId> findUnregisteredUserTables() {
+        return queryTables(SQL_UNREGISTERED_USER_TABLES, "Error scanning user tables");
     }
 
-    public boolean isRegistered(TableId tid) {
-        return queryExists(SQL_IS_REGISTERED, tid, "Failed to check ASNCDC.IBMSNAP_REGISTER for '%s'.'%s'");
-    }
-
-    public boolean isActive(TableId tid) {
-        return queryExists(SQL_IS_ACTIVE, tid, null);
-    }
-
-    public boolean allActive(List<TableId> tables) {
-        return tables.stream().allMatch(this::isActive);
-    }
-
-    public List<TableId> findUnregisteredInSchema(String schema) {
-        List<TableId> result = new ArrayList<>();
-        try (PreparedStatement ps = connection.prepareStatement(SQL_UNREGISTERED_IN_SCHEMA)) {
-            ps.setString(1, schema);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    result.add(new TableId(rs.getString(1), rs.getString(2)));
-                }
-            }
-        }
-        catch (SQLException e) {
-            LOG.warnf("[CDC SETUP] Error scanning schema '%s': %s", schema, e.getMessage());
-        }
-        return result;
-    }
-
-    public List<TableId> findUnregisteredAll() {
-        List<TableId> result = new ArrayList<>();
-        try (Statement stmt = connection.createStatement();
-                ResultSet rs = stmt.executeQuery(SQL_UNREGISTERED_ALL)) {
-            while (rs.next()) {
-                result.add(new TableId(rs.getString(1), rs.getString(2)));
-            }
-        }
-        catch (SQLException e) {
-            LOG.warnf("[CDC SETUP] Error in full-scan query: %s", e.getMessage());
-        }
-        return result;
+    public List<TableId> findInactiveRegisteredTables() {
+        return queryTables(SQL_INACTIVE_REGISTERED_TABLES, "Error scanning inactive registrations");
     }
 
     public boolean callAddTable(TableId tid) {
@@ -134,20 +88,18 @@ class Db2CdcOperations {
         }
     }
 
-    private boolean queryExists(String sql, TableId tid, String warnPattern) {
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, tid.schema());
-            ps.setString(2, tid.table());
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
+    private List<TableId> queryTables(String sql, String errorMessage) {
+        List<TableId> result = new ArrayList<>();
+        try (Statement stmt = connection.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                result.add(new TableId(null, rs.getString(1), rs.getString(2)));
             }
         }
         catch (SQLException e) {
-            if (warnPattern != null) {
-                LOG.warnf("[CDC SETUP] " + warnPattern + ": %s", tid.schema(), tid.table(), e.getMessage());
-            }
-            return false;
+            LOG.warnf("[CDC SETUP] %s: %s", errorMessage, e.getMessage());
         }
+        return result;
     }
 
     private void rollback() {

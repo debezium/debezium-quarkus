@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigUtils;
 
 class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceConfiguration> {
 
@@ -146,6 +147,9 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
     @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void recordCdcSetup(DebeziumDb2CdcInstrumentationRecorder recorder) {
+        if (ConfigUtils.isAnyPropertyPresent(DataSourceUtil.dataSourcePropertyKeys(DataSourceUtil.DEFAULT_DATASOURCE_NAME, "jdbc.url"))) {
+            return;
+        }
         recorder.setupCdcRegistration(60);
     }
 
@@ -154,9 +158,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
         public static final String USER = "db2inst1";
         public static final String PASSWORD = "dbz";
         public static final String DATABASE = "TESTDB";
-        public static final String LOCALHOST = "127.0.0.1";
         public static final int DB2_PORT = 50000;
-        public static final String SERVICE_NAME = "debezium-devservices-db2";
 
         private final String username;
         private final String password;
@@ -188,7 +190,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
 
         @Override
         public String getEffectiveJdbcUrl() {
-            return "jdbc:db2://" + LOCALHOST + ":" + getMappedPort(DB2_PORT) + "/" + database;
+            return "jdbc:db2://" + getHost() + ":" + getMappedPort(DB2_PORT) + "/" + database;
         }
 
         @Override

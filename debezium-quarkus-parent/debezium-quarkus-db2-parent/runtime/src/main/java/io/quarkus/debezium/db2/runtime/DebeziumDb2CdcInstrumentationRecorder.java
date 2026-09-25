@@ -16,31 +16,39 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.debezium.config.Configuration;
+import io.debezium.connector.db2.Db2ConnectorConfig;
+import io.debezium.relational.TableId;
+import io.debezium.relational.Tables.TableFilter;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * Quarkus Recorder that sets up automatic CDC registration for DB2 Dev Services.
+ * The Quarkus Recorder that configures auto CDC registration in DB2 Dev Services.
  * <p>
- * The recorded method runs at {@code RUNTIME_INIT}, after all Dev Services have started and
- * after Flyway / Liquibase / Hibernate DDL have completed. It spawns a short-lived daemon
- * thread that polls DB2 every second and calls {@code ASNCDC.ADDTABLE()} for any user table
- * not yet registered in {@code ASNCDC.IBMSNAP_REGISTER}, then issues an {@code asnccmd reinit}
- * via the {@code ASNCDC.ASNCDCSERVICES} UDF so the running capture agent picks up the change.
+ * The recorder's method executes during the {@code RUNTIME_INIT} phase and launches a temporary
+ * daemon thread which, for {@code retrySeconds} seconds, polls DB2 once per second and invokes
+ * {@code ASNCDC.ADDTABLE()} for all tables captured by the connector and not already registered in
+ * {@code ASNCDC.IBMSNAP_REGISTER}. After the invocation, the thread performs the {@code asnccmd reinit}
+ * command using {@code ASNCDC.ASNCDCSERVICES} UDF to refresh the capture agent.
+ * New tables added by the application while the thread works (for instance using Flyway or Hibernate)
+ * are also registered automatically. When the timeout expires, the thread logs the tables captured by
+ * the connector that are still unregistered.
  * <p>
- * Operating modes (determined by {@code table.include.list}):
- * <ul>
- *   <li><b>Targeted</b> – only exact {@code SCHEMA.TABLE} pairs; exits as soon as every declared
- *       table has {@code STATE='A'} in the register, or on timeout.</li>
- *   <li><b>Schema-scoped</b> – {@code SCHEMA.*} entries; scans only the declared schemas.</li>
- *   <li><b>Mixed</b> – combination of exact pairs and schema wildcards.</li>
- *   <li><b>Full-scan</b> – no include list; scans all non-system user tables.</li>
- * </ul>
- * Non-targeted modes run for at most {@code retrySeconds} seconds and then exit.
+ * The tables are selected with the table filters provided by the connector, thus the table and schema
+ * inclusion/exclusion work exactly as they do in the connector.
  */
 @Recorder
 public class DebeziumDb2CdcInstrumentationRecorder {
 
     private static final Logger LOG = Logger.getLogger(DebeziumDb2CdcInstrumentationRecorder.class);
+
+    private final RuntimeValue<DebeziumEngineRuntimeConfiguration> debeziumEngineConfigurationRuntimeValue;
+
+    public DebeziumDb2CdcInstrumentationRecorder(RuntimeValue<DebeziumEngineRuntimeConfiguration> debeziumEngineConfigurationRuntimeValue) {
+        this.debeziumEngineConfigurationRuntimeValue = debeziumEngineConfigurationRuntimeValue;
+    }
 
     /**
      * Records CDC registration setup to run at {@code RUNTIME_INIT}.
@@ -49,7 +57,9 @@ public class DebeziumDb2CdcInstrumentationRecorder {
      */
     public void setupCdcRegistration(int retrySeconds) {
         try {
-            Thread thread = new Thread(() -> runCdcRegistration(retrySeconds), "debezium-db2-cdc-setup");
+            TableFilter tableFilter = new Db2ConnectorConfig(Configuration.from(debeziumEngineConfigurationRuntimeValue.getValue().defaultConfiguration()))
+                    .getTableFilters().dataCollectionFilter();
+            Thread thread = new Thread(() -> runCdcRegistration(retrySeconds, tableFilter), "debezium-db2-cdc-setup");
             thread.setDaemon(true);
             thread.start();
         }
@@ -58,29 +68,14 @@ public class DebeziumDb2CdcInstrumentationRecorder {
         }
     }
 
-    private void runCdcRegistration(int retrySeconds) {
+    private void runCdcRegistration(int retrySeconds, TableFilter tableFilter) {
         Config config = ConfigProvider.getConfig();
         Optional<ConnectionInfo> connInfo = ConnectionInfo.from(config);
-        String tableIncludeList = config.getOptionalValue("quarkus.debezium.table.include.list", String.class)
-                .orElse("").toUpperCase();
         if (connInfo.isEmpty()) {
             return;
         }
 
-        TableFilter filter = TableFilter.from(tableIncludeList);
-
-        if (filter.isTargeted()) {
-            LOG.infof("[CDC SETUP] Targeted mode: %d declared table(s), timeout %ds.",
-                    filter.exactTables().size(), retrySeconds);
-        }
-        else if (!filter.wildcardSchemas().isEmpty()) {
-            String label = filter.exactTables().isEmpty() ? "Schema-scoped" : "Mixed";
-            LOG.infof("[CDC SETUP] %s mode: schemas [%s], timeout %ds.",
-                    label, String.join(", ", filter.wildcardSchemas()), retrySeconds);
-        }
-        else {
-            LOG.infof("[CDC SETUP] Full-scan mode: all user tables, timeout %ds.", retrySeconds);
-        }
+        LOG.infof("[CDC SETUP] Registering the tables the connector captures, timeout %ds.", retrySeconds);
 
         long deadline = System.currentTimeMillis() + (retrySeconds * 1000L);
         Connection c = acquireConnection(connInfo.get(), deadline);
@@ -92,7 +87,7 @@ public class DebeziumDb2CdcInstrumentationRecorder {
         try {
             Db2CdcOperations ops = new Db2CdcOperations(c);
             while (System.currentTimeMillis() < deadline) {
-                if (runOneCycle(ops, filter)) {
+                if (runOneCycle(ops, tableFilter)) {
                     ops.fixStateAndReinit();
                     try {
                         Thread.sleep(3000);
@@ -102,11 +97,6 @@ public class DebeziumDb2CdcInstrumentationRecorder {
                         return;
                     }
                 }
-                if (filter.isTargeted() && ops.allActive(filter.exactTables())) {
-                    LOG.infof("[CDC SETUP] All %d declared table(s) are now registered for CDC capture.",
-                            filter.exactTables().size());
-                    return;
-                }
                 try {
                     Thread.sleep(1000);
                 }
@@ -115,22 +105,15 @@ public class DebeziumDb2CdcInstrumentationRecorder {
                     return;
                 }
             }
-
-            if (!filter.isTargeted()) {
-                LOG.infof("[CDC SETUP] Watcher exiting after %ds.", retrySeconds);
-                return;
-            }
-            List<String> missing = filter.exactTables().stream()
-                    .filter(tid -> !ops.isRegistered(tid))
+            List<String> unregistered = ops.findUnregisteredUserTables().stream()
+                    .filter(tableFilter::isIncluded)
                     .map(TableId::toString)
                     .collect(Collectors.toList());
-            if (!missing.isEmpty()) {
-                LOG.warnf("[CDC SETUP] Registration timed out after %ds. Still unregistered: %s",
-                        retrySeconds, missing);
+            if (!unregistered.isEmpty()) {
+                LOG.warnf("[CDC SETUP] Registration timed out after %ds. Still unregistered: %s", retrySeconds, unregistered);
             }
             else {
-                LOG.infof("[CDC SETUP] All declared tables are registered (verified at timeout boundary after %ds).",
-                        retrySeconds);
+                LOG.infof("[CDC SETUP] Watcher exiting after %ds.", retrySeconds);
             }
         }
         finally {
@@ -138,31 +121,19 @@ public class DebeziumDb2CdcInstrumentationRecorder {
         }
     }
 
-    private boolean runOneCycle(Db2CdcOperations ops, TableFilter filter) {
+    private boolean runOneCycle(Db2CdcOperations ops, TableFilter tableFilter) {
         boolean reinitNeeded = false;
 
-        for (TableId tid : filter.exactTables()) {
-            if (!ops.existsInSyscat(tid)) {
-                continue;
-            }
-            if (!ops.isRegistered(tid)) {
+        for (TableId tid : ops.findUnregisteredUserTables()) {
+            if (tableFilter.isIncluded(tid)) {
                 reinitNeeded |= ops.callAddTable(tid);
             }
-            else if (!ops.isActive(tid)) {
+        }
+
+        for (TableId tid : ops.findInactiveRegisteredTables()) {
+            if (tableFilter.isIncluded(tid)) {
                 LOG.infof("[CDC SETUP] '%s'.'%s' is registered but STATE='I'; re-activating.", tid.schema(), tid.table());
                 reinitNeeded = true;
-            }
-        }
-
-        for (String schema : filter.wildcardSchemas()) {
-            for (TableId tid : ops.findUnregisteredInSchema(schema)) {
-                reinitNeeded |= ops.callAddTable(tid);
-            }
-        }
-
-        if (filter.isFullScan()) {
-            for (TableId tid : ops.findUnregisteredAll()) {
-                reinitNeeded |= ops.callAddTable(tid);
             }
         }
 
