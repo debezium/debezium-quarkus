@@ -27,7 +27,7 @@ import io.debezium.runtime.CapturingEvents;
 import io.debezium.runtime.CapturingFieldsFilterStrategy;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class CapturingEventsFilterTest {
@@ -36,7 +36,7 @@ public class CapturingEventsFilterTest {
     BatchFilterHandler handler;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(
                     BatchFilterHandler.class,
                     KeyFieldBatchFilter.class))

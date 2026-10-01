@@ -30,7 +30,7 @@ import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.PostProcessing;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class PostProcessingTest {
@@ -42,7 +42,7 @@ public class PostProcessingTest {
     DebeziumConnectorRegistry debeziumConnectorRegistry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(PostProcessingHandler.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 

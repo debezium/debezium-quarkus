@@ -24,7 +24,7 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.deployment.engine.RuntimeRegisteredConnectorTest.ExternalConnector;
 import io.quarkus.debezium.deployment.engine.RuntimeRegisteredConnectorTest.ExternalTask;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * With several {@code debezium-connector-*} dependencies no connector class is inferred: a
@@ -37,7 +37,7 @@ public class RuntimeRegisteredConnectorWithCandidatesTest {
     DebeziumConnectorsRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .setForcedDependencies(List.of(Dependency.of("io.debezium", "debezium-connector-vitess", Module.version())))
             .withApplicationRoot((jar) -> jar.addClasses(ExternalConnector.class, ExternalTask.class))
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")

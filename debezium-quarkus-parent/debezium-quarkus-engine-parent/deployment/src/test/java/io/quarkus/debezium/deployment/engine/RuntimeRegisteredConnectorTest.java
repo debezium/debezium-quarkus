@@ -25,7 +25,7 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.DebeziumConnectorsRegistry;
 import io.debezium.runtime.EngineManifest;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * A {@code connector.class} that is neither provided by a Debezium extension nor discovered among
@@ -38,7 +38,7 @@ public class RuntimeRegisteredConnectorTest {
     DebeziumConnectorsRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ExternalConnector.class, ExternalTask.class))
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")
             .overrideConfigKey("quarkus.debezium.connector.class", ExternalConnector.class.getName())

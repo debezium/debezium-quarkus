@@ -20,7 +20,7 @@ import io.debezium.connector.informix.InformixConnector;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumConnectorsRegistry;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * With several {@code debezium-connector-*} dependencies, a {@code connector.class} that one of them
@@ -33,7 +33,7 @@ public class KnownConnectorClassWithCandidatesTest {
     DebeziumConnectorsRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .setForcedDependencies(List.of(Dependency.of("io.debezium", "debezium-connector-vitess", Module.version())))
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")
             .overrideConfigKey("quarkus.debezium.connector.class", InformixConnector.class.getName())

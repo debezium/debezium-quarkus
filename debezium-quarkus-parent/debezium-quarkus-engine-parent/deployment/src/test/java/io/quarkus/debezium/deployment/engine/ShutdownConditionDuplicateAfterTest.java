@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.debezium.runtime.ShutdownCondition;
 import io.debezium.runtime.ShutdownCondition.Phase;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Only one method per phase is allowed: two {@code AFTER} methods must fail the build.
@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ShutdownConditionDuplicateAfterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(DuplicateAfterHandler.class))
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")
             .overrideConfigKey("quarkus.debezium.name", "shutdown")

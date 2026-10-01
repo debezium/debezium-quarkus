@@ -18,13 +18,13 @@ import jakarta.inject.Inject;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Integration tests for the Debezium Outbox extension, using default configuration from application.properties.
@@ -56,7 +56,7 @@ public class OutboxTestIT extends AbstractOutboxTest {
         try {
             actualObj = mapper.readValue("{\"something\":\"Some amazing payload\"}", JsonNode.class);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new RuntimeException(e);
         }
         final Map row = sessionFactory.withSession(

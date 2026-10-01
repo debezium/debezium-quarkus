@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.debezium.runtime.events.DebeziumHeartbeat;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class HeartbeatTest {
@@ -33,7 +33,7 @@ public class HeartbeatTest {
     HeartbeatHandler heartbeatHandler;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 
     @Test

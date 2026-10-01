@@ -29,7 +29,7 @@ import io.debezium.runtime.ShutdownCondition.Phase;
 import io.debezium.runtime.events.DebeziumCompletionEvent;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * An exception thrown by the shutdown method is not treated as {@code false}: the engine fails and reports an unsuccessful
@@ -47,7 +47,7 @@ public class ShutdownConditionFailureTest {
     DebeziumConnectorRegistry debeziumConnectorRegistry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ShutdownHandler.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 

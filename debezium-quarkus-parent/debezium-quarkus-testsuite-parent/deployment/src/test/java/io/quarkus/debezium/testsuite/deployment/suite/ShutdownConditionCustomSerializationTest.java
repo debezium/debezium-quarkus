@@ -31,8 +31,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.debezium.engine.format.Json;
 import io.debezium.engine.format.SerializationFormat;
 import io.debezium.runtime.BatchEvent;
@@ -48,7 +46,9 @@ import io.debezium.runtime.events.DebeziumCompletionEvent;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * With a custom serialization, as used by Debezium Server, the engine records are converted to JSON. The AFTER shutdown
@@ -70,7 +70,7 @@ public class ShutdownConditionCustomSerializationTest {
     DebeziumConnectorRegistry debeziumConnectorRegistry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ShutdownHandler.class, JsonSerializationProducer.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties")
             .overrideConfigKey("quarkus.debezium.offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore")

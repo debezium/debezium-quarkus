@@ -15,10 +15,10 @@ import jakarta.inject.Inject;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.hibernate.SessionFactory;
 import org.hibernate.engine.internal.SessionEventListenerManagerImpl;
+import org.hibernate.engine.spi.SessionDelegatorBaseImpl;
 import org.hibernate.engine.spi.SessionEventListenerManager;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
-import org.hibernate.engine.spi.SharedSessionDelegatorBaseImpl;
 import org.hibernate.event.monitor.spi.EventMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +61,7 @@ public class DebeziumCacheInvalidatorProducer {
         private final SessionFactory sessionFactory;
         private final PersistenceUnitRegistry persistenceUnitRegistry;
         private final SessionFactoryImplementor sessionFactoryImplementor;
-        private final SharedSessionDelegatorBaseImpl lazySession;
+        private final SessionDelegatorBaseImpl lazySession;
         private static final Logger LOGGER = LoggerFactory.getLogger(HibernateRegionEvictionStrategy.class);
 
         private HibernateRegionEvictionStrategy(SessionFactory sessionFactory,
@@ -75,7 +75,12 @@ public class DebeziumCacheInvalidatorProducer {
                 eventMonitor = session.getEventMonitor();
             }
 
-            this.lazySession = new SharedSessionDelegatorBaseImpl(null) {
+            this.lazySession = new SessionDelegatorBaseImpl(null) {
+                @Override
+                public SessionFactoryImplementor getFactory() {
+                    return sessionFactoryImplementor;
+                }
+
                 @Override
                 public SessionEventListenerManager getEventListenerManager() {
                     return new SessionEventListenerManagerImpl(sessionFactoryImplementor.getSessionFactoryOptions().buildSessionEventListeners());

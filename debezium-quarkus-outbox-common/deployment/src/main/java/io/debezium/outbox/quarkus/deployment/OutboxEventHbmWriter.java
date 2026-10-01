@@ -32,7 +32,7 @@ import io.debezium.outbox.quarkus.internal.OutboxConstants;
 public class OutboxEventHbmWriter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OutboxEventHbmWriter.class);
-    private static final String JACKSON_JSONNODE = "com.fasterxml.jackson.databind.JsonNode";
+    private static final String JACKSON_JSONNODE = "tools.jackson.databind.JsonNode";
 
     static JaxbHbmHibernateMapping write(DebeziumOutboxCommonConfig config, OutboxEventEntityBuildItem outboxEventEntityBuildItem) {
         final JaxbHbmHibernateMapping mapping = new JaxbHbmHibernateMapping();

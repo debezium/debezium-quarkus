@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.debezium.connector.informix.InformixConnector;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumConnectorsRegistry;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * A {@code connector.class} that is discovered among the application's dependencies at build time
@@ -28,7 +28,7 @@ public class KnownConnectorClassTest {
     DebeziumConnectorsRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")
             .overrideConfigKey("quarkus.debezium.connector.class", InformixConnector.class.getName())
             .overrideConfigKey("quarkus.debezium.name", "known")

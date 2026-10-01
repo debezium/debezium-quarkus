@@ -24,10 +24,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvent;
 import io.quarkus.debezium.engine.deserializer.CapturingEventDeserializerRegistry;
@@ -35,7 +31,12 @@ import io.quarkus.debezium.engine.deserializer.MutableCapturingEventDeserializer
 import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
+
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Tag(SuiteTags.DEFAULT)
 public class CapturingTest {
@@ -54,7 +55,7 @@ public class CapturingTest {
     }
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(CaptureProductsHandler.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 
@@ -147,9 +148,10 @@ public class CapturingTest {
 
     }
 
-    private static final ObjectMapper configuredMapper = new ObjectMapper()
+    private static final ObjectMapper configuredMapper = JsonMapper.builder()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+            .build();
 
     public static class OrderDeserializer extends ObjectMapperDeserializer<Order> {
 

@@ -8,11 +8,11 @@ package io.debezium.outbox.reactive.quarkus.it;
 import java.time.Instant;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.debezium.outbox.quarkus.ExportedEvent;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 public class MyOutboxEvent implements ExportedEvent<Long, JsonNode> {
     private static ObjectMapper mapper = new ObjectMapper();

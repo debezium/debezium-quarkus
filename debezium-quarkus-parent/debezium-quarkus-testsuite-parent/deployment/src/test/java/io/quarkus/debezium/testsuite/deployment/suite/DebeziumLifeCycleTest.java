@@ -26,7 +26,7 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
 import io.quarkus.runtime.Application;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class DebeziumLifeCycleTest {
@@ -35,7 +35,7 @@ public class DebeziumLifeCycleTest {
     DebeziumConnectorRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest application = new QuarkusUnitTest()
+    static final QuarkusExtensionTest application = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 
