@@ -11,10 +11,8 @@ import static io.debezium.embedded.EmbeddedEngineConfig.CONNECTOR_CLASS;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-import io.debezium.DebeziumException;
 import io.debezium.connector.common.BaseSourceConnector;
 import io.debezium.runtime.Connector;
 import io.debezium.runtime.Debezium;
@@ -67,72 +65,12 @@ public class CompatibleModeConnectorRecorder {
                 configuration.put(CONNECTOR_CLASS.name(), connectorClass.getName());
             }
 
+            Connector connector = new Connector(connectorClass.getName());
             Map<String, Debezium> engines = Map.of(EngineManifest.DEFAULT.id(),
-                    debeziumFactory.get(new Connector(connectorClass.getName()),
+                    debeziumFactory.get(connector,
                             new MultiEngineConfiguration(EngineManifest.DEFAULT.id(), configuration)));
 
-            Map<String, DebeziumRunner> runners = new ConcurrentHashMap<>();
-
-            return new DebeziumConnectorRegistry() {
-                @Override
-                public Connector connector() {
-                    return new Connector(connectorClass.getName());
-                }
-
-                @Override
-                public Debezium get(EngineManifest manifest) {
-                    return engines.get(manifest.id());
-                }
-
-                @Override
-                public List<EngineManifest> manifests() {
-                    return List.of(EngineManifest.DEFAULT);
-                }
-
-                @Override
-                public List<Debezium> runningEngines() {
-                    return engines.entrySet().stream()
-                            .filter(e -> runners.containsKey(e.getKey()))
-                            .map(Map.Entry::getValue)
-                            .toList();
-                }
-
-                @Override
-                public List<Debezium> engines() {
-                    return engines
-                            .values()
-                            .stream()
-                            .toList();
-                }
-
-                @Override
-                public void start(EngineManifest manifest) {
-                    Debezium debezium = engines.get(manifest.id());
-                    if (debezium == null) {
-                        throw new DebeziumException("No engine found for manifest: " + manifest.id());
-                    }
-                    DebeziumRunner runner = new DebeziumRunner(DebeziumThreadHandler.getThreadFactory(debezium), debezium);
-                    if (runners.putIfAbsent(manifest.id(), runner) != null) {
-                        throw new DebeziumException("Engine already running for manifest: " + manifest.id());
-                    }
-                    try {
-                        runner.start();
-                    }
-                    catch (RuntimeException e) {
-                        runners.remove(manifest.id());
-                        throw e;
-                    }
-                }
-
-                @Override
-                public void stop(EngineManifest manifest) {
-                    DebeziumRunner runner = runners.remove(manifest.id());
-                    if (runner == null) {
-                        throw new DebeziumException("No running engine found for manifest: " + manifest.id());
-                    }
-                    runner.shutdown();
-                }
-            };
+            return new CompatibleModeConnectorRegistry(connector, engines);
         };
     }
 }
