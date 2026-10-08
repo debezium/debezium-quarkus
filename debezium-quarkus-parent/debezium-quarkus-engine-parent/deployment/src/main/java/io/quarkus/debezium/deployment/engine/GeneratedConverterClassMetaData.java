@@ -12,6 +12,6 @@ import io.quarkus.arc.processor.BeanInfo;
 
 public record GeneratedConverterClassMetaData(UUID id, String generatedClassName, BeanInfo binder, BeanInfo filter) {
     public String getShortIdentifier() {
-        return id.toString().split("-")[0].replaceAll("\\D", "");
+        return GeneratedIdentifier.of(id);
     }
 }
