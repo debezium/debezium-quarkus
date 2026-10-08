@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.Instance;
+
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvent;
 import io.debezium.runtime.CapturingEvents;
 import io.debezium.runtime.EngineManifest;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.quarkus.debezium.engine.OperationMapper;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
 import io.quarkus.debezium.engine.capture.CapturingInvoker;
@@ -42,11 +45,17 @@ public final class DefaultChangeConsumerFactory implements ChangeConsumerFactory
 
     private final RoutedQuarkusChangeConsumer routedQuarkusChangeConsumer;
     private final Optional<CapturingTombstoneEvents> capturingTombstoneEvents;
+    private final DebeziumEngineRuntimeConfiguration configuration;
+    private final Instance<ErrorHandler> errorHandlers;
 
     DefaultChangeConsumerFactory(CapturingEventsInvokerRegistry<CapturingEvents> filterRegistry,
                                  CapturingEventsInvokerRegistry<CapturingEvents> registry,
-                                 Optional<CapturingTombstoneEvents> capturingTombstoneEvents) {
+                                 Optional<CapturingTombstoneEvents> capturingTombstoneEvents,
+                                 DebeziumEngineRuntimeConfiguration configuration,
+                                 Instance<ErrorHandler> errorHandlers) {
         this.capturingTombstoneEvents = capturingTombstoneEvents;
+        this.configuration = configuration;
+        this.errorHandlers = errorHandlers;
         this.routedQuarkusChangeConsumer = new RoutedQuarkusChangeConsumer(
                 capturingTombstoneEvents,
                 new FilterChangeConsumer(filterRegistry),
@@ -56,9 +65,10 @@ public final class DefaultChangeConsumerFactory implements ChangeConsumerFactory
 
     @Override
     public QuarkusChangeConsumer get(EngineManifest manifest) {
-        return new QuarkusChangeConsumer() {
+        QuarkusChangeConsumer baseConsumer = new QuarkusChangeConsumer() {
             @Override
-            public void handleBatch(List<ChangeEvent<Object, Object>> records, DebeziumEngine.RecordCommitter<ChangeEvent<Object, Object>> committer) {
+            public void handleBatch(List<ChangeEvent<Object, Object>> records, DebeziumEngine.RecordCommitter<ChangeEvent<Object, Object>> committer)
+                    throws InterruptedException {
                 routedQuarkusChangeConsumer.handle(manifest, records, committer);
             }
 
@@ -69,6 +79,41 @@ public final class DefaultChangeConsumerFactory implements ChangeConsumerFactory
                         .isSupported();
             }
         };
+
+        ErrorHandler errorHandler = ErrorHandler.resolve(manifest, configuration, errorHandlers, LoggerFactory.getLogger(DefaultChangeConsumerFactory.class));
+        if (errorHandler != null) {
+            return new QuarkusChangeConsumer() {
+                @Override
+                public void handleBatch(List<ChangeEvent<Object, Object>> records, DebeziumEngine.RecordCommitter<ChangeEvent<Object, Object>> committer)
+                        throws InterruptedException {
+                    List<BatchEvent> batchEvents = records.stream()
+                            .map(record -> new DefaultBatchEvent<>(record, committer))
+                            .collect(Collectors.toList());
+                    CapturingEvents<BatchEvent> capturingEvents = new DefaultCapturingEvents<>(batchEvents, manifest, null);
+                    try {
+                        errorHandler.handle(capturingEvents, new ErrorHandler.BatchConsumer() {
+                            @Override
+                            public void accept(CapturingEvents<BatchEvent> events) throws Exception {
+                                baseConsumer.handleBatch(records, committer);
+                            }
+                        });
+                    }
+                    catch (InterruptedException e) {
+                        throw e;
+                    }
+                    catch (Exception e) {
+                        throw new DebeziumException(e);
+                    }
+                }
+
+                @Override
+                public boolean supportsTombstoneEvents() {
+                    return baseConsumer.supportsTombstoneEvents();
+                }
+            };
+        }
+
+        return baseConsumer;
     }
 
     /**

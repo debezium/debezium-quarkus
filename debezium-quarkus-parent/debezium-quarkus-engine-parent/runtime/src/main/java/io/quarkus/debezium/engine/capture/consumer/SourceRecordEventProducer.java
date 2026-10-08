@@ -8,6 +8,7 @@ package io.quarkus.debezium.engine.capture.consumer;
 
 import java.util.Optional;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -17,8 +18,10 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.debezium.DebeziumException;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.runtime.CapturingEvent;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.quarkus.debezium.engine.OperationMapper;
 import io.quarkus.debezium.engine.capture.CapturingInvoker;
 import io.quarkus.debezium.engine.capture.CapturingInvokerRegistry;
@@ -49,44 +52,69 @@ public class SourceRecordEventProducer {
      */
     @Produces
     @Singleton
-    public SourceRecordConsumerHandler produce() {
-        return manifest -> new SourceRecordEventConsumer() {
-            private final Logger logger = LoggerFactory.getLogger(SourceRecordEventConsumer.class);
+    public SourceRecordConsumerHandler produce(DebeziumEngineRuntimeConfiguration configuration, Instance<ErrorHandler> errorHandlers) {
+        return manifest -> {
+            SourceRecordEventConsumer baseConsumer = new SourceRecordEventConsumer() {
+                private final Logger logger = LoggerFactory.getLogger(SourceRecordEventConsumer.class);
 
-            @Override
-            public void accept(ChangeEvent<SourceRecord, SourceRecord> event) {
-                logger.trace("receiving event {} with engine id {}", event.destination(), manifest.id());
-                CapturingEvent<SourceRecord, SourceRecord> capturingEvent = new OperationMapper(manifest.id()).from(event);
+                @Override
+                public void accept(ChangeEvent<SourceRecord, SourceRecord> event) {
+                    logger.trace("receiving event {} with engine id {}", event.destination(), manifest.id());
+                    CapturingEvent<SourceRecord, SourceRecord> capturingEvent = new OperationMapper(manifest.id()).from(event);
 
-                Optional<CapturingInvoker<CapturingEvent<?, ?>>> filterInvoker = capturingFilterRegistry.get(capturingEvent);
-                if (filterInvoker.isPresent()) {
-                    logger.trace("filter invoker matched for capturing event: {}", capturingEvent.destination());
-                    filterInvoker.get().capture(capturingEvent);
-                    return;
-                }
-
-                var deserializer = capturingEventDeserializerRegistry.get(capturingEvent.destination());
-                Optional<CapturingInvoker<Object>> objectCapturingInvoker = capturingObjectInvokerRegistry.get(capturingEvent);
-                if (deserializer != null && objectCapturingInvoker.isPresent()) {
-                    logger.trace("method annotated with @Capturing with object mapping found for destination: {}", capturingEvent.destination());
-                    objectCapturingInvoker.get().capture(deserializer.deserialize(capturingEvent).record());
-                    return;
-                }
-
-                Optional<CapturingInvoker<CapturingEvent<?, ?>>> invoker = capturingDefaultRegistry.get(capturingEvent);
-                if (invoker.isPresent()) {
-                    if (deserializer != null) {
-                        logger.trace("deserializer found for destination: {}", capturingEvent.destination());
-                        invoker.get().capture(deserializer.deserialize(capturingEvent));
+                    Optional<CapturingInvoker<CapturingEvent<?, ?>>> filterInvoker = capturingFilterRegistry.get(capturingEvent);
+                    if (filterInvoker.isPresent()) {
+                        logger.trace("filter invoker matched for capturing event: {}", capturingEvent.destination());
+                        filterInvoker.get().capture(capturingEvent);
                         return;
                     }
-                    logger.trace("deserializer not found, using default invoker for: {}", capturingEvent.destination());
-                    invoker.get().capture(capturingEvent);
-                    return;
-                }
 
-                logger.warn("no invoker found for event with destination: {} and engine id: {}", capturingEvent.destination(), manifest.id());
+                    var deserializer = capturingEventDeserializerRegistry.get(capturingEvent.destination());
+                    Optional<CapturingInvoker<Object>> objectCapturingInvoker = capturingObjectInvokerRegistry.get(capturingEvent);
+                    if (deserializer != null && objectCapturingInvoker.isPresent()) {
+                        logger.trace("method annotated with @Capturing with object mapping found for destination: {}", capturingEvent.destination());
+                        objectCapturingInvoker.get().capture(deserializer.deserialize(capturingEvent).record());
+                        return;
+                    }
+
+                    Optional<CapturingInvoker<CapturingEvent<?, ?>>> invoker = capturingDefaultRegistry.get(capturingEvent);
+                    if (invoker.isPresent()) {
+                        if (deserializer != null) {
+                            logger.trace("deserializer found for destination: {}", capturingEvent.destination());
+                            invoker.get().capture(deserializer.deserialize(capturingEvent));
+                            return;
+                        }
+                        logger.trace("deserializer not found, using default invoker for: {}", capturingEvent.destination());
+                        invoker.get().capture(capturingEvent);
+                        return;
+                    }
+
+                    logger.warn("no invoker found for event with destination: {} and engine id: {}", capturingEvent.destination(), manifest.id());
+                }
+            };
+
+            ErrorHandler errorHandler = ErrorHandler.resolve(manifest, configuration, errorHandlers, LoggerFactory.getLogger(SourceRecordEventProducer.class));
+            if (errorHandler != null) {
+                return new SourceRecordEventConsumer() {
+                    @Override
+                    public void accept(ChangeEvent<SourceRecord, SourceRecord> event) {
+                        CapturingEvent<SourceRecord, SourceRecord> capturingEvent = new OperationMapper(manifest.id()).from(event);
+                        try {
+                            errorHandler.handle(capturingEvent, new ErrorHandler.EventConsumer() {
+                                @Override
+                                public void accept(CapturingEvent<SourceRecord, SourceRecord> ev) throws Exception {
+                                    baseConsumer.accept(event);
+                                }
+                            });
+                        }
+                        catch (Exception e) {
+                            throw new DebeziumException(e);
+                        }
+                    }
+                };
             }
+
+            return baseConsumer;
         };
     }
 }
