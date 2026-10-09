@@ -38,6 +38,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.debezium.connector.SourceInfoStructMaker;
 import io.debezium.connector.base.DefaultQueueProvider;
 import io.debezium.connector.base.QueueProviderService;
 import io.debezium.connector.common.BaseSourceConnector;
@@ -674,7 +675,8 @@ public class EngineProcessor {
                 UnremovableBeanBuildItem.beanTypes(PostProcessor.class),
                 UnremovableBeanBuildItem.beanTypes(CustomConverter.class),
                 UnremovableBeanBuildItem.beanTypes(DebeziumHeartbeatFactory.class),
-                UnremovableBeanBuildItem.beanTypes(SchemaHistory.class));
+                UnremovableBeanBuildItem.beanTypes(SchemaHistory.class),
+                UnremovableBeanBuildItem.beanTypes(SourceInfoStructMaker.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
