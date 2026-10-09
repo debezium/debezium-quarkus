@@ -57,6 +57,7 @@ import io.debezium.pipeline.signal.channels.SourceSignalChannel;
 import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
 import io.debezium.pipeline.signal.channels.process.InProcessSignalChannel;
 import io.debezium.pipeline.txmetadata.DefaultTransactionMetadataFactory;
+import io.debezium.pipeline.txmetadata.spi.TransactionMetadataFactory;
 import io.debezium.processors.spi.PostProcessor;
 import io.debezium.relational.ConcurrentMapTableMappingStorage;
 import io.debezium.relational.history.SchemaHistory;
@@ -676,7 +677,8 @@ public class EngineProcessor {
                 UnremovableBeanBuildItem.beanTypes(CustomConverter.class),
                 UnremovableBeanBuildItem.beanTypes(DebeziumHeartbeatFactory.class),
                 UnremovableBeanBuildItem.beanTypes(SchemaHistory.class),
-                UnremovableBeanBuildItem.beanTypes(SourceInfoStructMaker.class));
+                UnremovableBeanBuildItem.beanTypes(SourceInfoStructMaker.class),
+                UnremovableBeanBuildItem.beanTypes(TransactionMetadataFactory.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
