@@ -75,6 +75,7 @@ import io.debezium.snapshot.mode.RecoverySnapshotter;
 import io.debezium.snapshot.mode.WhenNeededNoDataSnapshotter;
 import io.debezium.snapshot.mode.WhenNeededSnapshotter;
 import io.debezium.snapshot.spi.SnapshotLock;
+import io.debezium.spi.converter.CustomConverter;
 import io.debezium.spi.topic.TopicNamingStrategy;
 import io.debezium.transforms.ExtractNewRecordState;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -112,6 +113,7 @@ import io.quarkus.debezium.engine.deserializer.CapturingEventDeserializerRegistr
 import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
 import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
+import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverters;
 import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
 import io.quarkus.debezium.heartbeat.ArcHeartbeatFactory;
 import io.quarkus.debezium.heartbeat.QuarkusHeartbeatEmitter;
@@ -221,7 +223,8 @@ public class EngineProcessor {
                         DefaultNotificationHandler.class,
                         SnapshotHandler.class,
                         QuarkusNotificationChannel.class,
-                        QuarkusHeartbeatEmitter.class)
+                        QuarkusHeartbeatEmitter.class,
+                        QuarkusCustomConverters.class)
                 .setUnremovable()
                 .build());
     }
@@ -667,7 +670,8 @@ public class EngineProcessor {
                 UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class),
                 UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class),
                 UnremovableBeanBuildItem.beanTypes(TopicNamingStrategy.class),
-                UnremovableBeanBuildItem.beanTypes(PostProcessor.class));
+                UnremovableBeanBuildItem.beanTypes(PostProcessor.class),
+                UnremovableBeanBuildItem.beanTypes(CustomConverter.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
