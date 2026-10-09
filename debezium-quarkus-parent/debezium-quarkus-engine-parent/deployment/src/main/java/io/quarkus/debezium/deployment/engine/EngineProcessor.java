@@ -38,6 +38,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.debezium.connector.SourceInfoStructMaker;
 import io.debezium.connector.base.DefaultQueueProvider;
 import io.debezium.connector.base.QueueProviderService;
 import io.debezium.connector.common.BaseSourceConnector;
@@ -45,6 +46,7 @@ import io.debezium.connector.common.BaseSourceTask;
 import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.spi.OffsetCommitPolicy;
+import io.debezium.heartbeat.DebeziumHeartbeatFactory;
 import io.debezium.pipeline.notification.channels.LogNotificationChannel;
 import io.debezium.pipeline.notification.channels.SinkNotificationChannel;
 import io.debezium.pipeline.notification.channels.jmx.JmxNotificationChannel;
@@ -55,8 +57,11 @@ import io.debezium.pipeline.signal.channels.SourceSignalChannel;
 import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
 import io.debezium.pipeline.signal.channels.process.InProcessSignalChannel;
 import io.debezium.pipeline.txmetadata.DefaultTransactionMetadataFactory;
+import io.debezium.pipeline.txmetadata.spi.TransactionMetadataFactory;
 import io.debezium.processors.spi.PostProcessor;
 import io.debezium.relational.ConcurrentMapTableMappingStorage;
+import io.debezium.relational.TableMappingStorage;
+import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.CapturingFilterStrategy;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.FieldFilterStrategy;
@@ -75,6 +80,8 @@ import io.debezium.snapshot.mode.RecoverySnapshotter;
 import io.debezium.snapshot.mode.WhenNeededNoDataSnapshotter;
 import io.debezium.snapshot.mode.WhenNeededSnapshotter;
 import io.debezium.snapshot.spi.SnapshotLock;
+import io.debezium.spi.converter.CustomConverter;
+import io.debezium.spi.topic.TopicNamingStrategy;
 import io.debezium.transforms.ExtractNewRecordState;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -109,9 +116,10 @@ import io.quarkus.debezium.engine.capture.consumer.SourceRecordEventProducer;
 import io.quarkus.debezium.engine.converter.custom.DynamicCustomConverterSupplier;
 import io.quarkus.debezium.engine.deserializer.CapturingEventDeserializerRegistryProducer;
 import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
-import io.quarkus.debezium.engine.post.processing.ArcPostProcessorFactory;
 import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
+import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverters;
+import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
 import io.quarkus.debezium.heartbeat.ArcHeartbeatFactory;
 import io.quarkus.debezium.heartbeat.QuarkusHeartbeatEmitter;
 import io.quarkus.debezium.notification.DefaultNotificationHandler;
@@ -220,7 +228,9 @@ public class EngineProcessor {
                         DefaultNotificationHandler.class,
                         SnapshotHandler.class,
                         QuarkusNotificationChannel.class,
-                        QuarkusHeartbeatEmitter.class)
+                        QuarkusHeartbeatEmitter.class,
+                        QuarkusCustomConverters.class,
+                        ArcHeartbeatFactory.class)
                 .setUnremovable()
                 .build());
     }
@@ -311,8 +321,7 @@ public class EngineProcessor {
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/org.apache.kafka.connect.source.SourceConnector"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.signal.channels.SignalChannelReader"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.notification.channels.NotificationChannel"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.processors.PostProcessorProducer"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.heartbeat.DebeziumHeartbeatFactory"));
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.service.spi.ServiceProviderContributor"));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -415,8 +424,7 @@ public class EngineProcessor {
                 DefaultQueueProvider.class,
                 QueueProviderService.class,
                 WhenNeededNoDataSnapshotter.class,
-                ArcHeartbeatFactory.class,
-                ArcPostProcessorFactory.class,
+                ArcServiceProviderContributor.class,
                 DebeziumEngine.BuilderFactory.class,
                 ConvertingAsyncEngineBuilderFactory.class,
                 SaslClientAuthenticator.class,
@@ -664,7 +672,15 @@ public class EngineProcessor {
     public List<UnremovableBeanBuildItem> avoidRemovalIfNotReferenced() {
         return List.of(
                 UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class),
-                UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class));
+                UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class),
+                UnremovableBeanBuildItem.beanTypes(TopicNamingStrategy.class),
+                UnremovableBeanBuildItem.beanTypes(PostProcessor.class),
+                UnremovableBeanBuildItem.beanTypes(CustomConverter.class),
+                UnremovableBeanBuildItem.beanTypes(DebeziumHeartbeatFactory.class),
+                UnremovableBeanBuildItem.beanTypes(SchemaHistory.class),
+                UnremovableBeanBuildItem.beanTypes(SourceInfoStructMaker.class),
+                UnremovableBeanBuildItem.beanTypes(TransactionMetadataFactory.class),
+                UnremovableBeanBuildItem.beanTypes(TableMappingStorage.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
