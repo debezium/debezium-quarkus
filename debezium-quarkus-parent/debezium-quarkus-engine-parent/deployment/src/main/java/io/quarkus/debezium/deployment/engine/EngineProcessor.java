@@ -75,6 +75,7 @@ import io.debezium.snapshot.mode.RecoverySnapshotter;
 import io.debezium.snapshot.mode.WhenNeededNoDataSnapshotter;
 import io.debezium.snapshot.mode.WhenNeededSnapshotter;
 import io.debezium.snapshot.spi.SnapshotLock;
+import io.debezium.spi.topic.TopicNamingStrategy;
 import io.debezium.transforms.ExtractNewRecordState;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
@@ -667,7 +668,8 @@ public class EngineProcessor {
     public List<UnremovableBeanBuildItem> avoidRemovalIfNotReferenced() {
         return List.of(
                 UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class),
-                UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class));
+                UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class),
+                UnremovableBeanBuildItem.beanTypes(TopicNamingStrategy.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
