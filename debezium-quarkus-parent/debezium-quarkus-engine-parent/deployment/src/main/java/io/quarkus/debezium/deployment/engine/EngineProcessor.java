@@ -110,7 +110,6 @@ import io.quarkus.debezium.engine.capture.consumer.SourceRecordEventProducer;
 import io.quarkus.debezium.engine.converter.custom.DynamicCustomConverterSupplier;
 import io.quarkus.debezium.engine.deserializer.CapturingEventDeserializerRegistryProducer;
 import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
-import io.quarkus.debezium.engine.post.processing.ArcPostProcessorFactory;
 import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
 import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
@@ -313,7 +312,6 @@ public class EngineProcessor {
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/org.apache.kafka.connect.source.SourceConnector"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.signal.channels.SignalChannelReader"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.notification.channels.NotificationChannel"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.processors.PostProcessorProducer"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.heartbeat.DebeziumHeartbeatFactory"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.service.spi.ServiceProviderContributor"));
     }
@@ -419,7 +417,6 @@ public class EngineProcessor {
                 QueueProviderService.class,
                 WhenNeededNoDataSnapshotter.class,
                 ArcHeartbeatFactory.class,
-                ArcPostProcessorFactory.class,
                 ArcServiceProviderContributor.class,
                 DebeziumEngine.BuilderFactory.class,
                 ConvertingAsyncEngineBuilderFactory.class,
@@ -669,7 +666,8 @@ public class EngineProcessor {
         return List.of(
                 UnremovableBeanBuildItem.beanTypes(FieldFilterStrategy.class),
                 UnremovableBeanBuildItem.beanTypes(CapturingFilterStrategy.class),
-                UnremovableBeanBuildItem.beanTypes(TopicNamingStrategy.class));
+                UnremovableBeanBuildItem.beanTypes(TopicNamingStrategy.class),
+                UnremovableBeanBuildItem.beanTypes(PostProcessor.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
