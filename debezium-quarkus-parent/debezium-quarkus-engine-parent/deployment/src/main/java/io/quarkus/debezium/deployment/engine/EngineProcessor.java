@@ -112,6 +112,7 @@ import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
 import io.quarkus.debezium.engine.post.processing.ArcPostProcessorFactory;
 import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
+import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
 import io.quarkus.debezium.heartbeat.ArcHeartbeatFactory;
 import io.quarkus.debezium.heartbeat.QuarkusHeartbeatEmitter;
 import io.quarkus.debezium.notification.DefaultNotificationHandler;
@@ -313,6 +314,7 @@ public class EngineProcessor {
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.notification.channels.NotificationChannel"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.processors.PostProcessorProducer"));
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.heartbeat.DebeziumHeartbeatFactory"));
+        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.service.spi.ServiceProviderContributor"));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -417,6 +419,7 @@ public class EngineProcessor {
                 WhenNeededNoDataSnapshotter.class,
                 ArcHeartbeatFactory.class,
                 ArcPostProcessorFactory.class,
+                ArcServiceProviderContributor.class,
                 DebeziumEngine.BuilderFactory.class,
                 ConvertingAsyncEngineBuilderFactory.class,
                 SaslClientAuthenticator.class,
