@@ -45,6 +45,7 @@ import io.debezium.connector.common.BaseSourceTask;
 import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.spi.OffsetCommitPolicy;
+import io.debezium.pipeline.notification.channels.HttpNotificationChannel;
 import io.debezium.pipeline.notification.channels.LogNotificationChannel;
 import io.debezium.pipeline.notification.channels.SinkNotificationChannel;
 import io.debezium.pipeline.notification.channels.jmx.JmxNotificationChannel;
@@ -428,6 +429,7 @@ public class EngineProcessor {
                 SinkNotificationChannel.class,
                 LogNotificationChannel.class,
                 JmxNotificationChannel.class,
+                HttpNotificationChannel.class,
                 SnapshotLock.class,
                 NoLockingSupport.class,
                 AlwaysSnapshotter.class,
