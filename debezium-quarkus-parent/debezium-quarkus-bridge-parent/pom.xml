@@ -10,7 +10,7 @@
 
     <artifactId>debezium-quarkus-bridge-parent</artifactId>
     <packaging>pom</packaging>
-    <name>Debezium Quarkus Bridge - Parent</name>
+    <name>Debezium Quarkus :: Extension :: Bridge</name>
 
     <properties>
         <maven.compiler.release>17</maven.compiler.release>

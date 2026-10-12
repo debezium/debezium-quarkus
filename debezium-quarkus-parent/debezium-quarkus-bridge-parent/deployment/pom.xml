@@ -8,7 +8,7 @@
         <version>3.8.0-SNAPSHOT</version>
     </parent>
     <artifactId>debezium-quarkus-bridge-deployment</artifactId>
-    <name>Debezium Quarkus Bridge - Deployment</name>
+    <name>Debezium Quarkus :: Extension :: Bridge :: Deployment</name>
 
     <dependencies>
         <dependency>
