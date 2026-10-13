@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.debezium</groupId>
+        <groupId>io.debezium.quarkus</groupId>
         <artifactId>debezium-quarkus-extensions-parent</artifactId>
         <version>3.8.0-SNAPSHOT</version>
     </parent>
@@ -12,7 +12,6 @@
     <description>Parent Module for Debezium Runtime Extensions for Quarkus</description>
 
     <artifactId>debezium-quarkus-parent</artifactId>
-    <groupId>io.debezium.quarkus</groupId>
     <packaging>pom</packaging>
 
     <properties>

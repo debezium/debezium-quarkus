@@ -4,7 +4,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.debezium</groupId>
+        <groupId>io.debezium.quarkus</groupId>
         <artifactId>debezium-quarkus-outbox-parent</artifactId>
         <version>3.8.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
@@ -30,14 +30,14 @@
         </dependency>
 
         <dependency>
-            <groupId>io.debezium</groupId>
+            <groupId>io.debezium.quarkus</groupId>
             <artifactId>debezium-quarkus-outbox-deployment-common</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <!-- Debezium Quarkus Outbox Runtime artifact dependency -->
         <dependency>
-            <groupId>io.debezium</groupId>
+            <groupId>io.debezium.quarkus</groupId>
             <artifactId>debezium-quarkus-outbox</artifactId>
             <version>${project.version}</version>
         </dependency>
