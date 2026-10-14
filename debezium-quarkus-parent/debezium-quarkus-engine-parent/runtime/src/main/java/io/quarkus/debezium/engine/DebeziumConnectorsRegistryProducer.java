@@ -9,6 +9,7 @@ package io.quarkus.debezium.engine;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -24,7 +25,7 @@ public class DebeziumConnectorsRegistryProducer {
     private final Instance<DebeziumConnectorRegistry> registryInstances;
 
     @Inject
-    public DebeziumConnectorsRegistryProducer(Instance<DebeziumConnectorRegistry> registryInstances) {
+    public DebeziumConnectorsRegistryProducer(@Any Instance<DebeziumConnectorRegistry> registryInstances) {
         this.registryInstances = registryInstances;
     }
 
