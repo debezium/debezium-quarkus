@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
@@ -250,24 +251,37 @@ public class EngineProcessor {
                 .flatMap(Optional::stream)
                 .toList();
 
+        List<String> extensionConnectorClasses = debeziumConnectorBuildItems
+                .stream()
+                .map(item -> item.getConnector().getName())
+                .toList();
+
         List<String> compatibleConnectorClass = sourceConnectorClasses
                 .stream()
-                .filter(sourceConnector -> !debeziumConnectorBuildItems
-                        .stream()
-                        .map(item -> item.getConnector().getName())
-                        .toList()
-                        .contains(sourceConnector))
+                .filter(sourceConnector -> !extensionConnectorClasses.contains(sourceConnector))
+                .toList();
+
+        // a connector.class that is neither provided by an extension nor found among the dependencies
+        // (e.g. a connector jar added to the lib/ directory of a Debezium Server distribution) is only
+        // known at runtime: it is resolved from the configuration by one of the registries below
+        List<String> knownConnectorClasses = Stream
+                .concat(extensionConnectorClasses.stream(), sourceConnectorClasses.stream())
+                .distinct()
                 .toList();
 
         // with only one connector, It's possible to infer from the dependency the connector class
         if (compatibleConnectorClass.size() == 1) {
+            String inferredConnectorClass = compatibleConnectorClass.get(0);
+
             syntheticBeanBuildItemBuildProducer.produce(
                     SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
                             .scope(Singleton.class)
                             .unremovable()
-                            .supplier(recorder.engine(
-                                    (Class<? extends BaseSourceConnector>) recorderContext.classProxy(compatibleConnectorClass.get(0)), true))
-                            .named(DebeziumConnectorRegistry.class.getName() + compatibleConnectorClass.get(0))
+                            .supplier(recorder.inferredEngine(knownConnectorClasses
+                                    .stream()
+                                    .filter(sourceConnector -> !sourceConnector.equals(inferredConnectorClass))
+                                    .toList(), inferredConnectorClass))
+                            .named(DebeziumConnectorRegistry.class.getName() + inferredConnectorClass)
                             .setRuntimeInit()
                             .done());
         }
@@ -278,12 +292,20 @@ public class EngineProcessor {
                                     .scope(Singleton.class)
                                     .unremovable()
                                     .supplier(recorder.engine(
-                                            (Class<? extends BaseSourceConnector>) recorderContext.classProxy(sourceConnector), false))
+                                            (Class<? extends BaseSourceConnector>) recorderContext.classProxy(sourceConnector)))
                                     .named(DebeziumConnectorRegistry.class.getName() + sourceConnector)
                                     .setRuntimeInit()
                                     .done()));
-        }
 
+            syntheticBeanBuildItemBuildProducer.produce(
+                    SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
+                            .scope(Singleton.class)
+                            .unremovable()
+                            .supplier(recorder.configuredEngine(knownConnectorClasses))
+                            .named(DebeziumConnectorRegistry.class.getName() + "configured")
+                            .setRuntimeInit()
+                            .done());
+        }
     }
 
     @BuildStep
