@@ -54,14 +54,14 @@ The Engine extension brings Quarkus-native configuration and listener APIs for c
 Using **Quarkus CLI**:
 
 ```bash
-quarkus ext add io.debezium:debezium-quarkus-outbox
+quarkus ext add io.debezium.quarkus:debezium-quarkus-outbox
 ```
 
 Using **Maven**:
 
 ```xml
 <dependency>
-  <groupId>io.debezium</groupId>
+  <groupId>io.debezium.quarkus</groupId>
   <artifactId>debezium-quarkus-outbox</artifactId>
   <version>${version.debezium}</version>
 </dependency>
@@ -70,7 +70,7 @@ Using **Maven**:
 Using **Gradle**:
 
 ```gradle
-implementation("io.debezium:debezium-quarkus-outbox:${version.debezium}")
+implementation("io.debezium.quarkus:debezium-quarkus-outbox:${version.debezium}")
 ```
 
 Define an event class implementing `io.debezium.outbox.quarkus.ExportedEvent` interface and emit it via CDI (Jakarta Event), and configure the extension/Debezium will capture the outbox table changes and route them downstream. See the https://debezium.io/documentation/reference/stable/integrations/outbox.html[documentation] for features and setup details.
