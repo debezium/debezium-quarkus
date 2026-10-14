@@ -30,7 +30,7 @@ public class UnknownConnectorClassTest {
             .overrideConfigKey("quarkus.debezium.offset.storage", "org.apache.kafka.connect.storage.MemoryOffsetBackingStore")
             .assertException(throwable -> assertThat(throwable)
                     .hasStackTraceContaining(DebeziumException.class.getName())
-                    .hasStackTraceContaining("Unable to load connector class 'io.debezium.connector.does.not.Exist'"));
+                    .hasStackTraceContaining("Connector class 'io.debezium.connector.does.not.Exist' configured for engine 'default' was not found on the classpath"));
 
     @Test
     @DisplayName("should fail to start when the configured connector class cannot be loaded")
