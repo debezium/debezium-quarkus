@@ -116,7 +116,7 @@ jobs:
       - uses: ./.github/actions/build-debezium-quarkus-runtime-extension
         with:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
-          maven-props: ${{ matrix.maven-props }}}
+          maven-props: ${{ matrix.maven-props }}
           connector: ${{ matrix.connectors }}
   build-hibernate-cache:
     name: "Hibernate Cache Invalidation Extension"
