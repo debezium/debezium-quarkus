@@ -95,6 +95,7 @@ import io.quarkus.debezium.deployment.items.DebeziumGeneratedInvokerBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedPostProcessorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumMediatorBuildItem;
 import io.quarkus.debezium.engine.CompatibleModeConnectorRecorder;
+import io.quarkus.debezium.engine.ConfiguredConnector;
 import io.quarkus.debezium.engine.DebeziumConnectorsRegistryProducer;
 import io.quarkus.debezium.engine.DebeziumFactory;
 import io.quarkus.debezium.engine.DebeziumRecorder;
@@ -169,6 +170,7 @@ public class EngineProcessor {
 
         additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(Engine.class));
         additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(DefaultEngine.class));
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(ConfiguredConnector.class));
 
         additionalBeanProducer.produce(AdditionalBeanBuildItem
                 .builder()
@@ -297,10 +299,12 @@ public class EngineProcessor {
                                     .setRuntimeInit()
                                     .done()));
 
+            // qualified, so that it never makes an unqualified DebeziumConnectorRegistry injection ambiguous
             syntheticBeanBuildItemBuildProducer.produce(
                     SyntheticBeanBuildItem.configure(DebeziumConnectorRegistry.class)
                             .scope(Singleton.class)
                             .unremovable()
+                            .addQualifier(ConfiguredConnector.class)
                             .supplier(recorder.configuredEngine(knownConnectorClasses))
                             .named(DebeziumConnectorRegistry.class.getName() + "configured")
                             .setRuntimeInit()
