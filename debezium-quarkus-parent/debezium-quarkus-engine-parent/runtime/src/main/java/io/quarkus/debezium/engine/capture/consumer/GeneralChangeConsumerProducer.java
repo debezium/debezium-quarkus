@@ -14,6 +14,7 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Named;
 
 import io.debezium.runtime.CapturingEvents;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.quarkus.debezium.engine.capture.CapturingEventsInvokerRegistry;
 import io.quarkus.debezium.engine.capture.CapturingTombstoneEvents;
 
@@ -35,12 +36,12 @@ public class GeneralChangeConsumerProducer {
 
     @Produces
     @Dependent
-    public ChangeConsumerFactory produce() {
+    public ChangeConsumerFactory produce(DebeziumEngineRuntimeConfiguration configuration, Instance<ErrorHandler> errorHandlers) {
         if (registry == null) {
             return null;
         }
 
-        return new DefaultChangeConsumerFactory(filterRegistry, registry, capturingTombstoneEvents);
+        return new DefaultChangeConsumerFactory(filterRegistry, registry, capturingTombstoneEvents, configuration, errorHandlers);
     }
 
 }
