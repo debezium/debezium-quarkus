@@ -8,6 +8,8 @@ package io.quarkus.debezium.heartbeat;
 
 import java.util.Optional;
 
+import jakarta.enterprise.context.Dependent;
+
 import io.debezium.config.CommonConnectorConfig;
 import io.debezium.connector.base.ChangeEventQueue;
 import io.debezium.heartbeat.DebeziumHeartbeatFactory;
@@ -17,6 +19,11 @@ import io.debezium.heartbeat.HeartbeatErrorHandler;
 import io.debezium.pipeline.DataChangeEvent;
 import io.quarkus.arc.Arc;
 
+/**
+ * The {@link DebeziumHeartbeatFactory} that Debezium resolves from Quarkus Arc, it supplies the
+ * {@link Heartbeat} bean of the application.
+ */
+@Dependent
 public class ArcHeartbeatFactory implements DebeziumHeartbeatFactory {
 
     @Override

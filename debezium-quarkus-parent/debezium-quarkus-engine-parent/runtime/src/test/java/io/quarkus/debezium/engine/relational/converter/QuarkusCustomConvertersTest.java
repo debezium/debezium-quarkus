@@ -23,7 +23,7 @@ import org.mockito.Mockito;
 import io.debezium.relational.CustomConverterRegistry;
 import io.debezium.spi.converter.ConvertedField;
 
-class QuarkusCustomConverterFactoryTest {
+class QuarkusCustomConvertersTest {
 
     private final static ConvertedField FIELD = new ConvertedField() {
         @Override
@@ -39,13 +39,13 @@ class QuarkusCustomConverterFactoryTest {
     private final QuarkusCustomConverter disableConverter = Mockito.mock(QuarkusCustomConverter.class);
     private final QuarkusCustomConverter enabledConverter = Mockito.mock(QuarkusCustomConverter.class);
 
-    private final QuarkusCustomConverterFactory underTest = new QuarkusCustomConverterFactory(List.of(
+    private final QuarkusCustomConverters underTest = new QuarkusCustomConverters(List.of(
             disableConverter,
             enabledConverter));
 
     @Test
-    @DisplayName("should create converter only for enable converter")
-    void shouldCreateConverterOnlyForEnabledConverter() {
+    @DisplayName("should register a converter only for the enabled converter")
+    void shouldRegisterConverterOnlyForEnabledConverter() {
         CustomConverterRegistry.ConverterDefinition<SchemaBuilder> enabled = new CustomConverterRegistry.ConverterDefinition<>(new SchemaBuilder(INT8), null);
 
         when(enabledConverter.filter(FIELD)).thenReturn(true);
@@ -54,7 +54,7 @@ class QuarkusCustomConverterFactoryTest {
 
         List<SchemaBuilder> actual = new ArrayList<>();
 
-        underTest.get().converterFor(FIELD, (fieldSchema, converter) -> actual.add(fieldSchema));
+        underTest.converterFor(FIELD, (fieldSchema, converter) -> actual.add(fieldSchema));
 
         assertThat(actual).containsExactlyInAnyOrder(enabled.fieldSchema);
 
