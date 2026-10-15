@@ -62,12 +62,13 @@ public class CompatibleModeConnectorRecorder {
      * configured class is neither provided by a Debezium extension nor discovered among the application's
      * dependencies at build time (the {@code knownConnectorClasses}), for example a connector jar added to
      * the {@code lib/} directory of a Debezium Server distribution. When the configured class is a known
-     * one, another registry already serves it and this registry is empty. A {@code connector.class} that
-     * cannot be loaded is a configuration error and fails the start-up instead of leaving the engine
-     * silently unstarted.
+     * one, or there is none (the extension infers it), another registry already serves the engine and this
+     * registry is empty; the same holds for every engine of a multi-engine configuration. A
+     * {@code connector.class} that cannot be loaded is a configuration error and fails the start-up
+     * instead of leaving the engine silently unstarted.
      */
     public Supplier<DebeziumConnectorRegistry> configuredEngine(List<String> knownConnectorClasses) {
-        return () -> configuredRegistry(knownConnectorClasses, null);
+        return () -> configuredRegistry(knownConnectorClasses);
     }
 
     /**
@@ -75,25 +76,51 @@ public class CompatibleModeConnectorRecorder {
      * connector is inferred from the single dependency found at build time: {@code inferredConnectorClass}.
      */
     public Supplier<DebeziumConnectorRegistry> inferredEngine(List<String> knownConnectorClasses, String inferredConnectorClass) {
-        return () -> configuredRegistry(knownConnectorClasses, inferredConnectorClass);
+        return () -> inferredRegistry(knownConnectorClasses, inferredConnectorClass);
     }
 
-    private DebeziumConnectorRegistry configuredRegistry(List<String> knownConnectorClasses, String inferredConnectorClass) {
-        Map<String, String> configuration = defaultConfiguration(
-                inferredConnectorClass == null ? CONNECTOR_CLASS.name() : inferredConnectorClass);
+    private DebeziumConnectorRegistry configuredRegistry(List<String> knownConnectorClasses) {
+        List<MultiEngineConfiguration> engines = engineParser.parse(debeziumEngineConfigurationRuntimeValue.getValue());
+
+        // an engine without connector.class, or with one provided by an extension or a dependency, is served by another registry
+        List<MultiEngineConfiguration> unserved = engines
+                .stream()
+                .filter(engine -> !isServed(engine.configuration().get(CONNECTOR_CLASS.name()), knownConnectorClasses))
+                .toList();
+
+        if (unserved.isEmpty()) {
+            if (engines.size() == 1 && knownConnectorClasses.isEmpty()) {
+                // nothing to infer the connector class from
+                loadConnectorClass(engines.get(0).configuration().get(CONNECTOR_CLASS.name()), engines.get(0).engineId());
+            }
+            return emptyRegistry();
+        }
+
+        MultiEngineConfiguration engine = unserved.get(0);
+        String connectorClass = engine.configuration().get(CONNECTOR_CLASS.name());
+
+        if (engines.size() > 1 || !engine.engineId().equals(QuarkusDatasourceConfiguration.DEFAULT)) {
+            throw new DebeziumException("Connector class '" + connectorClass + "' configured for engine '" + engine.engineId()
+                    + "' is not provided by a Debezium extension nor found among the application's dependencies; "
+                    + "such a connector is only supported by the default engine in Compatibility mode, which does not support the Multi Engine feature");
+        }
+
+        loadConnectorClass(connectorClass, engine.engineId());
+
+        LOGGER.info("Connector class '{}' is not provided by a Debezium extension nor found among the application's dependencies; " +
+                "loading it from the configuration", connectorClass);
+
+        return registry(new Connector(connectorClass), new LinkedHashMap<>(engine.configuration()));
+    }
+
+    private DebeziumConnectorRegistry inferredRegistry(List<String> knownConnectorClasses, String inferredConnectorClass) {
+        Map<String, String> configuration = defaultConfiguration(inferredConnectorClass);
         String connectorClass = configuration.get(CONNECTOR_CLASS.name());
 
         if (connectorClass == null || connectorClass.isBlank()) {
-            if (inferredConnectorClass != null) {
-                // to reduce friction, if there is only one dependency it's possible to infer the connector class
-                configuration.put(CONNECTOR_CLASS.name(), inferredConnectorClass);
-                return registry(new Connector(inferredConnectorClass), configuration);
-            }
-            if (knownConnectorClasses.isEmpty()) {
-                // nothing to infer the connector class from
-                loadConnectorClass(connectorClass, EngineManifest.DEFAULT.id());
-            }
-            return emptyRegistry();
+            // to reduce friction, if there is only one dependency it's possible to infer the connector class
+            configuration.put(CONNECTOR_CLASS.name(), inferredConnectorClass);
+            return registry(new Connector(inferredConnectorClass), configuration);
         }
 
         if (knownConnectorClasses.contains(connectorClass)) {
@@ -108,6 +135,10 @@ public class CompatibleModeConnectorRecorder {
         }
 
         return registry(new Connector(connectorClass), configuration);
+    }
+
+    private static boolean isServed(String connectorClass, List<String> knownConnectorClasses) {
+        return connectorClass == null || connectorClass.isBlank() || knownConnectorClasses.contains(connectorClass);
     }
 
     /**
