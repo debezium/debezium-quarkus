@@ -13,6 +13,7 @@ import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
@@ -35,7 +36,7 @@ public class QuarkusHeartbeatEmitter implements Heartbeat {
     private final Event<DebeziumHeartbeat> heartbeat;
 
     @Inject
-    public QuarkusHeartbeatEmitter(Instance<DebeziumConnectorRegistry> registries, Event<DebeziumHeartbeat> heartbeat) {
+    public QuarkusHeartbeatEmitter(@Any Instance<DebeziumConnectorRegistry> registries, Event<DebeziumHeartbeat> heartbeat) {
         this.registries = registries
                 .stream()
                 .toList();
