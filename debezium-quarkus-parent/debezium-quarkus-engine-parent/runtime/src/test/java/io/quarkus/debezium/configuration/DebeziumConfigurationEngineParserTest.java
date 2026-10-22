@@ -72,6 +72,31 @@ class DebeziumConfigurationEngineParserTest {
                             public Optional<String> engineFactory() {
                                 return Optional.empty();
                             }
+
+                            @Override
+                            public Optional<String> errorHandler() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<Integer> maxRetries() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<Long> initialDelayMs() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<Long> maxDelayMs() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<Double> delayMultiplier() {
+                                return Optional.empty();
+                            }
                         });
             }
 
@@ -240,6 +265,31 @@ class DebeziumConfigurationEngineParserTest {
 
             @Override
             public Optional<String> engineFactory() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<String> errorHandler() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Integer> maxRetries() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> initialDelayMs() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Long> maxDelayMs() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<Double> delayMultiplier() {
                 return Optional.empty();
             }
 

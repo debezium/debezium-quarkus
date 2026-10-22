@@ -7,7 +7,9 @@
 package io.quarkus.debezium.engine.capture.consumer;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -17,8 +19,10 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.debezium.engine.ChangeEvent;
+import io.debezium.DebeziumException;
 import io.debezium.runtime.CapturingEvent;
+import io.debezium.runtime.ErrorHandler;
+import io.debezium.runtime.configuration.DebeziumEngineRuntimeConfiguration;
 import io.quarkus.debezium.engine.OperationMapper;
 import io.quarkus.debezium.engine.capture.CapturingInvoker;
 import io.quarkus.debezium.engine.capture.CapturingInvokerRegistry;
@@ -49,14 +53,13 @@ public class SourceRecordEventProducer {
      */
     @Produces
     @Singleton
-    public SourceRecordConsumerHandler produce() {
-        return manifest -> new SourceRecordEventConsumer() {
-            private final Logger logger = LoggerFactory.getLogger(SourceRecordEventConsumer.class);
+    public SourceRecordConsumerHandler produce(DebeziumEngineRuntimeConfiguration configuration, Instance<ErrorHandler> errorHandlers) {
+        return manifest -> {
+            Logger logger = LoggerFactory.getLogger(SourceRecordEventConsumer.class);
+            OperationMapper operationMapper = new OperationMapper(manifest.id());
 
-            @Override
-            public void accept(ChangeEvent<SourceRecord, SourceRecord> event) {
-                logger.trace("receiving event {} with engine id {}", event.destination(), manifest.id());
-                CapturingEvent<SourceRecord, SourceRecord> capturingEvent = new OperationMapper(manifest.id()).from(event);
+            Consumer<CapturingEvent<SourceRecord, SourceRecord>> eventDispatcher = capturingEvent -> {
+                logger.trace("receiving event {} with engine id {}", capturingEvent.destination(), manifest.id());
 
                 Optional<CapturingInvoker<CapturingEvent<?, ?>>> filterInvoker = capturingFilterRegistry.get(capturingEvent);
                 if (filterInvoker.isPresent()) {
@@ -86,7 +89,26 @@ public class SourceRecordEventProducer {
                 }
 
                 logger.warn("no invoker found for event with destination: {} and engine id: {}", capturingEvent.destination(), manifest.id());
+            };
+
+            ErrorHandler errorHandler = ErrorHandlerResolver.resolve(manifest, configuration, errorHandlers, LoggerFactory.getLogger(SourceRecordEventProducer.class));
+            if (errorHandler != null) {
+                return event -> {
+                    CapturingEvent<SourceRecord, SourceRecord> capturingEvent = operationMapper.from(event);
+                    try {
+                        errorHandler.handle(capturingEvent, ev -> eventDispatcher.accept(ev));
+                    }
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new DebeziumException(e);
+                    }
+                    catch (Exception e) {
+                        throw new DebeziumException(e);
+                    }
+                };
             }
+
+            return event -> eventDispatcher.accept(operationMapper.from(event));
         };
     }
 }
