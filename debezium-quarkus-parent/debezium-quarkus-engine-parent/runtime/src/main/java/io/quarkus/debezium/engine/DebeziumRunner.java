@@ -42,10 +42,12 @@ class DebeziumRunner {
         LOGGER.info("Shutting down Debezium Engine {}", debeziumThread.getName());
         try {
             engine.close();
-            debeziumThread.join(SHUTDOWN_TIMEOUT_MS);
-            if (debeziumThread.isAlive()) {
-                LOGGER.warn("Debezium Engine {} did not stop within {}ms; interrupting",
-                        debeziumThread.getName(), SHUTDOWN_TIMEOUT_MS);
+            if (!DebeziumThreadHandler.isEngineThread()) {
+                debeziumThread.join(SHUTDOWN_TIMEOUT_MS);
+                if (debeziumThread.isAlive()) {
+                    LOGGER.warn("Debezium Engine {} did not stop within {}ms; interrupting",
+                            debeziumThread.getName(), SHUTDOWN_TIMEOUT_MS);
+                }
             }
         }
         catch (IllegalStateException alreadyClosed) {
@@ -59,7 +61,9 @@ class DebeziumRunner {
             LOGGER.warn("Interrupted while waiting for Debezium Engine {} to stop", debeziumThread.getName());
         }
         finally {
-            debeziumThread.interrupt();
+            if (!DebeziumThreadHandler.isEngineThread()) {
+                debeziumThread.interrupt();
+            }
             LOGGER.info("Shutdown complete for Debezium Engine {}", debeziumThread.getName());
         }
     }
