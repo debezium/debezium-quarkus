@@ -13,6 +13,10 @@ inputs:
     description: "The Java distribution to use"
     required: false
     default: "graalvm"
+  java-version:
+    description: "The Java version to install"
+    required: false
+    default: "21"
   maven-props:
     description: "Maven properties"
     required: true
@@ -31,6 +35,7 @@ runs:
     - uses: ./.github/actions/setup-java
       with:
         distribution: ${{ inputs.distribution }}
+        java-version: ${{ inputs.java-version }}
     - uses: ./.github/actions/maven-cache
       with:
         key: ${{ inputs.maven-cache-key }}

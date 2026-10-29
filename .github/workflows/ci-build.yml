@@ -117,6 +117,7 @@ jobs:
         with:
           maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
           maven-props: ${{ matrix.maven-props }}
+          java-version: ${{ matrix.maven-props == 'native' && '25' || '21' }}
           connector: ${{ matrix.connectors }}
   build-hibernate-cache:
     name: "Hibernate Cache Invalidation Extension"

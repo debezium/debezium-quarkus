@@ -275,6 +275,7 @@ jobs:
         with:
           maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
           maven-props: ${{ matrix.maven-props }}
+          java-version: ${{ matrix.maven-props == 'native' && '25' || '21' }}
           connector: ${{ matrix.connectors }}
           multi-engine-timeout: ${{ matrix.connectors == 'oracle' && '120' || '30' }}
   build-hibernate-cache:
