@@ -28,12 +28,6 @@
         <dependency>
             <groupId>io.debezium</groupId>
             <artifactId>debezium-connect-plugins</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.kafka</groupId>
-                    <artifactId>kafka-clients</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -49,10 +43,6 @@
             <groupId>io.debezium</groupId>
             <artifactId>debezium-embedded</artifactId>
             <exclusions>
-                <exclusion>
-                    <groupId>org.apache.kafka</groupId>
-                    <artifactId>kafka-clients</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-core</artifactId>
@@ -143,15 +133,7 @@
                     <groupId>com.fasterxml</groupId>
                     <artifactId>jackson-module-afterburner</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.apache.kafka</groupId>
-                    <artifactId>kafka-clients</artifactId>
-                </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
