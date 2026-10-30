@@ -39,10 +39,13 @@ public class DebeziumThreadHandler {
     }
 
     /**
-     * @return {@code true} if the current thread is managed by a Debezium engine (main thread or any child/worker thread)
+     * @param manifest the engine to check against
+     * @return {@code true} if the current thread is managed by the Debezium engine identified by {@code manifest}
+     *         (main thread or any child/worker thread)
      */
-    static boolean isEngineThread() {
-        return context.get() != null;
+    static boolean isEngineThread(EngineManifest manifest) {
+        DebeziumContext current = context.get();
+        return current != null && manifest.equals(current.manifest());
     }
 
     /**
