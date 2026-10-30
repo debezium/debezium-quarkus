@@ -39,6 +39,16 @@ public class DebeziumThreadHandler {
     }
 
     /**
+     * @param manifest the engine to check against
+     * @return {@code true} if the current thread is managed by the Debezium engine identified by {@code manifest}
+     *         (main thread or any child/worker thread)
+     */
+    static boolean isEngineThread(EngineManifest manifest) {
+        DebeziumContext current = context.get();
+        return current != null && manifest.equals(current.manifest());
+    }
+
+    /**
      * The context is created through the dev/prod flow of the extension with {@link #getThreadFactory(Debezium)}. If
      * it's called without starting the Quarkus Application (like during integration tests) the context is initialized
      * with a dummy context.
