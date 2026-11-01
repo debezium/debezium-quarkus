@@ -24,6 +24,8 @@ jobs:
   build-debezium-quarkus-dependencies:
     name: "Build Debezium & Dependencies"
     runs-on: ubuntu-latest
+    outputs:
+      maven-cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - name: Checkout Debezium Quarkus Extensions repository
         uses: actions/checkout@v7
@@ -49,10 +51,27 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: 21
-      - uses: debezium/debezium/.github/actions/maven-cache@main
+      # The upstream Debezium artifacts (core, db2, informix) are built from source into the cached
+      # Maven repository, so the cache key must change whenever one of those checkouts moves. A key
+      # derived from this repository's pom files alone yields an exact hit for as long as the poms are
+      # unchanged, and actions/cache never re-saves on an exact hit, so downstream jobs would keep
+      # compiling against whatever upstream snapshot happened to be cached first.
+      - name: Compute Maven cache key
+        id: cache-key
+        env:
+          POM_HASH: ${{ hashFiles('debezium-quarkus/**/pom.xml') }}
+        run: |
+          UPSTREAM_HASH=$( (git -C core rev-parse HEAD; git -C db2 rev-parse HEAD; git -C informix rev-parse HEAD) | sha256sum | cut -c1-16 )
+          echo "key=debezium-quarkus-CI-build-${POM_HASH}-${UPSTREAM_HASH}" >> "$GITHUB_OUTPUT"
+          echo "pom-prefix=debezium-quarkus-CI-build-${POM_HASH}-" >> "$GITHUB_OUTPUT"
+      - name: Cache Maven Repository
+        uses: actions/cache@v6
         with:
-          key: debezium-quarkus-CI-build-${{ hashFiles('debezium-quarkus/**/pom.xml') }}
-          save: 'true'
+          path: ~/.m2/repository
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: |
+            ${{ steps.cache-key.outputs.pom-prefix }}
+            debezium-quarkus-CI-build-
       - name: Maven build core
         run: ./debezium-quarkus/mvnw clean install -f core/pom.xml -DskipTests -DskipITs -Dformat.formatter.goal=validate -Dformat.imports.goal=check -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.httpconnectionManager.ttlSeconds=120
       - name: Maven build db2
@@ -69,7 +88,7 @@ jobs:
         uses: actions/checkout@v7
       - uses: debezium/debezium/.github/actions/checkstyle-format@main
         with:
-          maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: ${{ needs.build-debezium-quarkus-dependencies.outputs.maven-cache-key }}
   build_outbox:
     name: "Outbox Extension"
     needs: [ check_style, build-debezium-quarkus-dependencies ]
@@ -79,7 +98,7 @@ jobs:
         uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-outbox
         with:
-          maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: ${{ needs.build-debezium-quarkus-dependencies.outputs.maven-cache-key }}
   build-debezium-extension-runtime-core:
     name: "Debezium Quarkus Extensions Core"
     needs: [ check_style, build-debezium-quarkus-dependencies ]
@@ -89,7 +108,7 @@ jobs:
         uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-quarkus-runtime-core
         with:
-          maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: ${{ needs.build-debezium-quarkus-dependencies.outputs.maven-cache-key }}
   build-runtime-extensions:
     name: "Debezium Quarkus Extensions Matrix"
     runs-on: ubuntu-latest
@@ -115,18 +134,17 @@ jobs:
         uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-quarkus-runtime-extension
         with:
-          maven-cache-key: debezium-quarkus-CI-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: ${{ needs.build-debezium-quarkus-dependencies.outputs.maven-cache-key }}
           maven-props: ${{ matrix.maven-props }}
           java-version: ${{ matrix.maven-props == 'native' && '25' || '21' }}
           connector: ${{ matrix.connectors }}
   build-hibernate-cache:
     name: "Hibernate Cache Invalidation Extension"
     needs: [ check_style, build-debezium-quarkus-dependencies ]
-    if: ${{ needs.file_changes.outputs.common-changed == 'true' || needs.file_changes.outputs.hibernate-changed == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Action
         uses: actions/checkout@v7
       - uses: ./.github/actions/build-debezium-hibernate-cache
         with:
-          maven-cache-key: debezium-quarkus-PR-build-${{ hashFiles('**/pom.xml') }}
+          maven-cache-key: ${{ needs.build-debezium-quarkus-dependencies.outputs.maven-cache-key }}
