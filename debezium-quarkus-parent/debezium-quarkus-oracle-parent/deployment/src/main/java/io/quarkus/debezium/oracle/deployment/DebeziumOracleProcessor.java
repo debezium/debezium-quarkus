@@ -14,6 +14,7 @@ import io.debezium.connector.oracle.StreamingAdapter;
 import io.debezium.connector.oracle.logminer.buffered.BufferedLogMinerAdapter;
 import io.debezium.connector.oracle.logminer.unbuffered.UnbufferedLogMinerAdapter;
 import io.debezium.connector.oracle.olr.OpenLogReplicatorAdapter;
+import io.debezium.connector.oracle.snapshot.lock.ExtendedSnapshotLock;
 import io.debezium.connector.oracle.snapshot.lock.NoSnapshotLock;
 import io.debezium.connector.oracle.snapshot.lock.SharedSnapshotLock;
 import io.debezium.connector.oracle.snapshot.query.SelectAllSnapshotQuery;
@@ -59,6 +60,7 @@ public class DebeziumOracleProcessor implements QuarkusEngineProcessor<AgroalDat
                 NoSnapshotLock.class,
                 SharedSnapshotLock.class,
                 SelectAllSnapshotQuery.class,
+                ExtendedSnapshotLock.class,
                 StreamingAdapter.class,
                 BufferedLogMinerAdapter.class,
                 UnbufferedLogMinerAdapter.class,
