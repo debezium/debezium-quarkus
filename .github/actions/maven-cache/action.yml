@@ -9,11 +9,16 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Cache Maven Repository
+    # Restore only: the cache under this key is populated exclusively by the "Build Debezium & Dependencies"
+    # job, which installs the upstream Debezium snapshots into it. Jobs that consume the cache must never
+    # save it themselves, otherwise a job that happens to miss the key would publish a repository without
+    # those snapshots under the very key every later run resolves. A miss is a workflow defect (the save
+    # was skipped or evicted), so fail here with a clear message instead of letting Maven fail later on
+    # unresolvable snapshot dependencies, or worse, silently resolve them from a remote repository.
+    - name: Restore Maven Repository
       id: cache-check
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v6
       with:
         path: ~/.m2/repository
         key: ${{ inputs.key }}
-        restore-keys: ${{ inputs.key }}
-
+        fail-on-cache-miss: true
