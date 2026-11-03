@@ -38,22 +38,38 @@ public abstract class AbstractEventDispatcher extends AbstractEventWriter<Uni<Vo
     @Inject
     DebeziumOutboxRuntimeConfig config;
 
+    /**
+     * Persists the outbox event, joining the session and transaction that are active in the current
+     * Vert.x context. A new session and transaction are only opened when there is none.
+     *
+     * @param dataMap the outbox event data
+     * @return a {@link Uni} that completes once the event is persisted
+     */
     protected Uni<Void> persist(Map<String, Object> dataMap) {
-        return factory.withSession(
-                session -> session.withTransaction(
-                        tx -> session.persist(dataMap)))
-                .invoke(() -> LOGGER.debug("outbox event persisted"))
-                .call(() -> this.removeFromOutbox(dataMap));
-
+        return factory.withTransaction((session, tx) -> persist(session, dataMap));
     }
 
-    protected Uni<Integer> removeFromOutbox(Map<String, Object> dataMap) {
+    /**
+     * Persists the outbox event with the given session, without beginning or committing a transaction.
+     * If configured, the event is removed again with the same session right after the insert.
+     *
+     * @param session the session to use, its transaction is owned by the caller
+     * @param dataMap the outbox event data
+     * @return a {@link Uni} that completes once the event is persisted
+     */
+    protected Uni<Void> persist(Mutiny.Session session, Map<String, Object> dataMap) {
+        return session.persist(dataMap)
+                .invoke(() -> LOGGER.debug("outbox event persisted"))
+                .call(() -> removeFromOutbox(session, dataMap));
+    }
+
+    protected Uni<Integer> removeFromOutbox(Mutiny.Session session, Map<String, Object> dataMap) {
         if (config.removeAfterInsert()) {
             LOGGER.debug("removing outbox event");
-            return factory.withSession(
-                    session -> session.withTransaction(
-                            tx -> session.createQuery("delete from " + OUTBOX_ENTITY_FULLNAME + " where " + AGGREGATE_ID + "=:aggregateId")
-                                    .setParameter("aggregateId", dataMap.get(AGGREGATE_ID)).executeUpdate()));
+            return session.flush()
+                    .chain(() -> session.createMutationQuery("delete from " + OUTBOX_ENTITY_FULLNAME + " where " + AGGREGATE_ID + "=:aggregateId")
+                            .setParameter("aggregateId", dataMap.get(AGGREGATE_ID))
+                            .executeUpdate());
         }
         return Uni.createFrom().item(-1);
     }
