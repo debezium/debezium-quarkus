@@ -212,6 +212,26 @@
         </plugins>
     </build>
 
+    <repositories>
+        <!--
+            The Confluent repository is inherited from debezium-build-parent, where it is required by
+            core modules that depend on io.confluent artifacts. The Debezium Quarkus extensions have no
+            such dependency, so we override the inherited definition (matched by id) and disable it to
+            avoid slow lookups and 404s against packages.confluent.io on every build.
+        -->
+        <repository>
+            <id>confluent</id>
+            <name>Confluent</name>
+            <url>https://packages.confluent.io/maven/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <modules>
         <module>debezium-quarkus-outbox-common</module>
         <module>debezium-quarkus-outbox</module>
