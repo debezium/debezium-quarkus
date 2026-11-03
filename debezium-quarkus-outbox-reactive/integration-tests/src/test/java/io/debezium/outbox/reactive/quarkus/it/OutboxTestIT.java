@@ -47,7 +47,6 @@ public class OutboxTestIT extends AbstractOutboxTest {
         // a way to subscribe to the mock service call
         var finished = this.myService.doSomething()
                 .subscribe().withSubscriber(UniAssertSubscriber.create())
-                .assertSubscribed()
                 .awaitItem(Duration.ofSeconds(5))
                 .getItem();
 

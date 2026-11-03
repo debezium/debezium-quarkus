@@ -6,16 +6,17 @@
 package io.debezium.outbox.reactive.quarkus.internal;
 
 import java.util.Map;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.debezium.outbox.quarkus.ExportedEvent;
 import io.debezium.outbox.quarkus.internal.DataMapTracingSetter;
-import io.debezium.outbox.reactive.quarkus.DebeziumCustomCodec;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -24,7 +25,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -45,9 +45,16 @@ public class DebeziumTracerEventDispatcher extends AbstractEventDispatcher {
     OpenTelemetry openTelemetry;
 
     @Override
-    @ConsumeEvent(value = "debezium-outbox", codec = DebeziumCustomCodec.class)
     public Uni<Void> onExportedEvent(Object incomingevent) {
-        ExportedEvent<?, ?> event = (ExportedEvent<?, ?>) incomingevent;
+        return traced((ExportedEvent<?, ?>) incomingevent, this::persist);
+    }
+
+    @Override
+    public Uni<Void> onExportedEvent(ExportedEvent<?, ?> event, Mutiny.Session session) {
+        return traced(event, dataMap -> persist(session, dataMap));
+    }
+
+    private Uni<Void> traced(ExportedEvent<?, ?> event, Function<Map<String, Object>, Uni<Void>> persister) {
         LOGGER.debug("An exported event was found for type {}", event.getType());
         final Tracer tracer = openTelemetry.getTracer(TRACING_COMPONENT);
         final SpanBuilder spanBuilder = tracer.spanBuilder(OPERATION_NAME);
@@ -71,7 +78,7 @@ public class DebeziumTracerEventDispatcher extends AbstractEventDispatcher {
             TextMapPropagator textMapPropagator = openTelemetry.getPropagators().getTextMapPropagator();
             textMapPropagator.inject(Context.current(), dataMap, exportedSpanData);
 
-            return persist(dataMap);
+            return persister.apply(dataMap);
         }
         finally {
             activeSpan.end();
