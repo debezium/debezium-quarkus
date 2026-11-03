@@ -31,4 +31,14 @@ public class OutboxProfiles {
             return Collections.singletonMap("quarkus.debezium-outbox.tracing.enabled", "false");
         }
     }
+
+    /**
+     * Removes outbox events right after they have been inserted.
+     */
+    public static class RemoveAfterInsert implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Collections.singletonMap("quarkus.debezium-outbox.remove-after-insert", "true");
+        }
+    }
 }

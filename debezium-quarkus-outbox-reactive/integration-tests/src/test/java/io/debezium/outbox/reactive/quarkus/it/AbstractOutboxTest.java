@@ -8,6 +8,7 @@ package io.debezium.outbox.reactive.quarkus.it;
 import static io.debezium.outbox.reactive.quarkus.it.TestAsserts.assertIsType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -20,6 +21,7 @@ import jakarta.inject.Inject;
 import org.hibernate.metamodel.spi.MappingMetamodelImplementor;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.reactive.mutiny.Mutiny;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -45,6 +47,54 @@ public abstract class AbstractOutboxTest {
     @Inject
     MyService myService;
 
+    @BeforeEach
+    public void clearTables() {
+        sessionFactory.withTransaction(session -> session.createMutationQuery("delete from OutboxEvent").executeUpdate()
+                .chain(() -> session.createMutationQuery("delete from TestEntity").executeUpdate()))
+                .await().indefinitely();
+    }
+
+    @Test
+    public void outboxInsertRolledBackWithCallerTransaction() {
+        myService.persistEntityAndEventInCallerTransaction(false, true).await().atMost(Duration.ofSeconds(10));
+
+        assertEquals(0L, countRows("TestEntity"));
+        assertEquals(0L, countRows("OutboxEvent"));
+    }
+
+    @Test
+    public void outboxInsertCommittedWithCallerTransaction() {
+        myService.persistEntityAndEventInCallerTransaction(false, false).await().atMost(Duration.ofSeconds(10));
+
+        assertEquals(1L, countRows("TestEntity"));
+        assertEquals(expectedOutboxRowsAfterCommit(), countRows("OutboxEvent"));
+    }
+
+    @Test
+    public void outboxInsertWithSessionRolledBackWithCallerTransaction() {
+        myService.persistEntityAndEventInCallerTransaction(true, true).await().atMost(Duration.ofSeconds(10));
+
+        assertEquals(0L, countRows("TestEntity"));
+        assertEquals(0L, countRows("OutboxEvent"));
+    }
+
+    @Test
+    public void outboxInsertWithSessionCommittedWithCallerTransaction() {
+        myService.persistEntityAndEventInCallerTransaction(true, false).await().atMost(Duration.ofSeconds(10));
+
+        assertEquals(1L, countRows("TestEntity"));
+        assertEquals(expectedOutboxRowsAfterCommit(), countRows("OutboxEvent"));
+    }
+
+    @Test
+    public void outboxInsertWithSessionRolledBackWhenCallerFails() {
+        assertThrows(IllegalStateException.class,
+                () -> myService.persistEntityAndEventThenFail().await().atMost(Duration.ofSeconds(10)));
+
+        assertEquals(0L, countRows("TestEntity"));
+        assertEquals(0L, countRows("OutboxEvent"));
+    }
+
     @Test
     public void testOutboxEntityMetamodelExists() throws Exception {
         final MappingMetamodelImplementor metadata = (MappingMetamodelImplementor) sessionFactory.getMetamodel();
@@ -67,7 +117,6 @@ public abstract class AbstractOutboxTest {
     public void firedEventGetsPersistedInOutboxTable() {
         var finished = this.myService.doSomething()
                 .subscribe().withSubscriber(UniAssertSubscriber.create())
-                .assertSubscribed()
                 .awaitItem(Duration.ofSeconds(5))
                 .getItem();
 
@@ -93,5 +142,18 @@ public abstract class AbstractOutboxTest {
         assertEquals("John Doe", row.get("name"));
         assertEquals("JOHN DOE", row.get("name_upper"));
         assertEquals("Jane Doe", row.get("name_no_columndef"));
+    }
+
+    /**
+     * @return the number of outbox rows expected after a single event was committed
+     */
+    protected long expectedOutboxRowsAfterCommit() {
+        return 1L;
+    }
+
+    protected long countRows(String entityName) {
+        return sessionFactory.withSession(
+                session -> session.createSelectionQuery("select count(*) from " + entityName, Long.class).getSingleResult())
+                .await().indefinitely();
     }
 }

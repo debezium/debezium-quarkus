@@ -7,12 +7,11 @@ package io.debezium.outbox.reactive.quarkus.internal;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.debezium.outbox.quarkus.ExportedEvent;
-import io.debezium.outbox.reactive.quarkus.DebeziumCustomCodec;
-import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -28,9 +27,14 @@ public class DefaultEventDispatcher extends AbstractEventDispatcher {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultEventDispatcher.class);
 
     @Override
-    @ConsumeEvent(value = "debezium-outbox", codec = DebeziumCustomCodec.class)
     public Uni<Void> onExportedEvent(Object event) {
         LOGGER.debug("An exported event was found for type {}", event.getClass().getName());
         return persist(getDataMapFromEvent((ExportedEvent<?, ?>) event));
+    }
+
+    @Override
+    public Uni<Void> onExportedEvent(ExportedEvent<?, ?> event, Mutiny.Session session) {
+        LOGGER.debug("An exported event was found for type {}", event.getClass().getName());
+        return persist(session, getDataMapFromEvent(event));
     }
 }
