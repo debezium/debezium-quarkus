@@ -7,6 +7,7 @@
 package io.quarkus.debezium.engine;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -26,6 +27,8 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumStatus;
 import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordEventConsumer;
+import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
+import io.quarkus.debezium.engine.shutdown.ShutdownInvokers;
 
 @ApplicationScoped
 class SourceRecordDebezium extends RunnableDebezium {
@@ -42,12 +45,13 @@ class SourceRecordDebezium extends RunnableDebezium {
                          StateHandler stateHandler,
                          Connector connector,
                          SourceRecordEventConsumer consumer,
-                         EngineManifest engineManifest) {
+                         EngineManifest engineManifest,
+                         List<ShutdownInvoker> shutdown) {
         this.configuration = configuration;
         this.stateHandler = stateHandler;
         this.engineInstance = () -> {
             LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
-            return DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
+            return ShutdownInvokers.apply(DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()
                             .withSystemProperties(Function.identity())
                             .edit()
@@ -55,7 +59,7 @@ class SourceRecordDebezium extends RunnableDebezium {
                             .build().asProperties())
                     .using(this.stateHandler.connectorCallback(engineManifest, this))
                     .using(this.stateHandler.completionCallback(engineManifest, this))
-                    .notifying(consumer)
+                    .notifying(consumer), shutdown)
                     .build();
         };
         this.connector = connector;
@@ -66,14 +70,15 @@ class SourceRecordDebezium extends RunnableDebezium {
                          ChangeConsumer batchConsumer,
                          Connector connector,
                          StateHandler stateHandler,
-                         EngineManifest engineManifest) {
+                         EngineManifest engineManifest,
+                         List<ShutdownInvoker> shutdown) {
         this.configuration = configuration;
         this.connector = connector;
         this.stateHandler = stateHandler;
         this.engineManifest = engineManifest;
         this.engineInstance = () -> {
             LOGGER.trace("Creating SourceRecordDebezium for engine {}", engineManifest);
-            return DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
+            return ShutdownInvokers.apply(DebeziumEngine.create(Connect.class, Connect.class, Connect.class, ConvertingAsyncEngineBuilderFactory.class.getName())
                     .using(Configuration.empty()
                             .withSystemProperties(Function.identity())
                             .edit()
@@ -81,7 +86,7 @@ class SourceRecordDebezium extends RunnableDebezium {
                             .build().asProperties())
                     .using(this.stateHandler.connectorCallback(engineManifest, this))
                     .using(this.stateHandler.completionCallback(engineManifest, this))
-                    .notifying(batchConsumer)
+                    .notifying(batchConsumer), shutdown)
                     .build();
         };
     }
