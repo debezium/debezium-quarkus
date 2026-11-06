@@ -18,6 +18,7 @@ import io.debezium.runtime.CapturingFilterStrategy;
 import io.debezium.runtime.CustomConverter;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.PostProcessing;
+import io.debezium.runtime.ShutdownCondition;
 import io.quarkus.arc.processor.BeanInfo;
 
 public class DebeziumDotNames {
@@ -30,7 +31,8 @@ public class DebeziumDotNames {
     public static final DotName CUSTOM_CONVERTER = DotName.createSimple(CustomConverter.class.getName());
     public static final DotName FIELD_FILTER_STRATEGY = DotName.createSimple(FieldFilterStrategy.class.getName());
     public static final DotName CAPTURING_FILTER_STRATEGY = DotName.createSimple(CapturingFilterStrategy.class.getName());
-    public static final List<DotName> dotNames = List.of(CAPTURING, POST_PROCESSING, CUSTOM_CONVERTER);
+    public static final DotName SHUTDOWN_CONDITION = DotName.createSimple(ShutdownCondition.class.getName());
+    public static final List<DotName> dotNames = List.of(CAPTURING, POST_PROCESSING, CUSTOM_CONVERTER, SHUTDOWN_CONDITION);
 
     public boolean filter(BeanInfo info) {
         return info.getTarget()

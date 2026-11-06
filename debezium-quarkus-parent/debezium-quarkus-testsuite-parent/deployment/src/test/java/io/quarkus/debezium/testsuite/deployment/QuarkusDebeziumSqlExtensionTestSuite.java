@@ -27,6 +27,10 @@ import io.quarkus.debezium.testsuite.deployment.suite.EngineTopicNamingStrategyT
 import io.quarkus.debezium.testsuite.deployment.suite.HeartbeatTest;
 import io.quarkus.debezium.testsuite.deployment.suite.NotificationTest;
 import io.quarkus.debezium.testsuite.deployment.suite.PostProcessingTest;
+import io.quarkus.debezium.testsuite.deployment.suite.ShutdownConditionBeforeTest;
+import io.quarkus.debezium.testsuite.deployment.suite.ShutdownConditionCustomSerializationTest;
+import io.quarkus.debezium.testsuite.deployment.suite.ShutdownConditionFailureTest;
+import io.quarkus.debezium.testsuite.deployment.suite.ShutdownConditionTest;
 import io.quarkus.debezium.testsuite.deployment.suite.TopicNamingStrategyTest;
 
 /**
@@ -62,7 +66,8 @@ import io.quarkus.debezium.testsuite.deployment.suite.TopicNamingStrategyTest;
         HeartbeatTest.class,
         NotificationTest.class, PostProcessingTest.class, CustomConverterTest.class,
         CapturingEventsTest.class, CapturingEventsFilterTest.class, DebeziumServerTest.class, TopicNamingStrategyTest.class,
-        EngineTopicNamingStrategyTest.class })
+        EngineTopicNamingStrategyTest.class, ShutdownConditionTest.class, ShutdownConditionBeforeTest.class,
+        ShutdownConditionCustomSerializationTest.class, ShutdownConditionFailureTest.class })
 @SuiteDisplayName("Sql Debezium Extensions for Quarkus Test Suite")
 public interface QuarkusDebeziumSqlExtensionTestSuite {
 }

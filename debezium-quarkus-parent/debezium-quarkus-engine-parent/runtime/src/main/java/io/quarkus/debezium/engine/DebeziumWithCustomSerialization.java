@@ -7,6 +7,7 @@
 package io.quarkus.debezium.engine;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -21,6 +22,8 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumSerialization;
 import io.debezium.runtime.DebeziumStatus;
 import io.debezium.runtime.EngineManifest;
+import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
+import io.quarkus.debezium.engine.shutdown.ShutdownInvokers;
 
 public class DebeziumWithCustomSerialization extends RunnableDebezium {
 
@@ -37,7 +40,8 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
                                            DebeziumEngine.ChangeConsumer batchConsumer,
                                            Connector connector,
                                            StateHandler stateHandler,
-                                           EngineManifest engineManifest) {
+                                           EngineManifest engineManifest,
+                                           List<ShutdownInvoker> shutdown) {
         this.configuration = configuration;
         this.connector = connector;
         this.stateHandler = stateHandler;
@@ -49,7 +53,7 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
                     debeziumSerialization.getHeaderFormat().getName(),
                     debeziumSerialization.getKeyFormat().getName(),
                     debeziumSerialization.getValueFormat().getName());
-            return DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
+            return ShutdownInvokers.apply(DebeziumEngine.create(debeziumSerialization.getKeyFormat(),
                     debeziumSerialization.getValueFormat(),
                     debeziumSerialization.getHeaderFormat(),
                     configuration.getOrDefault("engine.factory", ConvertingAsyncEngineBuilderFactory.class.getName()))
@@ -60,7 +64,7 @@ public class DebeziumWithCustomSerialization extends RunnableDebezium {
                             .build().asProperties())
                     .using(this.stateHandler.connectorCallback(engineManifest, this))
                     .using(this.stateHandler.completionCallback(engineManifest, this))
-                    .notifying(batchConsumer)
+                    .notifying(batchConsumer), shutdown)
                     .build();
         };
     }
