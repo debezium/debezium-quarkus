@@ -19,6 +19,7 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 import io.quarkus.debezium.engine.capture.consumer.ChangeConsumerFactory;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
+import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
 
 public class DebeziumFactory {
 
@@ -27,6 +28,7 @@ public class DebeziumFactory {
     private final SourceRecordConsumerHandler sourceRecordConsumerHandler;
     private final List<DebeziumConfigurationEnhancer> enhancers;
     private final ChangeConsumerFactory changeConsumerHandler;
+    private final Instance<ShutdownInvoker> shutdownInvokers;
 
     @Inject
     public DebeziumFactory(
@@ -34,7 +36,8 @@ public class DebeziumFactory {
                            Instance<DebeziumSerialization<?, ?, ?>> serializations,
                            StateHandler stateHandler,
                            SourceRecordConsumerHandler sourceRecordConsumerHandler,
-                           ChangeConsumerFactory changeConsumerHandler) {
+                           ChangeConsumerFactory changeConsumerHandler,
+                           Instance<ShutdownInvoker> shutdownInvokers) {
         this.serializations = serializations;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
@@ -42,9 +45,11 @@ public class DebeziumFactory {
                 .stream()
                 .toList();
         this.changeConsumerHandler = changeConsumerHandler;
+        this.shutdownInvokers = shutdownInvokers;
     }
 
     public Debezium get(Connector connector, MultiEngineConfiguration engine) {
+        List<ShutdownInvoker> shutdown = shutdownInvokers.stream().toList();
 
         if (serializations.isResolvable() && changeConsumerHandler != null) {
             EngineManifest engineManifest = new EngineManifest(engine.engineId());
@@ -64,7 +69,8 @@ public class DebeziumFactory {
                     changeConsumerHandler.get(engineManifest),
                     connector,
                     stateHandler,
-                    engineManifest);
+                    engineManifest,
+                    shutdown);
         }
 
         EngineManifest engineManifest = new EngineManifest(engine.engineId());
@@ -79,7 +85,8 @@ public class DebeziumFactory {
                     changeConsumerHandler.get(engineManifest),
                     connector,
                     stateHandler,
-                    engineManifest);
+                    engineManifest,
+                    shutdown);
         }
 
         return new SourceRecordDebezium(
@@ -87,7 +94,8 @@ public class DebeziumFactory {
                 stateHandler,
                 connector,
                 sourceRecordConsumerHandler.get(engineManifest),
-                engineManifest);
+                engineManifest,
+                shutdown);
     }
 
     private class ComposeConfigurationEnhancer {
