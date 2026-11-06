@@ -66,6 +66,7 @@ import io.debezium.relational.TableMappingStorage;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.CapturingFilterStrategy;
 import io.debezium.runtime.DebeziumConnectorRegistry;
+import io.debezium.runtime.DebeziumShutdown.Phase;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
@@ -100,6 +101,7 @@ import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedCustomConverterBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedInvokerBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedPostProcessorBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumGeneratedShutdownBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumMediatorBuildItem;
 import io.quarkus.debezium.engine.CompatibleModeConnectorRecorder;
 import io.quarkus.debezium.engine.ConfiguredConnector;
@@ -123,6 +125,8 @@ import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverters;
 import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
+import io.quarkus.debezium.engine.shutdown.DynamicShutdownInvokerSupplier;
+import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
 import io.quarkus.debezium.heartbeat.ArcHeartbeatFactory;
 import io.quarkus.debezium.heartbeat.QuarkusHeartbeatEmitter;
 import io.quarkus.debezium.notification.DefaultNotificationHandler;
@@ -609,6 +613,67 @@ public class EngineProcessor {
                                 (Class<? extends CapturingInvoker<?>>) recorderContext.classProxy(item.getGeneratedClassName())))
                         .named(DynamicCapturingInvokerSupplier.BASE_NAME + item.getMediator().getImplClazz().name() + item.getId())
                         .done()));
+    }
+
+    @BuildStep
+    public void generateShutdownInvokers(List<DebeziumMediatorBuildItem> mediatorBuildItems,
+                                         BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+                                         BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+                                         BuildProducer<DebeziumGeneratedShutdownBuildItem> debeziumGeneratedShutdownBuildItemBuildProducer) {
+        List<DebeziumMediatorBuildItem> shutdownMediators = mediatorBuildItems.stream()
+                .filter(item -> item.getDotName().equals(DebeziumDotNames.DEBEZIUM_SHUTDOWN))
+                .toList();
+
+        shutdownMediators.forEach(item -> ShutdownInvokerGenerator.validate(item.getMethodInfo()));
+
+        Map<Phase, List<DebeziumMediatorBuildItem>> byPhase = shutdownMediators.stream()
+                .collect(Collectors.groupingBy(EngineProcessor::shutdownPhase));
+
+        byPhase.forEach((phase, items) -> {
+            if (items.size() > 1) {
+                throw new IllegalArgumentException("only one @DebeziumShutdown(" + phase + ") method is allowed, found "
+                        + items.stream()
+                                .map(item -> item.getMethodInfo().declaringClass().name() + "." + item.getMethodInfo().name())
+                                .collect(Collectors.joining(", ")));
+            }
+        });
+
+        GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true);
+        ShutdownInvokerGenerator generator = new ShutdownInvokerGenerator(classOutput);
+
+        shutdownMediators.forEach(item -> {
+            GeneratedClassMetaData metadata = generator.generate(item.getMethodInfo(), item.getBean(), shutdownPhase(item));
+
+            debeziumGeneratedShutdownBuildItemBuildProducer.produce(new DebeziumGeneratedShutdownBuildItem(
+                    metadata.generatedClassName(),
+                    metadata.mediator(),
+                    metadata.getShortIdentifier()));
+
+            reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(metadata.generatedClassName()).build());
+        });
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public void injectShutdownInvokers(
+                                       RecorderContext recorderContext,
+                                       BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+                                       DynamicShutdownInvokerSupplier dynamicShutdownInvokerSupplier,
+                                       List<DebeziumGeneratedShutdownBuildItem> debeziumGeneratedShutdownBuildItems) {
+        debeziumGeneratedShutdownBuildItems.forEach(item -> syntheticBeanBuildItemBuildProducer.produce(
+                SyntheticBeanBuildItem.configure(ShutdownInvoker.class)
+                        .setRuntimeInit()
+                        .scope(ApplicationScoped.class)
+                        .unremovable()
+                        .supplier(dynamicShutdownInvokerSupplier.createInvoker(
+                                recorderContext.classProxy(item.getMediator().getImplClazz().name().toString()),
+                                (Class<? extends ShutdownInvoker>) recorderContext.classProxy(item.getGeneratedClassName())))
+                        .named(DynamicShutdownInvokerSupplier.BASE_NAME + item.getMediator().getImplClazz().name() + item.getId())
+                        .done()));
+    }
+
+    private static Phase shutdownPhase(DebeziumMediatorBuildItem item) {
+        return Phase.valueOf(item.getMethodInfo().annotation(DebeziumDotNames.DEBEZIUM_SHUTDOWN).value().asEnum());
     }
 
     @BuildStep
