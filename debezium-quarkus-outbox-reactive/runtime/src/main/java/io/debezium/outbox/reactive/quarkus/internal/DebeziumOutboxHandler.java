@@ -28,13 +28,10 @@ public class DebeziumOutboxHandler {
     /**
      * Persists the event to the outbox table.
      *
-     * If a Hibernate Reactive session and transaction were opened by {@link Mutiny.SessionFactory} in the
-     * current Vert.x context, for example with {@link Mutiny.SessionFactory#withTransaction}, the write joins
-     * them. Otherwise, the event is persisted in a new session and transaction.
-     *
-     * Sessions that are not opened through {@link Mutiny.SessionFactory}, such as the one managed by Hibernate
-     * Reactive with Panache, are not guaranteed to be found; pass the session explicitly with
-     * {@link #persistToOutbox(ExportedEvent, Mutiny.Session)} in that case.
+     * If a Hibernate Reactive session and transaction are already open in the current Vert.x context, whether
+     * opened with {@link Mutiny.SessionFactory#withTransaction}, {@code Panache.withTransaction()} or
+     * {@code @WithTransaction}, the write joins them. Otherwise, the event is persisted in a new session and
+     * transaction.
      *
      * @param incomingEvent the event to persist
      * @return a {@link Uni} that completes once the event is persisted
