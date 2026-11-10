@@ -30,6 +30,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.debezium.outbox.quarkus.internal.OutboxConstants;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 
 /**
@@ -96,6 +99,38 @@ public abstract class AbstractOutboxTest {
     }
 
     @Test
+    @RunOnVertxContext
+    public void outboxInsertRolledBackWithPanacheTransaction(UniAsserter asserter) {
+        asserter.assertFailedWith(() -> myService.persistEntityAndEventInPanacheTransaction(true), IllegalStateException.class);
+        asserter.assertEquals(() -> countRowsAsync("TestEntity"), 0L);
+        asserter.assertEquals(() -> countRowsAsync("OutboxEvent"), 0L);
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void outboxInsertCommittedWithPanacheTransaction(UniAsserter asserter) {
+        asserter.execute(() -> myService.persistEntityAndEventInPanacheTransaction(false));
+        asserter.assertEquals(() -> countRowsAsync("TestEntity"), 1L);
+        asserter.assertEquals(() -> countRowsAsync("OutboxEvent"), expectedOutboxRowsAfterCommit());
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void outboxInsertRolledBackWithTransactionAnnotation(UniAsserter asserter) {
+        asserter.assertFailedWith(() -> myService.persistEntityAndEventWithTransactionAnnotation(true), IllegalStateException.class);
+        asserter.assertEquals(() -> countRowsAsync("TestEntity"), 0L);
+        asserter.assertEquals(() -> countRowsAsync("OutboxEvent"), 0L);
+    }
+
+    @Test
+    @RunOnVertxContext
+    public void outboxInsertCommittedWithTransactionAnnotation(UniAsserter asserter) {
+        asserter.execute(() -> myService.persistEntityAndEventWithTransactionAnnotation(false));
+        asserter.assertEquals(() -> countRowsAsync("TestEntity"), 1L);
+        asserter.assertEquals(() -> countRowsAsync("OutboxEvent"), expectedOutboxRowsAfterCommit());
+    }
+
+    @Test
     public void testOutboxEntityMetamodelExists() throws Exception {
         final MappingMetamodelImplementor metadata = (MappingMetamodelImplementor) sessionFactory.getMetamodel();
         final EntityPersister persister = metadata.findEntityDescriptor(OutboxConstants.OUTBOX_ENTITY_FULLNAME);
@@ -152,8 +187,11 @@ public abstract class AbstractOutboxTest {
     }
 
     protected long countRows(String entityName) {
+        return countRowsAsync(entityName).await().indefinitely();
+    }
+
+    protected Uni<Long> countRowsAsync(String entityName) {
         return sessionFactory.withSession(
-                session -> session.createSelectionQuery("select count(*) from " + entityName, Long.class).getSingleResult())
-                .await().indefinitely();
+                session -> session.createSelectionQuery("select count(*) from " + entityName, Long.class).getSingleResult());
     }
 }
