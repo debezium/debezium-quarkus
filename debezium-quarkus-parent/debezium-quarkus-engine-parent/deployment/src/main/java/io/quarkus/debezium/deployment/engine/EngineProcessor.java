@@ -66,6 +66,7 @@ import io.debezium.relational.TableMappingStorage;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.CapturingFilterStrategy;
 import io.debezium.runtime.DebeziumConnectorRegistry;
+import io.debezium.runtime.ErrorHandler;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
@@ -708,7 +709,8 @@ public class EngineProcessor {
                 UnremovableBeanBuildItem.beanTypes(SchemaHistory.class),
                 UnremovableBeanBuildItem.beanTypes(SourceInfoStructMaker.class),
                 UnremovableBeanBuildItem.beanTypes(TransactionMetadataFactory.class),
-                UnremovableBeanBuildItem.beanTypes(TableMappingStorage.class));
+                UnremovableBeanBuildItem.beanTypes(TableMappingStorage.class),
+                UnremovableBeanBuildItem.beanTypes(ErrorHandler.class));
     }
 
     private Optional<String> extractSourceConnector(Path path) {
