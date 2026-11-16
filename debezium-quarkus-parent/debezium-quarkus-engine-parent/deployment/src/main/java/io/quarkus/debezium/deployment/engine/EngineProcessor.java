@@ -37,6 +37,7 @@ import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.transforms.predicates.TopicNameMatches;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 
 import io.debezium.connector.SourceInfoStructMaker;
@@ -672,6 +673,26 @@ public class EngineProcessor {
                         .done()));
     }
 
+    /**
+     * A method is processed for a single Debezium annotation, so a method that carries more than one fails the build rather
+     * than having the others silently ignored.
+     */
+    private static DotName mediatorAnnotation(DebeziumDotNames dbz, MethodInfo method) {
+        List<DotName> annotations = DebeziumDotNames.dotNames
+                .stream()
+                .filter(name -> method.annotation(name) != null)
+                .toList();
+
+        if (annotations.size() > 1) {
+            throw new IllegalArgumentException("method " + method.declaringClass().name() + "." + method.name()
+                    + " carries more than one Debezium annotation: "
+                    + annotations.stream().map(name -> "@" + name.withoutPackagePrefix()).collect(Collectors.joining(", "))
+                    + "; use a separate method for each annotation");
+        }
+
+        return dbz.get(method);
+    }
+
     private static Phase shutdownPhase(DebeziumMediatorBuildItem item) {
         return Phase.valueOf(item.getMethodInfo().annotation(DebeziumDotNames.SHUTDOWN_CONDITION).value().asEnum());
     }
@@ -732,7 +753,7 @@ public class EngineProcessor {
                         .stream()
                         .flatMap(Collection::stream)
                         .filter(dbz::filter)
-                        .map(methodInfo -> new DebeziumMediatorBuildItem(beanInfo, methodInfo, dbz.get(methodInfo))))
+                        .map(methodInfo -> new DebeziumMediatorBuildItem(beanInfo, methodInfo, mediatorAnnotation(dbz, methodInfo))))
                 .forEach(mediatorBuildItemBuildProducer::produce);
 
         beanDiscoveryFinished
