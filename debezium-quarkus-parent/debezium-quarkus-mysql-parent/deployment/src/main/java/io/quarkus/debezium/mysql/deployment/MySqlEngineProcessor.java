@@ -18,21 +18,9 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 
-import io.debezium.connector.binlog.snapshot.lock.MinimalAtLeastOnceSnapshotLock;
 import io.debezium.connector.mysql.Module;
 import io.debezium.connector.mysql.MySqlConnector;
-import io.debezium.connector.mysql.MySqlConnectorTask;
-import io.debezium.connector.mysql.MySqlSourceInfoStructMaker;
-import io.debezium.connector.mysql.snapshot.lock.DefaultSnapshotLock;
-import io.debezium.connector.mysql.snapshot.lock.ExtendedSnapshotLock;
-import io.debezium.connector.mysql.snapshot.lock.MinimalPerconaNoTableLocksSnapshotLock;
-import io.debezium.connector.mysql.snapshot.lock.MinimalPerconaSnapshotLock;
-import io.debezium.connector.mysql.snapshot.lock.MinimalSnapshotLock;
-import io.debezium.connector.mysql.snapshot.lock.NoneSnapshotLock;
-import io.debezium.connector.mysql.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
-import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -53,7 +41,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.LaunchMode;
@@ -72,27 +59,6 @@ public class MySqlEngineProcessor implements QuarkusEngineProcessor<AgroalDataso
     @Override
     public DebeziumConnectorBuildItem engine() {
         return new DebeziumConnectorBuildItem(MYSQL, MySqlEngineProducer.class, MySqlConnector.class);
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    @Override
-    public void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                SchemaHistory.class,
-                KafkaSchemaHistory.class,
-                MySqlConnector.class,
-                MySqlSourceInfoStructMaker.class,
-                MySqlConnectorTask.class,
-                DefaultSnapshotLock.class,
-                ExtendedSnapshotLock.class,
-                MinimalAtLeastOnceSnapshotLock.class,
-                MinimalPerconaNoTableLocksSnapshotLock.class,
-                MinimalPerconaSnapshotLock.class,
-                MinimalSnapshotLock.class,
-                NoneSnapshotLock.class,
-                SelectAllSnapshotQuery.class)
-                .reason(getClass().getName())
-                .build());
     }
 
     @Override
