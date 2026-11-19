@@ -19,6 +19,8 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.configuration.DebeziumConfigurationEngineParser.MultiEngineConfiguration;
 import io.quarkus.debezium.engine.capture.consumer.ChangeConsumerFactory;
 import io.quarkus.debezium.engine.capture.consumer.SourceRecordConsumerHandler;
+import io.quarkus.debezium.engine.schemachange.SchemaChangeInvoker;
+import io.quarkus.debezium.engine.schemachange.SchemaChangeInvokers;
 import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
 
 public class DebeziumFactory {
@@ -29,6 +31,7 @@ public class DebeziumFactory {
     private final List<DebeziumConfigurationEnhancer> enhancers;
     private final ChangeConsumerFactory changeConsumerHandler;
     private final Instance<ShutdownInvoker> shutdownInvokers;
+    private final Instance<SchemaChangeInvoker> schemaChangeInvokers;
 
     @Inject
     public DebeziumFactory(
@@ -37,7 +40,8 @@ public class DebeziumFactory {
                            StateHandler stateHandler,
                            SourceRecordConsumerHandler sourceRecordConsumerHandler,
                            ChangeConsumerFactory changeConsumerHandler,
-                           Instance<ShutdownInvoker> shutdownInvokers) {
+                           Instance<ShutdownInvoker> shutdownInvokers,
+                           Instance<SchemaChangeInvoker> schemaChangeInvokers) {
         this.serializations = serializations;
         this.stateHandler = stateHandler;
         this.sourceRecordConsumerHandler = sourceRecordConsumerHandler;
@@ -46,14 +50,15 @@ public class DebeziumFactory {
                 .toList();
         this.changeConsumerHandler = changeConsumerHandler;
         this.shutdownInvokers = shutdownInvokers;
+        this.schemaChangeInvokers = schemaChangeInvokers;
     }
 
     public Debezium get(Connector connector, MultiEngineConfiguration engine) {
         List<ShutdownInvoker> shutdown = shutdownInvokers.stream().toList();
+        EngineManifest engineManifest = new EngineManifest(engine.engineId());
+        List<SchemaChangeInvoker> schemaChange = SchemaChangeInvokers.select(engineManifest, engine.configuration(), schemaChangeInvokers.stream().toList());
 
         if (serializations.isResolvable() && changeConsumerHandler != null) {
-            EngineManifest engineManifest = new EngineManifest(engine.engineId());
-
             List<DebeziumSerialization<?, ?, ?>> serializations = this.serializations
                     .stream()
                     .filter(serialization -> serialization.getEngineId().equals(engine.engineId()))
@@ -66,14 +71,13 @@ public class DebeziumFactory {
             return new DebeziumWithCustomSerialization(
                     serializations.getFirst(),
                     engine.configuration(),
-                    changeConsumerHandler.get(engineManifest),
+                    SchemaChangeInvokers.apply(changeConsumerHandler.get(engineManifest), engineManifest, schemaChange),
                     connector,
                     stateHandler,
                     engineManifest,
                     shutdown);
         }
 
-        EngineManifest engineManifest = new EngineManifest(engine.engineId());
         ComposeConfigurationEnhancer enhancer = new ComposeConfigurationEnhancer(engine.configuration(),
                 enhancers.stream()
                         .filter(enhancers -> enhancers.applicableTo().equals(connector))
@@ -82,7 +86,7 @@ public class DebeziumFactory {
         if (changeConsumerHandler != null) {
             return new SourceRecordDebezium(
                     engine.configuration(),
-                    changeConsumerHandler.get(engineManifest),
+                    SchemaChangeInvokers.apply(changeConsumerHandler.get(engineManifest), engineManifest, schemaChange),
                     connector,
                     stateHandler,
                     engineManifest,
@@ -93,7 +97,7 @@ public class DebeziumFactory {
                 enhancer.get(),
                 stateHandler,
                 connector,
-                sourceRecordConsumerHandler.get(engineManifest),
+                SchemaChangeInvokers.apply(sourceRecordConsumerHandler.get(engineManifest), engineManifest, schemaChange),
                 engineManifest,
                 shutdown);
     }

@@ -17,6 +17,8 @@ import io.quarkus.debezium.testsuite.deployment.suite.CapturingEventsTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingFieldsFilterTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingFilterTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingFilterValidationTest;
+import io.quarkus.debezium.testsuite.deployment.suite.CapturingSchemaChangeEventsTest;
+import io.quarkus.debezium.testsuite.deployment.suite.CapturingSchemaChangeTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingTest;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingTest.Order;
 import io.quarkus.debezium.testsuite.deployment.suite.CapturingTest.User;
@@ -67,7 +69,8 @@ import io.quarkus.debezium.testsuite.deployment.suite.TopicNamingStrategyTest;
         NotificationTest.class, PostProcessingTest.class, CustomConverterTest.class,
         CapturingEventsTest.class, CapturingEventsFilterTest.class, DebeziumServerTest.class, TopicNamingStrategyTest.class,
         EngineTopicNamingStrategyTest.class, ShutdownConditionTest.class, ShutdownConditionBeforeTest.class,
-        ShutdownConditionCustomSerializationTest.class, ShutdownConditionFailureTest.class })
+        ShutdownConditionCustomSerializationTest.class, ShutdownConditionFailureTest.class,
+        CapturingSchemaChangeTest.class, CapturingSchemaChangeEventsTest.class })
 @SuiteDisplayName("Sql Debezium Extensions for Quarkus Test Suite")
 public interface QuarkusDebeziumSqlExtensionTestSuite {
 }

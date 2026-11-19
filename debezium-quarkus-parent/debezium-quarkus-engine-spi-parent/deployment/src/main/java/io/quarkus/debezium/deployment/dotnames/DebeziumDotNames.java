@@ -15,6 +15,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingFilterStrategy;
+import io.debezium.runtime.CapturingSchemaChange;
 import io.debezium.runtime.CustomConverter;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.runtime.PostProcessing;
@@ -32,7 +33,8 @@ public class DebeziumDotNames {
     public static final DotName FIELD_FILTER_STRATEGY = DotName.createSimple(FieldFilterStrategy.class.getName());
     public static final DotName CAPTURING_FILTER_STRATEGY = DotName.createSimple(CapturingFilterStrategy.class.getName());
     public static final DotName SHUTDOWN_CONDITION = DotName.createSimple(ShutdownCondition.class.getName());
-    public static final List<DotName> dotNames = List.of(CAPTURING, POST_PROCESSING, CUSTOM_CONVERTER, SHUTDOWN_CONDITION);
+    public static final DotName CAPTURING_SCHEMA_CHANGE = DotName.createSimple(CapturingSchemaChange.class.getName());
+    public static final List<DotName> dotNames = List.of(CAPTURING, POST_PROCESSING, CUSTOM_CONVERTER, SHUTDOWN_CONDITION, CAPTURING_SCHEMA_CHANGE);
 
     public boolean filter(BeanInfo info) {
         return info.getTarget()
