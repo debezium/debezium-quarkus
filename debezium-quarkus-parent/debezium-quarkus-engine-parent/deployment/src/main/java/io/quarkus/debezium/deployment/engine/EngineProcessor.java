@@ -338,6 +338,7 @@ public class EngineProcessor {
     NativeImageConfigBuildItem nativeImageConfiguration() {
         return NativeImageConfigBuildItem.builder()
                 .addRuntimeInitializedClass("org.apache.kafka.common.security.authenticator.SaslClientAuthenticator")
+                .addRuntimeInitializedClass("io.debezium.connector.common.UUIDUtils")
                 .build();
     }
 
