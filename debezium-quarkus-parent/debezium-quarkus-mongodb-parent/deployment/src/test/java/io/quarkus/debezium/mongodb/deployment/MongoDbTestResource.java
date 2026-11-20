@@ -32,7 +32,7 @@ public class MongoDbTestResource {
             .memberCount(1)
             .authEnabled(true)
             .network(Network.newNetwork())
-            .imageName(ImageNames.OFFICIAL_DOCKER_IMAGE_NAME)
+            .imageName(ImageNames.MONGO_OFFICIAL_8_0_IMAGE_NAME)
             .startupTimeout(Duration.ofSeconds(90))
             .build();
 
