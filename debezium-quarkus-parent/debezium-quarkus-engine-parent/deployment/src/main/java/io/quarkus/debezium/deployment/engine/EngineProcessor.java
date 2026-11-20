@@ -101,6 +101,7 @@ import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedCustomConverterBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedInvokerBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedPostProcessorBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumGeneratedSchemaChangeBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedShutdownBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumMediatorBuildItem;
 import io.quarkus.debezium.engine.CompatibleModeConnectorRecorder;
@@ -124,6 +125,8 @@ import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
 import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverters;
+import io.quarkus.debezium.engine.schemachange.DynamicSchemaChangeInvokerSupplier;
+import io.quarkus.debezium.engine.schemachange.SchemaChangeInvoker;
 import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
 import io.quarkus.debezium.engine.shutdown.DynamicShutdownInvokerSupplier;
 import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
@@ -675,6 +678,51 @@ public class EngineProcessor {
 
     private static Phase shutdownPhase(DebeziumMediatorBuildItem item) {
         return Phase.valueOf(item.getMethodInfo().annotation(DebeziumDotNames.SHUTDOWN_CONDITION).value().asEnum());
+    }
+
+    @BuildStep
+    public void generateSchemaChangeInvokers(List<DebeziumMediatorBuildItem> mediatorBuildItems,
+                                             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+                                             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
+                                             BuildProducer<DebeziumGeneratedSchemaChangeBuildItem> debeziumGeneratedSchemaChangeBuildItemBuildProducer) {
+        List<DebeziumMediatorBuildItem> schemaChangeMediators = mediatorBuildItems.stream()
+                .filter(item -> item.getDotName().equals(DebeziumDotNames.CAPTURING_SCHEMA_CHANGE))
+                .toList();
+
+        schemaChangeMediators.forEach(item -> SchemaChangeInvokerGenerator.validate(item.getMethodInfo()));
+
+        GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true);
+        SchemaChangeInvokerGenerator generator = new SchemaChangeInvokerGenerator(classOutput);
+
+        schemaChangeMediators.forEach(item -> {
+            GeneratedClassMetaData metadata = generator.generate(item.getMethodInfo(), item.getBean());
+
+            debeziumGeneratedSchemaChangeBuildItemBuildProducer.produce(new DebeziumGeneratedSchemaChangeBuildItem(
+                    metadata.generatedClassName(),
+                    metadata.mediator(),
+                    metadata.getShortIdentifier()));
+
+            reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(metadata.generatedClassName()).build());
+        });
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public void injectSchemaChangeInvokers(
+                                           RecorderContext recorderContext,
+                                           BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+                                           DynamicSchemaChangeInvokerSupplier dynamicSchemaChangeInvokerSupplier,
+                                           List<DebeziumGeneratedSchemaChangeBuildItem> debeziumGeneratedSchemaChangeBuildItems) {
+        debeziumGeneratedSchemaChangeBuildItems.forEach(item -> syntheticBeanBuildItemBuildProducer.produce(
+                SyntheticBeanBuildItem.configure(SchemaChangeInvoker.class)
+                        .setRuntimeInit()
+                        .scope(ApplicationScoped.class)
+                        .unremovable()
+                        .supplier(dynamicSchemaChangeInvokerSupplier.createInvoker(
+                                recorderContext.classProxy(item.getMediator().getImplClazz().name().toString()),
+                                (Class<? extends SchemaChangeInvoker>) recorderContext.classProxy(item.getGeneratedClassName())))
+                        .named(DynamicSchemaChangeInvokerSupplier.BASE_NAME + item.getMediator().getImplClazz().name() + item.getId())
+                        .done()));
     }
 
     @BuildStep
