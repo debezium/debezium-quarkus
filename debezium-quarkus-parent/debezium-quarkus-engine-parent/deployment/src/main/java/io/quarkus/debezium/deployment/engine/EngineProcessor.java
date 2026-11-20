@@ -127,6 +127,8 @@ import io.quarkus.debezium.heartbeat.QuarkusHeartbeatEmitter;
 import io.quarkus.debezium.notification.DefaultNotificationHandler;
 import io.quarkus.debezium.notification.QuarkusNotificationChannel;
 import io.quarkus.debezium.notification.SnapshotHandler;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -151,6 +153,8 @@ public class EngineProcessor {
             OFFSET_STORAGE.name());
     public static final String DEBEZIUM_GROUP_ID = "io.debezium";
     public static final String DEBEZIUM_CONNECTOR_PACKAGE = "debezium-connector";
+
+    private static final String TRACING_PACKAGE = "io.debezium.transforms.tracing.";
 
     /**
      * Types whose implementations are loaded through a {@link ServiceLoader}.
@@ -383,6 +387,7 @@ public class EngineProcessor {
     void registerImplementationsOfReflectiveTypes(CombinedIndexBuildItem combinedIndexBuildItem,
                                                   CurateOutcomeBuildItem curateOutcomeBuildItem,
                                                   List<DebeziumReflectiveTypeBuildItem> reflectiveTypes,
+                                                  Capabilities capabilities,
                                                   BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         // the Debezium artifacts don't ship a Jandex index; they are indexed here rather than through an
         // IndexDependencyBuildItem, so that they don't become bean archives as a side effect
@@ -394,7 +399,9 @@ public class EngineProcessor {
             classNames.add(type.toString());
             Stream.concat(index.getAllKnownImplementors(type).stream(), index.getAllKnownSubclasses(type).stream())
                     .filter(clazz -> !clazz.isInterface() && !Modifier.isAbstract(clazz.flags()))
-                    .forEach(clazz -> classNames.add(clazz.name().toString()));
+                    .map(clazz -> clazz.name().toString())
+                    .filter(className -> isOptionalDependencyPresent(capabilities, className))
+                    .forEach(classNames::add);
         }
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
@@ -403,16 +410,24 @@ public class EngineProcessor {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void registerDebeziumComponents(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+    void registerDebeziumComponents(Capabilities capabilities,
+                                    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         final Set<String> classNames = new TreeSet<>();
         for (ComponentMetadataProvider provider : ServiceLoader.load(ComponentMetadataProvider.class, Thread.currentThread().getContextClassLoader())) {
             provider.getConnectorMetadata()
-                    .forEach(metadata -> classNames.add(metadata.getComponentDescriptor().getClassName()));
+                    .stream()
+                    .map(metadata -> metadata.getComponentDescriptor().getClassName())
+                    .filter(className -> isOptionalDependencyPresent(capabilities, className))
+                    .forEach(classNames::add);
         }
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
                 .reason(getClass().getName())
                 .build());
+    }
+
+    private static boolean isOptionalDependencyPresent(Capabilities capabilities, String className) {
+        return !className.startsWith(TRACING_PACKAGE) || capabilities.isPresent(Capability.OPENTELEMETRY_TRACER);
     }
 
     private Index indexDebeziumDependencies(CurateOutcomeBuildItem curateOutcomeBuildItem) {
