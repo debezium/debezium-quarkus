@@ -32,7 +32,7 @@ import io.debezium.runtime.EngineManifest;
 import io.debezium.runtime.FieldFilterStrategy;
 import io.debezium.spi.converter.ConvertedField;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class CustomConverterTest {
@@ -47,7 +47,7 @@ public class CustomConverterTest {
     DebeziumConnectorRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 

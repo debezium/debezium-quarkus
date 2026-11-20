@@ -19,7 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.debezium.runtime.ShutdownCondition;
 import io.debezium.runtime.ShutdownCondition.Phase;
 import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Each {@link ShutdownCondition} method is turned into a {@link ShutdownInvoker} that delegates to the bean method.
@@ -30,7 +30,7 @@ public class ShutdownConditionDiscoveryTest {
     Instance<ShutdownInvoker> invokers;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ShutdownHandler.class))
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")
             .overrideConfigKey("quarkus.debezium.name", "shutdown")

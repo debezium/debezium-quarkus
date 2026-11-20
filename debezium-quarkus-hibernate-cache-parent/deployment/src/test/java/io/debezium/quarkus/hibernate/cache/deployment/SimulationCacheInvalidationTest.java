@@ -30,7 +30,7 @@ import io.debezium.quarkus.hibernate.cache.deployment.entities.User;
 import io.debezium.quarkus.test.assertions.DebeziumAssertions;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.EngineManifest;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(PostgresResource.class)
@@ -48,7 +48,7 @@ public class SimulationCacheInvalidationTest {
     private HibernateStatistics hibernateStatistics;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(Order.class, Product.class, User.class, Fruit.class)
                     .addAsResource("ehcache.xml", "ehcache.xml"))

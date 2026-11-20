@@ -27,7 +27,7 @@ import io.debezium.runtime.Connector;
 import io.debezium.runtime.DebeziumConnectorRegistry;
 import io.debezium.runtime.EngineManifest;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(InformixResource.class)
@@ -37,7 +37,7 @@ public class CompatibilityModeTest {
     DebeziumConnectorRegistry registry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .setForcedDependencies(List.of(
                     Dependency.of("io.debezium", "debezium-connector-informix"),
                     Dependency.of("com.ibm.informix", "jdbc")))

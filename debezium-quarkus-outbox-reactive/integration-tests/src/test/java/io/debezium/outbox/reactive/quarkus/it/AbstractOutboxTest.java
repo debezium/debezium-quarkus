@@ -24,16 +24,16 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.debezium.outbox.quarkus.internal.OutboxConstants;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Abstract base class for the Debezium Outbox extension test suite.  Each subclass implementation can
@@ -161,7 +161,7 @@ public abstract class AbstractOutboxTest {
         try {
             actualObj = mapper.readValue("{\"something\":\"Some amazing payload\"}", JsonNode.class);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

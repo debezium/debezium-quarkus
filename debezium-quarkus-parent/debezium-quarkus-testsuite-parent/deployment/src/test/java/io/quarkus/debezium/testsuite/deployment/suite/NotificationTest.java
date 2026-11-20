@@ -25,7 +25,7 @@ import io.quarkus.debezium.notification.DebeziumNotification;
 import io.quarkus.debezium.notification.SnapshotEvent;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class NotificationTest {
@@ -37,7 +37,7 @@ public class NotificationTest {
     DebeziumNotificationsHandler debeziumNotificationsHandler;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 
     @Test

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.debezium.DebeziumException;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * A {@code connector.class} that cannot be loaded is a configuration error: the application must
@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnknownConnectorClassTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.debezium.engine.autostart", "false")
             .overrideConfigKey("quarkus.debezium.connector.class", "io.debezium.connector.does.not.Exist")
             .overrideConfigKey("quarkus.debezium.name", "unknown")

@@ -6,12 +6,9 @@
 
 package io.quarkus.debezium.engine.deserializer;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Jackson deserializer for a change data capture event
@@ -28,7 +25,7 @@ public class ObjectMapperDeserializer<T> implements Deserializer<T> {
     }
 
     public ObjectMapperDeserializer(Class<T> type, ObjectMapper objectMapper) {
-        this.type = TypeFactory.defaultInstance().constructType(type);
+        this.type = objectMapper.constructType(type);
         this.objectMapper = objectMapper;
     }
 
@@ -46,31 +43,20 @@ public class ObjectMapperDeserializer<T> implements Deserializer<T> {
     }
 
     private T deserializeFlattenEvent(byte[] data) {
-        try {
-            JsonNode root = objectMapper.readTree(data);
+        JsonNode root = objectMapper.readTree(data);
 
-            return objectMapper.treeToValue(root.path(PAYLOAD), type);
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return objectMapper.treeToValue(root.path(PAYLOAD), type);
     }
 
     private T deserializeDebeziumEvent(byte[] data, String path) {
-        try {
-            JsonNode root = objectMapper.readTree(data);
-            JsonNode afterNode = root.path(PAYLOAD).path(path);
+        JsonNode root = objectMapper.readTree(data);
+        JsonNode afterNode = root.path(PAYLOAD).path(path);
 
-            if (containsJson(afterNode)) {
-                return objectMapper.treeToValue(objectMapper.readTree(afterNode.textValue()), type);
-            }
-
-            return objectMapper.treeToValue(afterNode, type);
-
+        if (containsJson(afterNode)) {
+            return objectMapper.treeToValue(objectMapper.readTree(afterNode.stringValue()), type);
         }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
+        return objectMapper.treeToValue(afterNode, type);
     }
 
     /**
@@ -79,7 +65,7 @@ public class ObjectMapperDeserializer<T> implements Deserializer<T> {
      * @return if the json node is a string that contains JSON
      */
     private boolean containsJson(JsonNode afterNode) {
-        return afterNode.isTextual();
+        return afterNode.isString();
     }
 
     @Override

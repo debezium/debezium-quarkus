@@ -6,17 +6,19 @@
 
 package io.quarkus.sample.app.deserializer;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
 import io.quarkus.sample.app.dto.Order;
 
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
 public class OrderDeserializer extends ObjectMapperDeserializer<Order> {
-    private static final ObjectMapper configuredMapper = new ObjectMapper()
+    private static final ObjectMapper configuredMapper = JsonMapper.builder()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+            .build();
 
     public OrderDeserializer() {
         super(Order.class, configuredMapper);

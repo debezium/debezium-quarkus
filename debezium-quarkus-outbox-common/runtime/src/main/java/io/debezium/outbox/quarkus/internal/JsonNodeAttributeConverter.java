@@ -5,15 +5,13 @@
  */
 package io.debezium.outbox.quarkus.internal;
 
-import java.io.IOException;
-
 import jakarta.persistence.AttributeConverter;
 
 import org.hibernate.HibernateException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Converter that knows how to convert between a {@link String} and {@link JsonNode}.
@@ -32,7 +30,7 @@ public class JsonNodeAttributeConverter implements AttributeConverter<JsonNode, 
         try {
             return mapper.writeValueAsString(jsonNode);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new HibernateException("Failed to convert JsonNode to String", e);
         }
     }
@@ -45,7 +43,7 @@ public class JsonNodeAttributeConverter implements AttributeConverter<JsonNode, 
         try {
             return mapper.readValue(databaseValue, JsonNode.class);
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw new HibernateException("Failed to convert String to JsonNode", e);
         }
     }

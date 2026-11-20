@@ -20,12 +20,12 @@ import io.debezium.runtime.BatchEvent;
 import io.debezium.runtime.CapturingEvents;
 import io.debezium.runtime.DebeziumSerialization;
 import io.debezium.server.api.ChangeConsumerHolder;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 class DebeziumQuarkusBridgeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+    static final QuarkusExtensionTest unitTest = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(TestSinkConsumer.class));
 
     @Inject

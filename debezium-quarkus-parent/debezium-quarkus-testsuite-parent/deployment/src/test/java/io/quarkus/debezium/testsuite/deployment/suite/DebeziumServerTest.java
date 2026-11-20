@@ -27,7 +27,7 @@ import io.debezium.runtime.EngineManifest;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
 import io.quarkus.runtime.Application;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.config.ConfigSourceFactory;
 
 @Tag(SuiteTags.DEFAULT)
@@ -40,7 +40,7 @@ public class DebeziumServerTest {
     HeartbeatTest.HeartbeatHandler heartbeatHandler;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .setArchiveProducer(
                     () -> ShrinkWrap.create(JavaArchive.class)
                             .addClasses(HeartbeatTest.class)

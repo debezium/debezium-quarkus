@@ -34,7 +34,7 @@ import io.debezium.runtime.ShutdownCondition.Phase;
 import io.debezium.runtime.events.DebeziumCompletionEvent;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * The BEFORE shutdown method stops the engine on the first record of the orders table, before the batch that contains it
@@ -52,7 +52,7 @@ public class ShutdownConditionBeforeTest {
     DebeziumConnectorRegistry debeziumConnectorRegistry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ShutdownHandler.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 

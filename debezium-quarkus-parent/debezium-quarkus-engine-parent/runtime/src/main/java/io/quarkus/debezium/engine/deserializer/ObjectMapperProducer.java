@@ -6,10 +6,10 @@
 
 package io.quarkus.debezium.engine.deserializer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+
+import tools.jackson.databind.ObjectMapper;
 
 public class ObjectMapperProducer {
     private ObjectMapperProducer() {

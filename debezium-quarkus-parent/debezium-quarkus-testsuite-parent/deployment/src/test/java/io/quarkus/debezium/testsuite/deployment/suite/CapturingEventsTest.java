@@ -26,7 +26,7 @@ import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvents;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class CapturingEventsTest {
@@ -35,7 +35,7 @@ public class CapturingEventsTest {
     CaptureProductsHandler captureProductsHandler;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(CaptureProductsHandler.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties");
 

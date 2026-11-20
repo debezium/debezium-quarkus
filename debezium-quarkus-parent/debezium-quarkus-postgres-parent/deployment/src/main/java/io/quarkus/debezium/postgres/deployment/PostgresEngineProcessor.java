@@ -14,7 +14,6 @@ import io.debezium.connector.postgresql.snapshot.lock.SharedSnapshotLock;
 import io.debezium.connector.postgresql.snapshot.query.SelectAllSnapshotQuery;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
@@ -29,6 +28,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceResultBuildItem;
 
 public class PostgresEngineProcessor implements QuarkusEngineProcessor<AgroalDatasourceConfiguration> {
 
@@ -59,9 +59,11 @@ public class PostgresEngineProcessor implements QuarkusEngineProcessor<AgroalDat
             return;
         }
 
-        devServicesProducer.produce(new DevServicesResultBuildItem("debezium-postgres",
-                "debezium",
-                datasource.getConfigProperties()));
+        devServicesProducer.produce(DevServicesResultBuildItem.discovered()
+                .name("debezium-postgres")
+                .containerId("debezium")
+                .config(datasource.getConfigProperties())
+                .build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

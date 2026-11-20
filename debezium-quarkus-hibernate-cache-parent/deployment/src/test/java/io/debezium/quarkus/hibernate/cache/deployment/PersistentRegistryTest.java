@@ -19,7 +19,7 @@ import io.debezium.quarkus.hibernate.cache.deployment.entities.Fruit;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.Order;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.Product;
 import io.debezium.quarkus.hibernate.cache.deployment.entities.User;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 
 @QuarkusTestResource(PostgresResource.class)
@@ -29,7 +29,7 @@ public class PersistentRegistryTest {
     PersistenceUnitRegistry registry;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Order.class, Product.class, User.class, Fruit.class))
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "validate")

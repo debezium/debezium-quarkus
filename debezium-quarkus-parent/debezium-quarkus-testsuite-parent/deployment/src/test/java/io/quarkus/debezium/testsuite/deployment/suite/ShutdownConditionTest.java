@@ -31,8 +31,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvent;
 import io.debezium.runtime.DebeziumConnectorRegistry;
@@ -43,7 +41,9 @@ import io.debezium.runtime.ShutdownCondition.Phase;
 import io.debezium.runtime.events.DebeziumCompletionEvent;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
 import io.quarkus.debezium.testsuite.deployment.TestSuiteConfigurations;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
+
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The AFTER shutdown method stops the engine on the first record of the orders table. The batch that contains it must be
@@ -67,7 +67,7 @@ public class ShutdownConditionTest {
     DebeziumConnectorRegistry debeziumConnectorRegistry;
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(ShutdownHandler.class))
             .withConfigurationResource("debezium-quarkus-testsuite.properties")
             .overrideConfigKey("quarkus.debezium.offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore")

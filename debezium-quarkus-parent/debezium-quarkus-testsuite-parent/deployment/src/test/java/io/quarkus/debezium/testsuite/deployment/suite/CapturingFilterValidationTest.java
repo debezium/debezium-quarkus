@@ -19,13 +19,13 @@ import io.debezium.runtime.Capturing;
 import io.debezium.runtime.CapturingEvent;
 import io.debezium.runtime.CapturingFilterStrategy;
 import io.quarkus.debezium.testsuite.deployment.SuiteTags;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 @Tag(SuiteTags.DEFAULT)
 public class CapturingFilterValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest setup = new QuarkusUnitTest()
+    static final QuarkusExtensionTest setup = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClasses(
                     InvalidHandler.class,
                     DummyFilter.class))
