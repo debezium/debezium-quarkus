@@ -72,6 +72,36 @@ public interface DebeziumEngineConfiguration {
          */
         @WithName("engine.factory")
         Optional<String> engineFactory();
+
+        /**
+         * error handler bean name or class name
+         */
+        @WithName("error-handler")
+        Optional<String> errorHandler();
+
+        /**
+         * max retries for the retry error handler
+         */
+        @WithName("error-handling.max-retries")
+        Optional<Integer> maxRetries();
+
+        /**
+         * initial delay in milliseconds for backoff strategy
+         */
+        @WithName("error-handling.initial-delay-ms")
+        Optional<Long> initialDelayMs();
+
+        /**
+         * max delay in milliseconds for backoff strategy
+         */
+        @WithName("error-handling.max-delay-ms")
+        Optional<Long> maxDelayMs();
+
+        /**
+         * delay multiplier for exponential backoff strategy
+         */
+        @WithName("error-handling.delay-multiplier")
+        Optional<Double> delayMultiplier();
     }
 
     /**
