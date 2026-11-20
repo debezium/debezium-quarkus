@@ -15,6 +15,9 @@ import static io.quarkus.debezium.deployment.engine.ClassesInConfigurationHandle
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.lang.reflect.Modifier;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -23,6 +26,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,35 +39,31 @@ import org.apache.kafka.common.security.authenticator.SaslClientAuthenticator;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.runtime.rest.entities.ConfigInfo;
 import org.apache.kafka.connect.runtime.rest.entities.ConfigInfos;
+import org.apache.kafka.connect.source.SourceConnector;
 import org.apache.kafka.connect.source.SourceTask;
 import org.apache.kafka.connect.transforms.predicates.TopicNameMatches;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 
 import io.debezium.connector.SourceInfoStructMaker;
-import io.debezium.connector.base.DefaultQueueProvider;
+import io.debezium.connector.base.QueueProvider;
 import io.debezium.connector.base.QueueProviderService;
 import io.debezium.connector.common.BaseSourceConnector;
 import io.debezium.connector.common.BaseSourceTask;
-import io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory;
 import io.debezium.engine.DebeziumEngine;
 import io.debezium.engine.spi.OffsetCommitPolicy;
 import io.debezium.heartbeat.DebeziumHeartbeatFactory;
-import io.debezium.pipeline.notification.channels.HttpNotificationChannel;
-import io.debezium.pipeline.notification.channels.LogNotificationChannel;
-import io.debezium.pipeline.notification.channels.SinkNotificationChannel;
-import io.debezium.pipeline.notification.channels.jmx.JmxNotificationChannel;
-import io.debezium.pipeline.signal.actions.StandardActionProvider;
-import io.debezium.pipeline.signal.channels.FileSignalChannel;
-import io.debezium.pipeline.signal.channels.KafkaSignalChannel;
-import io.debezium.pipeline.signal.channels.SourceSignalChannel;
-import io.debezium.pipeline.signal.channels.jmx.JmxSignalChannel;
-import io.debezium.pipeline.signal.channels.process.InProcessSignalChannel;
-import io.debezium.pipeline.txmetadata.DefaultTransactionMetadataFactory;
+import io.debezium.metadata.ComponentMetadataProvider;
+import io.debezium.pipeline.notification.channels.NotificationChannel;
+import io.debezium.pipeline.signal.actions.SignalActionProvider;
+import io.debezium.pipeline.signal.channels.SignalChannelReader;
 import io.debezium.pipeline.txmetadata.spi.TransactionMetadataFactory;
 import io.debezium.processors.spi.PostProcessor;
-import io.debezium.relational.ConcurrentMapTableMappingStorage;
 import io.debezium.relational.TableMappingStorage;
 import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.CapturingFilterStrategy;
@@ -72,20 +74,13 @@ import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
 import io.debezium.runtime.configuration.DebeziumEngineConfiguration;
 import io.debezium.runtime.events.DefaultEngine;
 import io.debezium.runtime.events.Engine;
-import io.debezium.schema.SchemaTopicNamingStrategy;
-import io.debezium.snapshot.lock.NoLockingSupport;
-import io.debezium.snapshot.mode.AlwaysSnapshotter;
-import io.debezium.snapshot.mode.ConfigurationBasedSnapshotter;
-import io.debezium.snapshot.mode.InitialOnlySnapshotter;
-import io.debezium.snapshot.mode.InitialSnapshotter;
-import io.debezium.snapshot.mode.NoDataSnapshotter;
-import io.debezium.snapshot.mode.RecoverySnapshotter;
-import io.debezium.snapshot.mode.WhenNeededNoDataSnapshotter;
-import io.debezium.snapshot.mode.WhenNeededSnapshotter;
+import io.debezium.service.spi.ServiceProviderContributor;
 import io.debezium.snapshot.spi.SnapshotLock;
+import io.debezium.snapshot.spi.SnapshotQuery;
 import io.debezium.spi.converter.CustomConverter;
+import io.debezium.spi.snapshot.Snapshotter;
+import io.debezium.spi.storage.OffsetStoreProvider;
 import io.debezium.spi.topic.TopicNamingStrategy;
-import io.debezium.transforms.ExtractNewRecordState;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -103,6 +98,7 @@ import io.quarkus.debezium.deployment.items.DebeziumGeneratedInvokerBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedPostProcessorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumGeneratedShutdownBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumMediatorBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumReflectiveTypeBuildItem;
 import io.quarkus.debezium.engine.CompatibleModeConnectorRecorder;
 import io.quarkus.debezium.engine.ConfiguredConnector;
 import io.quarkus.debezium.engine.DebeziumConnectorsRegistryProducer;
@@ -124,7 +120,6 @@ import io.quarkus.debezium.engine.deserializer.ObjectMapperDeserializer;
 import io.quarkus.debezium.engine.post.processing.DynamicPostProcessingSupplier;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverter;
 import io.quarkus.debezium.engine.relational.converter.QuarkusCustomConverters;
-import io.quarkus.debezium.engine.service.ArcServiceProviderContributor;
 import io.quarkus.debezium.engine.shutdown.DynamicShutdownInvokerSupplier;
 import io.quarkus.debezium.engine.shutdown.ShutdownInvoker;
 import io.quarkus.debezium.heartbeat.ArcHeartbeatFactory;
@@ -132,6 +127,8 @@ import io.quarkus.debezium.heartbeat.QuarkusHeartbeatEmitter;
 import io.quarkus.debezium.notification.DefaultNotificationHandler;
 import io.quarkus.debezium.notification.QuarkusNotificationChannel;
 import io.quarkus.debezium.notification.SnapshotHandler;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -156,6 +153,39 @@ public class EngineProcessor {
             OFFSET_STORAGE.name());
     public static final String DEBEZIUM_GROUP_ID = "io.debezium";
     public static final String DEBEZIUM_CONNECTOR_PACKAGE = "debezium-connector";
+
+    private static final String TRACING_PACKAGE = "io.debezium.transforms.tracing.";
+
+    /**
+     * Types whose implementations are loaded through a {@link ServiceLoader}.
+     */
+    private static final List<Class<?>> SERVICE_LOADED_TYPES = List.of(
+            DebeziumEngine.BuilderFactory.class,
+            NotificationChannel.class,
+            OffsetStoreProvider.class,
+            QueueProvider.class,
+            ServiceProviderContributor.class,
+            SignalActionProvider.class,
+            SignalChannelReader.class,
+            SnapshotLock.class,
+            SnapshotQuery.class,
+            Snapshotter.class,
+            SourceConnector.class);
+
+    /**
+     * Types whose implementations are instantiated from a class name, usually one given in the configuration.
+     */
+    private static final List<Class<?>> CONFIGURED_TYPES = List.of(
+            BaseSourceTask.class,
+            CustomConverter.class,
+            OffsetCommitPolicy.class,
+            PostProcessor.class,
+            SchemaHistory.class,
+            SourceInfoStructMaker.class,
+            SourceTask.class,
+            TableMappingStorage.class,
+            TopicNamingStrategy.class,
+            TransactionMetadataFactory.class);
 
     @BuildStep
     void features(BuildProducer<FeatureBuildItem> producer, List<DebeziumExtensionNameBuildItem> debeziumExtensionNameBuildItems) {
@@ -344,16 +374,79 @@ public class EngineProcessor {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.embedded.async.ConvertingAsyncEngineBuilderFactory"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.engine.DebeziumEngine$BuilderFactory"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.snapshot.spi.SnapshotLock"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.snapshot.spi.SnapshotQuery"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.spi.snapshot.Snapshotter"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.connector.base.QueueProvider"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/org.apache.kafka.connect.source.SourceConnector"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.signal.channels.SignalChannelReader"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.pipeline.notification.channels.NotificationChannel"));
-        resources.produce(new NativeImageResourceBuildItem("META-INF/services/io.debezium.service.spi.ServiceProviderContributor"));
+        SERVICE_LOADED_TYPES.forEach(type -> resources.produce(new NativeImageResourceBuildItem("META-INF/services/" + type.getName())));
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void registerReflectiveTypes(BuildProducer<DebeziumReflectiveTypeBuildItem> reflectiveTypes) {
+        Stream.concat(SERVICE_LOADED_TYPES.stream(), CONFIGURED_TYPES.stream())
+                .forEach(type -> reflectiveTypes.produce(new DebeziumReflectiveTypeBuildItem(type)));
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void registerImplementationsOfReflectiveTypes(CombinedIndexBuildItem combinedIndexBuildItem,
+                                                  CurateOutcomeBuildItem curateOutcomeBuildItem,
+                                                  List<DebeziumReflectiveTypeBuildItem> reflectiveTypes,
+                                                  Capabilities capabilities,
+                                                  BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        // the Debezium artifacts don't ship a Jandex index; they are indexed here rather than through an
+        // IndexDependencyBuildItem, so that they don't become bean archives as a side effect
+        final IndexView index = CompositeIndex.create(combinedIndexBuildItem.getIndex(), indexDebeziumDependencies(curateOutcomeBuildItem));
+
+        final Set<String> classNames = new TreeSet<>();
+        for (DebeziumReflectiveTypeBuildItem reflectiveType : reflectiveTypes) {
+            final DotName type = reflectiveType.type();
+            classNames.add(type.toString());
+            Stream.concat(index.getAllKnownImplementors(type).stream(), index.getAllKnownSubclasses(type).stream())
+                    .filter(clazz -> !clazz.isInterface() && !Modifier.isAbstract(clazz.flags()))
+                    .map(clazz -> clazz.name().toString())
+                    .filter(className -> isOptionalDependencyPresent(capabilities, className))
+                    .forEach(classNames::add);
+        }
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
+                .reason(getClass().getName())
+                .build());
+    }
+
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void registerDebeziumComponents(Capabilities capabilities,
+                                    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        final Set<String> classNames = new TreeSet<>();
+        for (ComponentMetadataProvider provider : ServiceLoader.load(ComponentMetadataProvider.class, Thread.currentThread().getContextClassLoader())) {
+            provider.getConnectorMetadata()
+                    .stream()
+                    .map(metadata -> metadata.getComponentDescriptor().getClassName())
+                    .filter(className -> isOptionalDependencyPresent(capabilities, className))
+                    .forEach(classNames::add);
+        }
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classNames.toArray(new String[0]))
+                .reason(getClass().getName())
+                .build());
+    }
+
+    private static boolean isOptionalDependencyPresent(Capabilities capabilities, String className) {
+        return !className.startsWith(TRACING_PACKAGE) || capabilities.isPresent(Capability.OPENTELEMETRY_TRACER);
+    }
+
+    private Index indexDebeziumDependencies(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        final Indexer indexer = new Indexer();
+        curateOutcomeBuildItem.getApplicationModel()
+                .getRuntimeDependencies()
+                .stream()
+                .filter(dependency -> dependency.getGroupId().equals(DEBEZIUM_GROUP_ID) || dependency.getGroupId().startsWith(DEBEZIUM_GROUP_ID + "."))
+                .forEach(dependency -> dependency.getContentTree().walk(visit -> {
+                    if (visit.getRelativePath("/").endsWith(".class")) {
+                        try (InputStream stream = Files.newInputStream(visit.getPath())) {
+                            indexer.index(stream);
+                        }
+                        catch (IOException e) {
+                            throw new UncheckedIOException("Failed to index " + visit.getPath(), e);
+                        }
+                    }
+                }));
+        return indexer.complete();
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -451,45 +544,12 @@ public class EngineProcessor {
                 "java.util.HashMap",
                 "[B").serialization().build());
 
+        // classes that are neither an implementation of a reflective type nor published as a Debezium component
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
-                ConcurrentMapTableMappingStorage.class,
-                DefaultQueueProvider.class,
                 QueueProviderService.class,
-                WhenNeededNoDataSnapshotter.class,
-                ArcServiceProviderContributor.class,
-                DebeziumEngine.BuilderFactory.class,
-                ConvertingAsyncEngineBuilderFactory.class,
                 SaslClientAuthenticator.class,
                 JsonConverter.class,
-                DefaultTransactionMetadataFactory.class,
-                SchemaTopicNamingStrategy.class,
-                OffsetCommitPolicy.class,
-                BaseSourceTask.class,
-                SinkNotificationChannel.class,
-                LogNotificationChannel.class,
-                JmxNotificationChannel.class,
-                HttpNotificationChannel.class,
-                SnapshotLock.class,
-                NoLockingSupport.class,
-                AlwaysSnapshotter.class,
-                InitialSnapshotter.class,
-                InitialOnlySnapshotter.class,
-                NoDataSnapshotter.class,
-                RecoverySnapshotter.class,
-                WhenNeededSnapshotter.class,
-                ExtractNewRecordState.class,
-                TopicNameMatches.class,
-                ConfigurationBasedSnapshotter.class,
-                SourceSignalChannel.class,
-                KafkaSignalChannel.class,
-                FileSignalChannel.class,
-                JmxSignalChannel.class,
-                InProcessSignalChannel.class,
-                StandardActionProvider.class,
-                OffsetCommitPolicy.class,
-                SourceTask.class,
-                QuarkusNotificationChannel.class,
-                OffsetCommitPolicy.PeriodicCommitOffsetPolicy.class)
+                TopicNameMatches.class)
                 .reason(getClass().getName())
                 .build());
     }

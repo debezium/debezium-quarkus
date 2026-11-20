@@ -20,20 +20,10 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 
 import io.debezium.connector.binlog.charset.BinlogCharsetRegistry;
-import io.debezium.connector.binlog.snapshot.lock.MinimalAtLeastOnceSnapshotLock;
 import io.debezium.connector.mariadb.MariaDbConnector;
-import io.debezium.connector.mariadb.MariaDbConnectorTask;
-import io.debezium.connector.mariadb.MariaDbSourceInfoStructMaker;
 import io.debezium.connector.mariadb.Module;
 import io.debezium.connector.mariadb.charset.MariaDbCharsetRegistry;
-import io.debezium.connector.mariadb.snapshot.lock.DefaultSnapshotLock;
-import io.debezium.connector.mariadb.snapshot.lock.ExtendedSnapshotLock;
-import io.debezium.connector.mariadb.snapshot.lock.MinimalSnapshotLock;
-import io.debezium.connector.mariadb.snapshot.lock.NoneSnapshotLock;
-import io.debezium.connector.mariadb.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.relational.history.SchemaHistory;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
-import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
@@ -85,19 +75,8 @@ public class MariaDbEngineProcessor implements QuarkusEngineProcessor<AgroalData
                 .build());
 
         reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                SchemaHistory.class,
-                KafkaSchemaHistory.class,
-                MariaDbConnector.class,
-                MariaDbSourceInfoStructMaker.class,
-                MariaDbConnectorTask.class,
-                MinimalAtLeastOnceSnapshotLock.class,
-                DefaultSnapshotLock.class,
-                ExtendedSnapshotLock.class,
-                MinimalSnapshotLock.class,
-                NoneSnapshotLock.class,
                 MariaDbCharsetRegistry.class,
-                BinlogCharsetRegistry.class,
-                SelectAllSnapshotQuery.class)
+                BinlogCharsetRegistry.class)
                 .reason(getClass().getName())
                 .build());
     }

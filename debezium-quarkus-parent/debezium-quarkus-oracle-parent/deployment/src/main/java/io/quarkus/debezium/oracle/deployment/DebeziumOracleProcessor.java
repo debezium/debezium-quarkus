@@ -8,22 +8,12 @@ package io.quarkus.debezium.oracle.deployment;
 import io.debezium.connector.oracle.Module;
 import io.debezium.connector.oracle.OracleConnection;
 import io.debezium.connector.oracle.OracleConnector;
-import io.debezium.connector.oracle.OracleConnectorTask;
-import io.debezium.connector.oracle.OracleSourceInfoStructMaker;
 import io.debezium.connector.oracle.StreamingAdapter;
-import io.debezium.connector.oracle.logminer.buffered.BufferedLogMinerAdapter;
-import io.debezium.connector.oracle.logminer.unbuffered.UnbufferedLogMinerAdapter;
-import io.debezium.connector.oracle.olr.OpenLogReplicatorAdapter;
-import io.debezium.connector.oracle.snapshot.lock.ExtendedSnapshotLock;
-import io.debezium.connector.oracle.snapshot.lock.NoSnapshotLock;
-import io.debezium.connector.oracle.snapshot.lock.SharedSnapshotLock;
-import io.debezium.connector.oracle.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.relational.history.SchemaHistory;
-import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumReflectiveTypeBuildItem;
 import io.quarkus.debezium.engine.OracleEngineProducer;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -50,28 +40,14 @@ public class DebeziumOracleProcessor implements QuarkusEngineProcessor<AgroalDat
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     @Override
     public void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                SchemaHistory.class,
-                KafkaSchemaHistory.class,
-                OracleConnection.class,
-                OracleSourceInfoStructMaker.class,
-                OracleConnectorTask.class,
-                OracleConnector.class,
-                NoSnapshotLock.class,
-                SharedSnapshotLock.class,
-                SelectAllSnapshotQuery.class,
-                ExtendedSnapshotLock.class,
-                StreamingAdapter.class,
-                BufferedLogMinerAdapter.class,
-                UnbufferedLogMinerAdapter.class,
-                OpenLogReplicatorAdapter.class)
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(OracleConnection.class)
                 .reason(getClass().getName())
                 .build());
+    }
 
-        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                "io.debezium.connector.oracle.xstream.XStreamAdapter")
-                .reason(getClass().getName())
-                .build());
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    DebeziumReflectiveTypeBuildItem reflectiveTypes() {
+        return new DebeziumReflectiveTypeBuildItem(StreamingAdapter.class);
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

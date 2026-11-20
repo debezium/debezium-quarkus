@@ -7,14 +7,7 @@ package io.quarkus.debezium.db2.deployment;
 
 import io.debezium.connector.db2.Db2Connection;
 import io.debezium.connector.db2.Db2Connector;
-import io.debezium.connector.db2.Db2ConnectorTask;
-import io.debezium.connector.db2.Db2SourceInfoStructMaker;
 import io.debezium.connector.db2.Module;
-import io.debezium.connector.db2.snapshot.lock.ExclusiveSnapshotLock;
-import io.debezium.connector.db2.snapshot.lock.NoSnapshotLock;
-import io.debezium.connector.db2.snapshot.query.SelectAllSnapshotQuery;
-import io.debezium.relational.history.SchemaHistory;
-import io.debezium.storage.kafka.history.KafkaSchemaHistory;
 import io.quarkus.debezium.agroal.configuration.AgroalDatasourceConfiguration;
 import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
@@ -44,15 +37,7 @@ class DebeziumDb2Processor implements QuarkusEngineProcessor<AgroalDatasourceCon
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     @Override
     public void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                SchemaHistory.class,
-                KafkaSchemaHistory.class,
-                Db2Connection.class,
-                Db2SourceInfoStructMaker.class,
-                Db2ConnectorTask.class,
-                NoSnapshotLock.class,
-                ExclusiveSnapshotLock.class,
-                SelectAllSnapshotQuery.class)
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(Db2Connection.class)
                 .reason(getClass().getName())
                 .build());
     }

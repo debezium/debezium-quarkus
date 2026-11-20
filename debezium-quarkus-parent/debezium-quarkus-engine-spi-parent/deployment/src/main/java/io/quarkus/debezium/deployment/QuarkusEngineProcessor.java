@@ -17,10 +17,10 @@ import io.debezium.runtime.recorder.DatasourceRecorder;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumReflectiveTypeBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
  * The {@link QuarkusEngineProcessor} is the processor that guides what beans should be instantiated to create
@@ -45,11 +45,14 @@ public interface QuarkusEngineProcessor<C extends QuarkusDatasourceConfiguration
     DebeziumConnectorBuildItem engine();
 
     /**
-     * instruments graalVM to add classes that are loaded through reflections. This build step is necessary for a correct native build
+     * instruments graalVM to add classes that are loaded through reflections and cannot be discovered otherwise.
+     * Implementations of the types declared with {@link DebeziumReflectiveTypeBuildItem}, and the components published
+     * through Debezium's {@code ComponentMetadataProvider}, are registered automatically and should not be listed here.
+     * Extensions that need it override this method and annotate it with {@code @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)}.
      * @param reflectiveClassBuildItemBuildProducer
      */
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer);
+    default void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+    }
 
     /**
      *

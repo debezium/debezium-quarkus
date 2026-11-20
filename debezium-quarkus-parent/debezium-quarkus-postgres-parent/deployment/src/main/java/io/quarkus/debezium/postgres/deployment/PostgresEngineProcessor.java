@@ -7,11 +7,6 @@ package io.quarkus.debezium.postgres.deployment;
 
 import io.debezium.connector.postgresql.Module;
 import io.debezium.connector.postgresql.PostgresConnector;
-import io.debezium.connector.postgresql.PostgresConnectorTask;
-import io.debezium.connector.postgresql.PostgresSourceInfoStructMaker;
-import io.debezium.connector.postgresql.snapshot.lock.NoSnapshotLock;
-import io.debezium.connector.postgresql.snapshot.lock.SharedSnapshotLock;
-import io.debezium.connector.postgresql.snapshot.query.SelectAllSnapshotQuery;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
@@ -26,7 +21,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
@@ -62,20 +56,6 @@ public class PostgresEngineProcessor implements QuarkusEngineProcessor<AgroalDat
         devServicesProducer.produce(new DevServicesResultBuildItem("debezium-postgres",
                 "debezium",
                 datasource.getConfigProperties()));
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    @Override
-    public void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                PostgresConnector.class,
-                PostgresSourceInfoStructMaker.class,
-                PostgresConnectorTask.class,
-                NoSnapshotLock.class,
-                SharedSnapshotLock.class,
-                SelectAllSnapshotQuery.class)
-                .reason(getClass().getName())
-                .build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

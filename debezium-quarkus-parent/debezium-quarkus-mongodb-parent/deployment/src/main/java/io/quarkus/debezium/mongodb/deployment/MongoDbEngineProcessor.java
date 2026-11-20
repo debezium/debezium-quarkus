@@ -16,12 +16,8 @@ import com.github.dockerjava.api.model.Ports;
 
 import io.debezium.connector.mongodb.Module;
 import io.debezium.connector.mongodb.MongoDbConnector;
-import io.debezium.connector.mongodb.MongoDbConnectorTask;
-import io.debezium.connector.mongodb.MongoDbSourceInfoStructMaker;
-import io.debezium.connector.mongodb.connection.DefaultMongoDbAuthProvider;
-import io.debezium.connector.mongodb.snapshot.query.SelectAllSnapshotQuery;
+import io.debezium.connector.mongodb.connection.MongoDbAuthProvider;
 import io.debezium.runtime.configuration.DebeziumEngineBuildTimeConfiguration;
-import io.debezium.schema.DefaultTopicNamingStrategy;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.debezium.configuration.MongoDbDatasourceRecorder;
 import io.quarkus.debezium.configuration.MongodbDatasourceCompatibilityRecorder;
@@ -30,6 +26,7 @@ import io.quarkus.debezium.deployment.QuarkusEngineProcessor;
 import io.quarkus.debezium.deployment.engine.DebeziumCompatibility;
 import io.quarkus.debezium.deployment.items.DebeziumConnectorBuildItem;
 import io.quarkus.debezium.deployment.items.DebeziumExtensionNameBuildItem;
+import io.quarkus.debezium.deployment.items.DebeziumReflectiveTypeBuildItem;
 import io.quarkus.debezium.engine.MongoDbEngineProducer;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -38,7 +35,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.Startable;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
@@ -58,17 +54,8 @@ public class MongoDbEngineProcessor implements QuarkusEngineProcessor<MultiEngin
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    @Override
-    public void registerClassesThatAreLoadedThroughReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(
-                DefaultTopicNamingStrategy.class,
-                MongoDbConnector.class,
-                MongoDbConnectorTask.class,
-                MongoDbSourceInfoStructMaker.class,
-                SelectAllSnapshotQuery.class,
-                DefaultMongoDbAuthProvider.class)
-                .reason(getClass().getName())
-                .build());
+    DebeziumReflectiveTypeBuildItem reflectiveTypes() {
+        return new DebeziumReflectiveTypeBuildItem(MongoDbAuthProvider.class);
     }
 
     @Override
